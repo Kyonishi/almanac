@@ -8,115 +8,83 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --red:#B03A2E;--dred:#922B21;
+  --red:#B03A2E;--dred:#8B1A1A;
   --grn:#2E7D32;--lgrn:#EBF5EB;
   --txt:#2C2C2C;--sub:#8A8A8A;--brd:#EBEBEB;--bg:#F4F2ED;
-  --card:#FFFFFF;
 }
 html,body{height:100%;overscroll-behavior:none}
-body{
-  font-family:-apple-system,'PingFang TC','Noto Sans TC','Microsoft JhengHei',sans-serif;
-  background:var(--bg);
-  max-width:480px;margin:0 auto;
-  display:flex;flex-direction:column;min-height:100vh;
-}
+body{font-family:-apple-system,'PingFang TC','Noto Sans TC','Microsoft JhengHei',sans-serif;
+  background:var(--bg);max-width:480px;margin:0 auto;min-height:100vh}
 
-/* ── HEADER ───────────────────────────── */
-header{
-  background:linear-gradient(160deg,var(--red) 0%,#8B1A1A 100%);
-  color:#fff;padding:20px 16px 14px;
-  display:flex;align-items:center;justify-content:space-between;
-  position:sticky;top:0;z-index:10;
-  box-shadow:0 2px 8px rgba(0,0,0,.18);
-}
-.h-title{font-size:20px;font-weight:700;letter-spacing:5px;opacity:.97}
-.h-date{font-size:11px;opacity:.75;text-align:right;line-height:1.6}
+/* HEADER */
+header{background:linear-gradient(160deg,var(--red) 0%,var(--dred) 100%);color:#fff;
+  padding:18px 16px 13px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.h-title{font-size:20px;font-weight:700;letter-spacing:5px}
+.h-date{font-size:10px;opacity:.75;text-align:right;line-height:1.7}
 
-/* ── MONTH NAV ────────────────────────── */
-.mnav{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:10px 14px;background:var(--card);
-  border-bottom:1px solid var(--brd);
-}
-.nb{
-  background:none;border:none;color:var(--red);
-  font-size:24px;width:36px;height:36px;border-radius:50%;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;
-  transition:background .12s;
-}
+/* MONTH NAV */
+.mnav{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;background:#fff;border-bottom:1px solid var(--brd)}
+.nb{background:none;border:none;color:var(--red);font-size:24px;width:36px;height:36px;
+  border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s}
 .nb:hover{background:#FEF0EF}
 .mc{display:flex;align-items:center;gap:10px}
 #ml{font-size:16px;font-weight:600;color:var(--txt)}
-.tb{
-  background:var(--red);color:#fff;border:none;
-  border-radius:12px;padding:3px 11px;font-size:11px;
-  cursor:pointer;transition:opacity .15s;
-}
-.tb:hover{opacity:.85}
+.tb{background:var(--red);color:#fff;border:none;border-radius:12px;padding:3px 11px;
+  font-size:11px;cursor:pointer}
 
-/* ── CALENDAR ─────────────────────────── */
-.cal{background:var(--card);padding-bottom:10px;border-bottom:1px solid var(--brd)}
-.wh{
-  display:grid;grid-template-columns:repeat(7,1fr);
-  padding:8px 6px 4px;text-align:center;
-}
+/* CALENDAR */
+.cal{background:#fff;padding-bottom:10px;border-bottom:1px solid var(--brd)}
+.wh{display:grid;grid-template-columns:repeat(7,1fr);padding:8px 6px 4px;text-align:center}
 .wh>span{font-size:11px;color:var(--sub);font-weight:500}
 .wh>span:first-child{color:#C0392B}
 .wh>span:last-child{color:#2471A3}
-
 .dg{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;padding:0 6px}
-
-.d{
-  display:flex;flex-direction:column;align-items:center;
-  justify-content:center;padding:3px 1px;
-  border-radius:9px;cursor:pointer;min-height:50px;
-  position:relative;transition:background .1s;
-}
+.d{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:3px 1px;border-radius:9px;cursor:pointer;min-height:50px;transition:background .1s}
 .d:not(.oth):hover{background:#FEF5F5}
 .d.oth{opacity:.2;pointer-events:none}
 .d.sel{background:var(--red)!important}
-
 .sol{font-size:19px;font-weight:600;color:var(--txt);line-height:1}
-.d.sun .sol{color:#C0392B}
-.d.sat .sol{color:#2471A3}
+.d.sun .sol{color:#C0392B}.d.sat .sol{color:#2471A3}
 .d.sel .sol{color:#fff!important}
 .d.tod:not(.sel) .sol{color:var(--red);font-weight:800}
-
 .lun{font-size:9px;color:var(--sub);margin-top:2px;line-height:1}
 .d.sel .lun{color:rgba(255,255,255,.8)}
-
-.jqt{font-size:9px;color:var(--grn);font-weight:700;margin-top:2px;line-height:1}
+.jqt{font-size:9px;color:var(--grn);font-weight:700;margin-top:2px}
 .d.sel .jqt{color:#81C784}
-
 .dot{width:4px;height:4px;border-radius:50%;background:var(--red);margin:2px auto 0}
 .d.sel .dot{background:#fff}
 
-/* ── DETAIL ───────────────────────────── */
-.det{margin:12px 8px 24px;background:var(--card);border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.09)}
+/* DETAIL CARD */
+.det{margin:12px 8px 24px;background:#fff;border-radius:16px;overflow:hidden;
+  box-shadow:0 2px 12px rgba(0,0,0,.09)}
 
 /* hero */
 .dh{background:var(--lgrn);padding:18px 16px;display:flex;gap:14px;align-items:flex-start}
-.bigd{
-  font-size:72px;font-weight:900;color:var(--grn);
-  line-height:1;min-width:80px;text-align:center;flex-shrink:0;
-  font-variant-numeric:tabular-nums;
-}
+.bigd{font-size:72px;font-weight:900;color:var(--grn);line-height:1;min-width:80px;
+  text-align:center;flex-shrink:0}
 .dmeta{flex:1;padding-top:2px}
 .dlun{font-size:22px;font-weight:700;color:var(--grn);line-height:1;margin-bottom:6px}
 .dgz{font-size:11px;color:#5D6D5D;line-height:1.75}
 .bdg{margin-top:8px;display:flex;flex-wrap:wrap;gap:5px}
-.bc{background:#FFF0E0;color:#C0622B;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:500}
-.bj{background:#E8F5E9;color:var(--grn);padding:2px 9px;border-radius:10px;font-size:10px;font-weight:600}
-.bf{background:#FEF9E7;color:#B7770D;padding:2px 9px;border-radius:10px;font-size:10px}
+/* badge variants */
+.bc {background:#FFF0E0;color:#C0622B;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:500}
+.bj {background:#E8F5E9;color:var(--grn);padding:2px 9px;border-radius:10px;font-size:10px;font-weight:600}
+.bf {background:#FEF9E7;color:#B7770D;padding:2px 9px;border-radius:10px;font-size:10px}
+.bx {background:#FDE8E8;color:#C0392B;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:600}
+.bg {background:#E3F2FD;color:#1565C0;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:600}
 
 /* sections */
 .sec{padding:13px 16px;border-top:1px solid var(--brd)}
-.st{font-size:9.5px;color:#BBB;letter-spacing:1.5px;font-weight:600;margin-bottom:11px;text-transform:uppercase}
+.st{font-size:9.5px;color:#BBB;letter-spacing:1.5px;font-weight:600;margin-bottom:11px}
 
 /* 宜忌 */
 .yjr{display:flex;align-items:flex-start;gap:9px;margin-bottom:9px}
 .yjr:last-child{margin-bottom:0}
-.yjb{width:22px;height:22px;border-radius:50%;font-size:12px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.yjb{width:22px;height:22px;border-radius:50%;font-size:12px;font-weight:700;color:#fff;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
 .yb{background:var(--grn)}.jb{background:var(--red)}
 .yt{font-size:12.5px;color:#1A5E1A;line-height:1.85;flex:1}
 .jt{font-size:12.5px;color:#B71C1C;line-height:1.85;flex:1}
@@ -129,7 +97,17 @@ header{
 .gv{font-size:12.5px;color:var(--grn);font-weight:700}
 .gvl{font-size:14px;color:var(--grn);font-weight:700}
 
-/* 节气 bar */
+/* calendar text box (佛/道歷) */
+.caltext{font-size:13px;color:#4A5A4A;line-height:1.85;background:#F7FAF7;
+  border-radius:9px;padding:11px 13px}
+.caltext strong{color:var(--grn)}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.tag{display:inline-block;background:#F0F7F0;color:var(--grn);
+  border:1px solid #C8E6C9;padding:3px 10px;border-radius:12px;font-size:11px}
+.tag.red{background:#FEF0F0;color:#C0392B;border-color:#F5C6C6}
+.tag.gold{background:#FFF8E1;color:#B7770D;border-color:#FFE082}
+
+/* 节气 */
 .jqrow{display:flex;justify-content:space-between;margin-bottom:7px}
 .jqp{font-size:13px;font-weight:700;color:var(--grn)}
 .jqn{font-size:13px;font-weight:700;color:#D67D00}
@@ -137,11 +115,16 @@ header{
 .jqfill{height:100%;background:linear-gradient(to right,var(--grn),#D67D00);border-radius:3px}
 .jqinfo{display:flex;justify-content:space-between;margin-top:5px;font-size:10px;color:#AAA}
 
-/* footer */
-footer{
-  text-align:center;font-size:10px;color:#CCC;
-  padding:12px 16px 20px;letter-spacing:.5px;
-}
+/* 時辰 */
+.shichen-box{background:#F7FAF7;border-radius:9px;padding:11px 13px}
+.shichen-cur{font-size:13px;color:var(--grn);font-weight:700;margin-bottom:6px}
+.shichen-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-top:6px}
+.shichen-cell{text-align:center;font-size:9px;color:#AAA;background:#EEF5EE;
+  border-radius:5px;padding:3px 1px;line-height:1.4}
+.shichen-cell.now{background:var(--grn);color:#fff}
+.shichen-cell .hz{font-size:11px;font-weight:700}
+
+footer{text-align:center;font-size:10px;color:#CCC;padding:12px 16px 20px;letter-spacing:.5px}
 </style>
 </head>
 <body>
@@ -152,12 +135,12 @@ footer{
 </header>
 
 <div class="mnav">
-  <button class="nb" onclick="cm(-1)" title="上個月">‹</button>
+  <button class="nb" onclick="cm(-1)">‹</button>
   <div class="mc">
     <span id="ml"></span>
     <button class="tb" onclick="gt()">今天</button>
   </div>
-  <button class="nb" onclick="cm(1)" title="下個月">›</button>
+  <button class="nb" onclick="cm(1)">›</button>
 </div>
 
 <div class="cal">
@@ -172,7 +155,7 @@ footer{
   <div style="padding:36px;text-align:center;color:#CCC;font-size:14px">載入農曆資料中…</div>
 </div>
 
-<footer>農曆資料來源：lunar-javascript (6tail) · 無廣告版</footer>
+<footer>農曆資料 · lunar-javascript (6tail) · 無廣告</footer>
 
 <script>
 !function(){
@@ -183,7 +166,7 @@ let CY=T.getFullYear(),CM=T.getMonth()+1,SY=CY,SM=CM,SD=T.getDate();
 /* safe wrapper */
 const s=(f,d='')=>{try{const r=f();return r==null?d:r}catch{return d}};
 
-/* library helpers */
+/* ── helpers ──────────────────────────────── */
 const sl=(y,m,d)=>s(()=>Solar.fromYmd(y,m,d));
 const ll=(y,m,d)=>s(()=>sl(y,m,d).getLunar());
 
@@ -196,29 +179,46 @@ function jqFor(y,m,d){
   },'');
 }
 function fesFor(y,m,d){
-  return s(()=>{const f=sl(y,m,d).getFestivals();return f&&f.length?f[0]:''},'');
+  // solar festivals first, then lunar festivals
+  const sf=s(()=>sl(y,m,d).getFestivals(),[]);
+  if(sf&&sf.length)return sf[0];
+  const lf=s(()=>ll(y,m,d).getFestivals(),[]);
+  if(lf&&lf.length)return lf[0];
+  return '';
 }
 
-/* ── UPDATE HEADER ──────────────────────────── */
+/* digit-by-digit Chinese number: 2570 → 二五七〇 */
+function toChDigit(n){
+  const m=['〇','一','二','三','四','五','六','七','八','九'];
+  return String(n).split('').map(d=>m[+d]).join('');
+}
+
+/* current shichen index */
+function shiIdx(){
+  const h=new Date().getHours();
+  return h===23?0:Math.floor((h+1)/2);
+}
+const HZ=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+const HT=['23–01','01–03','03–05','05–07','07–09','09–11',
+          '11–13','13–15','15–17','17–19','19–21','21–23'];
+
+/* ── HEADER CLOCK ─────────────────────────── */
 function updateHeader(){
   const days=['日','一','二','三','四','五','六'];
-  const now=new Date();
-  const d=now.getDate(),wd=days[now.getDay()];
-  const hm=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  document.getElementById('hdate').innerHTML=`${now.getFullYear()}.${now.getMonth()+1}.${d} 星期${wd}<br>${hm}`;
+  const n=new Date();
+  const hm=`${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
+  document.getElementById('hdate').innerHTML=
+    `${n.getFullYear()}.${n.getMonth()+1}.${n.getDate()} 星期${days[n.getDay()]}<br>${hm}`;
 }
-updateHeader();
-setInterval(updateHeader,30000);
+updateHeader();setInterval(updateHeader,30000);
 
-/* ── CALENDAR ───────────────────────────────── */
+/* ── CALENDAR ─────────────────────────────── */
 function rc(){
   document.getElementById('ml').textContent=`${CY}年${String(CM).padStart(2,'0')}月`;
   const g=document.getElementById('dg');g.innerHTML='';
-
   const fd=new Date(CY,CM-1,1),dow=fd.getDay(),dim=new Date(CY,CM,0).getDate();
   const pM=CM===1?12:CM-1,pY=CM===1?CY-1:CY,pdim=new Date(pY,pM,0).getDate();
   const nM=CM===12?1:CM+1,nY=CM===12?CY+1:CY;
-
   for(let i=dow-1;i>=0;i--) g.appendChild(mc(pY,pM,pdim-i,true));
   for(let d=1;d<=dim;d++)   g.appendChild(mc(CY,CM,d,false));
   const tot=dow+dim,tail=tot%7?7-tot%7:0;
@@ -232,67 +232,82 @@ function mc(y,m,d,oth){
   const el=document.createElement('div');
   el.className='d'+(oth?' oth':'')+(isS?' sel':'')+(isT?' tod':'')
     +(dw===0?' sun':dw===6?' sat':'');
-
   const sv=document.createElement('div');sv.className='sol';sv.textContent=d;el.appendChild(sv);
-
   if(!oth){
     const lun=ll(y,m,d),jq=jqFor(y,m,d),fv=fesFor(y,m,d);
     const sub=document.createElement('div');
-    if(jq){
-      sub.className='jqt';sub.textContent=jq;
-    }else if(fv){
-      sub.className='lun';sub.style.color='#C07A00';
-      sub.textContent=fv.length>4?fv.slice(0,4):fv;
-    }else if(lun){
+    if(jq){sub.className='jqt';sub.textContent=jq;}
+    else if(fv){sub.className='lun';sub.style.color='#C07A00';
+      sub.textContent=fv.length>4?fv.slice(0,4):fv;}
+    else if(lun){
       sub.className='lun';
-      if(lun.getDay()===1){sub.textContent=lun.getMonthInChinese()+'月';sub.style.fontWeight='700';sub.style.color='#555';}
+      if(lun.getDay()===1){sub.textContent=lun.getMonthInChinese()+'月';
+        sub.style.fontWeight='700';sub.style.color='#555';}
       else{sub.textContent=lun.getDayInChinese();}
     }
     el.appendChild(sub);
     if(isT&&!isS){const dot=document.createElement('div');dot.className='dot';el.appendChild(dot);}
-    el.onclick=()=>{SY=y;SM=m;SD=d;rc();rd();setTimeout(()=>document.getElementById('det').scrollIntoView({behavior:'smooth'}),50);};
+    el.onclick=()=>{SY=y;SM=m;SD=d;rc();rd();
+      setTimeout(()=>document.getElementById('det').scrollIntoView({behavior:'smooth'}),50);};
   }
   return el;
 }
 
-/* ── DETAIL ─────────────────────────────────── */
+/* ── DETAIL ───────────────────────────────── */
 function rd(){
   const box=document.getElementById('det');
   const lun=ll(SY,SM,SD);
   if(!lun){box.innerHTML='<div style="padding:24px;text-align:center;color:#AAA">無法取得農曆資料</div>';return;}
 
-  const jq=jqFor(SY,SM,SD),fv=fesFor(SY,SM,SD);
+  const jq=jqFor(SY,SM,SD);
   const g=(f,d='')=>s(f,d);
 
-  const lM=g(()=>lun.getMonthInChinese(),'?');
-  const lD=g(()=>lun.getDayInChinese(),'?');
-  const yGZ=g(()=>lun.getYearInGanZhiByLiChun());
-  const mGZ=g(()=>lun.getMonthInGanZhi());
-  const dGZ=g(()=>lun.getDayInGanZhi());
+  /* basic info */
+  const lM   =g(()=>lun.getMonthInChinese(),'?');
+  const lD   =g(()=>lun.getDayInChinese(),'?');
   const lYear=g(()=>lun.getYear(),'');
-  const sx=g(()=>lun.getYearShengXiao());
-  const ch=g(()=>lun.getDayChong());
-  const ny=g(()=>lun.getDayNaYin());
-  const sh=g(()=>lun.getDayShen());
-  const xu=g(()=>lun.getXiu());
-  const j12=g(()=>lun.getDayShen12());
-  const yi=g(()=>lun.getDayYi(),[]);
-  const ji=g(()=>lun.getDayJi(),[]);
-  const pc=g(()=>lun.getDayPositionCai());
-  const pf=g(()=>lun.getDayPositionFu());
-  const px=g(()=>lun.getDayPositionXi());
-  const py=g(()=>lun.getDayPositionYangGui());
-  const pi=g(()=>lun.getDayPositionYinGui());
+  const yGZ  =g(()=>lun.getYearInGanZhiByLiChun());
+  const mGZ  =g(()=>lun.getMonthInGanZhi());
+  const dGZ  =g(()=>lun.getDayInGanZhi());
+  const sx   =g(()=>lun.getYearShengXiao());
+  const ch   =g(()=>lun.getDayChong());
+  const ny   =g(()=>lun.getDayNaYin());
+  const sh   =g(()=>lun.getDayShen());
+  const xu   =g(()=>lun.getXiu());
+  const xuLk =g(()=>lun.getXiuLuck()); // 吉 or 凶
+  const j12  =g(()=>lun.getDayShen12());
+  const yi   =g(()=>lun.getDayYi(),[]);
+  const ji   =g(()=>lun.getDayJi(),[]);
+  const pc   =g(()=>lun.getDayPositionCai());
+  const pf   =g(()=>lun.getDayPositionFu());
+  const px   =g(()=>lun.getDayPositionXi());
+  const py   =g(()=>lun.getDayPositionYangGui());
+  const pi   =g(()=>lun.getDayPositionYinGui());
 
-  /* jieqi progress */
+  /* festivals */
+  const solarFes =g(()=>sl(SY,SM,SD).getFestivals(),[]);
+  const lunarFes =g(()=>lun.getFestivals(),[]);
+  const otherFes =g(()=>lun.getOtherFestivals(),[]);
+  const allFes   =[...(Array.isArray(solarFes)?solarFes:[]),
+                   ...(Array.isArray(lunarFes)?lunarFes:[])];
+  const other    =Array.isArray(otherFes)?otherFes:[];
+
+  /* 佛歷 Buddhist calendar (Gregorian year + 544) */
+  const buddhaYearCh=toChDigit(SY+544);
+
+  /* 道歷 Taoist calendar (Gregorian year + 2697 = Yellow Emperor era) */
+  const taoYearCh=toChDigit(SY+2697);
+  const curShiIdx=shiIdx();
+  const curShi=HZ[curShiIdx];
+
+  /* 节气 progress */
   let jqHtml='';
   s(()=>{
     const tbl=lun.getJieQiTable();
     const sel=new Date(SY,SM-1,SD);
     const sorted=Object.entries(tbl).sort(([,a],[,b])=>
       new Date(a.getYear(),a.getMonth()-1,a.getDay())-
-      new Date(b.getYear(),b.getMonth()-1,b.getDay())
-    );
+      new Date(b.getYear(),b.getMonth()-1,b.getDay()));
     let pN='',nN='',pD=0,nD=0;
     for(const[n,x]of sorted){
       const xd=new Date(x.getYear(),x.getMonth()-1,x.getDay());
@@ -313,15 +328,14 @@ function rd(){
   const ys=Array.isArray(yi)?yi.join('　'):yi;
   const js=Array.isArray(ji)?ji.join('　'):ji;
 
-  /* 今日時辰 */
-  const HZ=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
-  const HT=['23:00–01:00','01:00–03:00','03:00–05:00','05:00–07:00',
-            '07:00–09:00','09:00–11:00','11:00–13:00','13:00–15:00',
-            '15:00–17:00','17:00–19:00','19:00–21:00','21:00–23:00'];
-  const now=new Date(),h=now.getHours();
-  const idx=h===23?0:Math.floor((h+1)/2);
-  const curShichen=`${HZ[idx]}時 (${HT[idx]})`;
+  /* 時辰 display grid */
+  const shiGrid=HZ.map((hz,i)=>`
+    <div class="shichen-cell${i===curShiIdx?' now':''}">
+      <div class="hz">${hz}</div>
+      <div>${HT[i]}</div>
+    </div>`).join('');
 
+  /* ── render ─── */
   box.innerHTML=`
   <div class="dh">
     <div class="bigd">${SD}</div>
@@ -329,12 +343,13 @@ function rd(){
       <div class="dlun">${lM}月${lD}</div>
       <div class="dgz">
         ${yGZ}年 · ${mGZ}月 · ${dGZ}日<br>
-        農曆 ${lYear} 年 · 第${s(()=>sl(SY,SM,SD).getWeek(),'')}周
+        農曆 ${lYear} 年 · 星期${'日一二三四五六'[new Date(SY,SM-1,SD).getDay()]}
       </div>
       <div class="bdg">
         ${sx?`<span class="bc">[${sx}] 衝${ch}</span>`:''}
+        ${xuLk==='凶'?`<span class="bx">凶日</span>`:xuLk==='吉'?`<span class="bj">吉日</span>`:''}
         ${jq?`<span class="bj">🌿 ${jq}</span>`:''}
-        ${fv?`<span class="bf">🎊 ${fv}</span>`:''}
+        ${allFes.map(f=>`<span class="bf">🎊 ${f}</span>`).join('')}
       </div>
     </div>
   </div>
@@ -365,34 +380,42 @@ function rd(){
     </div>
   </div>
 
+  <div class="sec">
+    <div class="st">佛　歷</div>
+    <div class="caltext">
+      <strong>${buddhaYearCh}年</strong>${lM}月${lD}
+      ${other.length?`（${other.join('、')}）`:''}
+    </div>
+    ${other.length?`<div class="tags">${other.map(f=>`<span class="tag">${f}</span>`).join('')}</div>`:''}
+  </div>
+
+  <div class="sec">
+    <div class="st">道　歷</div>
+    <div class="caltext">
+      道歷<strong>${taoYearCh}年</strong>，天運${yGZ}年，${mGZ}月，${dGZ}日。<br>
+      ${lM}月${lD}日，<strong>${curShi}時</strong>。
+    </div>
+  </div>
+
   ${jqHtml}
 
   <div class="sec" style="padding-bottom:14px">
-    <div class="st">今日時辰</div>
-    <div style="font-size:13px;color:#555;background:#F7FAF7;border-radius:9px;padding:10px 12px;line-height:1.6">
-      📍 現在：<strong style="color:var(--grn)">${curShichen}</strong><br>
-      <span style="font-size:11px;color:#AAA">子(23-1)·丑(1-3)·寅(3-5)·卯(5-7)·辰(7-9)·巳(9-11)<br>
-      午(11-13)·未(13-15)·申(15-17)·酉(17-19)·戌(19-21)·亥(21-23)</span>
+    <div class="st">今日十二時辰</div>
+    <div class="shichen-box">
+      <div class="shichen-cur">現在：${curShi}時（${HT[curShiIdx]}）</div>
+      <div class="shichen-grid">${shiGrid}</div>
     </div>
   </div>`;
 }
 
-/* ── CONTROLS ───────────────────────────────── */
+/* ── CONTROLS ─────────────────────────────── */
 window.cm=d=>{CM+=d;if(CM>12){CM=1;CY++;}if(CM<1){CM=12;CY--;}rc();};
-window.gt=()=>{
-  CY=T.getFullYear();CM=T.getMonth()+1;
-  SY=CY;SM=CM;SD=T.getDate();rc();rd();
-};
+window.gt=()=>{CY=T.getFullYear();CM=T.getMonth()+1;SY=CY;SM=CM;SD=T.getDate();rc();rd();};
 
-/* ── INIT ───────────────────────────────────── */
-const init=()=>{
-  if(typeof Solar==='undefined'){setTimeout(init,50);return;}
-  rc();rd();
-};
-if(document.readyState==='loading'){
-  document.addEventListener('DOMContentLoaded',init);
-}else{init();}
-
+/* ── INIT ─────────────────────────────────── */
+const init=()=>{if(typeof Solar==='undefined'){setTimeout(init,50);return;}rc();rd();};
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}
+else{init();}
 }();
 </script>
 </body>
