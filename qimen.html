@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>奇門遁甲排盤</title>
+<script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/cn2t.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#1A1A2E;--red:#8B1A1A;--gold:#9A7B2A;--lgold:#FDF6E3;
+  --grn:#2E5E2E;--lgrn:#EEF5EE;
+  --bg:#F5F0E8;--card:#FFFDF7;--brd:#E2D9C8;--sub:#7A6A50;
+}
+html,body{min-height:100%;background:var(--bg);
+  font-family:-apple-system,'PingFang TC','Noto Sans TC',serif}
+body{max-width:500px;margin:0 auto;padding-bottom:32px}
+
+/* HEADER */
+header{
+  background:linear-gradient(160deg,#1A1A2E 0%,#2C1810 100%);
+  color:#E8D5A3;padding:18px 16px 14px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.h-title{font-size:20px;font-weight:700;letter-spacing:6px}
+.h-sub{font-size:10px;opacity:.65;text-align:right;line-height:1.7}
+
+/* INPUT PANEL */
+.input-panel{background:var(--card);border-bottom:1px solid var(--brd);padding:14px 16px}
+.input-row{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.input-row:last-child{margin-bottom:0}
+.input-label{font-size:11px;color:var(--sub);width:48px;flex-shrink:0;font-weight:600;letter-spacing:.5px}
+.inp{flex:1;border:1px solid var(--brd);border-radius:8px;padding:7px 10px;
+  font-size:14px;background:#FFFDF7;color:var(--ink);font-family:inherit}
+.inp:focus{outline:none;border-color:var(--gold)}
+.btn-now{background:var(--gold);color:#fff;border:none;border-radius:8px;
+  padding:7px 14px;font-size:12px;cursor:pointer;white-space:nowrap;font-family:inherit}
+.btn-now:hover{opacity:.88}
+.btn-calc{
+  width:100%;background:linear-gradient(135deg,var(--red),#5C1010);
+  color:#E8D5A3;border:none;border-radius:10px;padding:12px;
+  font-size:16px;letter-spacing:4px;cursor:pointer;font-family:inherit;
+  margin-top:4px;box-shadow:0 2px 6px rgba(139,26,26,.35)
+}
+.btn-calc:hover{opacity:.9}
+.btn-calc:active{transform:scale(.98)}
+
+/* RESULT */
+.result{margin:10px 8px}
+
+/* META CARD */
+.meta-card{
+  background:var(--card);border-radius:12px;padding:14px 16px;
+  border:1px solid var(--brd);margin-bottom:10px;
+  box-shadow:0 1px 6px rgba(0,0,0,.06)
+}
+.meta-title{font-size:10px;color:var(--sub);letter-spacing:1.5px;margin-bottom:10px;font-weight:600}
+.meta-gz{font-size:17px;font-weight:700;color:var(--ink);letter-spacing:2px;margin-bottom:8px}
+.meta-ju{
+  display:inline-block;background:var(--red);color:#E8D5A3;
+  padding:3px 12px;border-radius:12px;font-size:13px;font-weight:600;
+  letter-spacing:1px;margin-bottom:8px
+}
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.meta-item{background:#F8F4EC;border-radius:7px;padding:7px 10px}
+.meta-k{font-size:9px;color:var(--sub);margin-bottom:2px;font-weight:600}
+.meta-v{font-size:12px;color:var(--ink);font-weight:600;line-height:1.4}
+.meta-v.zf{color:var(--grn)}.meta-v.zs{color:var(--red)}
+
+/* 九宮格 */
+.pan-wrap{background:var(--card);border-radius:12px;border:1px solid var(--brd);
+  overflow:hidden;margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+.pan-header{
+  background:linear-gradient(135deg,#1A1A2E,#2C1810);color:#E8D5A3;
+  padding:9px 14px;font-size:11px;letter-spacing:2px;font-weight:600
+}
+.pan-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  border-left:1px solid var(--brd);border-top:1px solid var(--brd);
+}
+.cell{
+  border-right:1px solid var(--brd);border-bottom:1px solid var(--brd);
+  padding:8px 4px;min-height:120px;position:relative;
+  display:flex;flex-direction:column;align-items:center;
+  background:var(--card);
+}
+.cell.center-cell{background:#FDFAF2}
+.cell.is-zf{background:#EEF7EE}  /* 值符所在宮 */
+.cell.is-zs{background:#FEF3F3}  /* 值使所在宮 */
+.cell-gua{
+  font-size:9px;color:var(--sub);font-weight:600;letter-spacing:.5px;
+  margin-bottom:5px;
+}
+/* 天干 (天盤) */
+.c-sky{
+  font-size:22px;font-weight:900;color:var(--red);line-height:1;margin-bottom:3px
+}
+/* 地干 (地盤) */
+.c-earth{
+  font-size:14px;font-weight:700;color:var(--ink);margin-bottom:5px;opacity:.75
+}
+/* 門/星/神 行 */
+.c-row{display:flex;gap:4px;justify-content:center;margin-bottom:2px}
+.c-tag{
+  font-size:10px;padding:1px 4px;border-radius:4px;font-weight:600;
+  white-space:nowrap
+}
+.tag-door{background:#E8F0FE;color:#1A3A8F}
+.tag-star{background:#E8F5E9;color:var(--grn)}
+.tag-god{background:#FFF3E0;color:#7A3800}
+/* 空亡標記 */
+.c-kong{
+  position:absolute;top:4px;right:4px;
+  font-size:8px;color:var(--red);background:#FEF0F0;
+  border-radius:3px;padding:1px 3px;font-weight:700
+}
+/* 值符/值使標籤 */
+.c-special{
+  font-size:8px;font-weight:700;border-radius:3px;padding:1px 4px;
+  margin-top:auto;margin-bottom:2px
+}
+.c-special.zf-tag{background:var(--grn);color:#fff}
+.c-special.zs-tag{background:var(--red);color:#fff}
+
+/* 擊刑 (天干+地干相刑) */
+.c-sky.jixing::after{
+  content:'✕';font-size:9px;color:var(--red);margin-left:2px;vertical-align:super
+}
+
+/* INFO CARD: 節氣/旬空/長生 */
+.info-card{background:var(--card);border-radius:12px;padding:14px 16px;
+  border:1px solid var(--brd);margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+.info-title{font-size:10px;color:var(--sub);letter-spacing:1.5px;margin-bottom:10px;font-weight:600}
+.info-row{display:flex;align-items:center;margin-bottom:6px}
+.info-row:last-child{margin-bottom:0}
+.info-k{font-size:11px;color:var(--sub);width:52px;flex-shrink:0}
+.info-v{font-size:12px;color:var(--ink);font-weight:600}
+.info-v .pill{
+  display:inline-block;padding:1px 7px;border-radius:8px;font-size:11px;margin-right:4px
+}
+.pill-ji{background:#E8F5E9;color:var(--grn)}
+.pill-xiong{background:#FEF0F0;color:var(--red)}
+.pill-neutral{background:#F5F5F0;color:var(--sub)}
+
+/* 擊刑說明 */
+.jixing-card{background:#FEF9F9;border:1px solid #F5D5D5;border-radius:10px;
+  padding:12px 14px;margin-bottom:10px;font-size:12px;color:#5C1010;line-height:1.7}
+.jixing-title{font-weight:700;margin-bottom:4px;letter-spacing:1px}
+
+
+/* cross-nav */
+.cross-nav{
+  position:fixed;bottom:20px;right:16px;z-index:999;
+  display:flex;flex-direction:column;gap:8px;align-items:flex-end
+}
+.cross-nav a{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(26,26,46,.92);color:#E8D5A3;
+  border-radius:24px;padding:8px 14px 8px 10px;
+  text-decoration:none;font-size:12px;letter-spacing:1px;
+  box-shadow:0 2px 10px rgba(0,0,0,.3);backdrop-filter:blur(4px);
+  transition:transform .15s,opacity .15s;
+}
+.cross-nav a:hover{opacity:.88;transform:scale(1.04)}
+.cross-nav a .nav-icon{font-size:16px}
+footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spacing:.5px}
+
+/* empty state */
+.empty{
+  text-align:center;padding:48px 20px;color:var(--sub);
+  font-size:14px;line-height:2;letter-spacing:1px
+}
+.empty .big{font-size:32px;margin-bottom:8px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="h-title">奇門遁甲</div>
+  <div class="h-sub" id="hdate"></div>
+</header>
+
+<div class="input-panel">
+  <div class="input-row">
+    <div class="input-label">日期</div>
+    <input class="inp" type="date" id="iDate">
+    <button class="btn-now" onclick="setNow()">現在</button>
+  </div>
+  <div class="input-row">
+    <div class="input-label">時間</div>
+    <input class="inp" type="time" id="iTime">
+  </div>
+  <button class="btn-calc" onclick="calc()">起　局</button>
+</div>
+
+<div class="result" id="result">
+  <div class="empty">
+    <div class="big">☯</div>
+    輸入時間後點「起局」<br>即可起一局時家奇門<br>
+    <span style="font-size:11px;opacity:.7">拆補法 · 時家轉盤</span>
+  </div>
+</div>
+
+<footer>時家奇門遁甲 · 拆補法 · lunar-javascript (6tail) · 無廣告</footer>
+
+<script>
+// qimen.js — 時家奇門 拆補法 JS port (v1)
+// Ported from kentang2017/kinqimen (config.py + kinqimen.py), MIT licensed source.
+// Astronomy layer (干支/節氣) delegated to lunar-javascript (6tail), already
+// verified accurate in our 萬年曆 project — avoids re-deriving ephemeris in JS.
+
+(function (global) {
+'use strict';
+
+const TIAN_GAN = '甲乙丙丁戊己庚辛壬癸';
+const DI_ZHI = '子丑寅卯辰巳午未申酉戌亥';
+const CNUMBER = ['一','二','三','四','五','六','七','八','九']; // 1-9 (宮位/局數共用)
+const EIGHT_GUA = ['坎','坤','震','巽','中','乾','兌','艮','離']; // index by CNUMBER position (1-9)
+const CLOCKWISE_EIGHTGUA = ['坎','艮','震','巽','離','坤','兌','乾']; // 8 palaces only, clockwise order, no 中
+const DOOR_R = ['休','生','傷','杜','景','死','驚','開'];
+const STAR_R = ['蓬','任','沖','輔','英','禽','柱','心'];
+const GOD_YANG = ['符','蛇','陰','合','勾','雀','地','天'];
+const GOD_YIN  = ['符','蛇','陰','合','虎','玄','地','天'];
+
+// 節氣 → 上中下元局數對照 (拆補法), directly transcribed from kinqimen/config.py
+const JIEQI_CODE = {
+  '冬至':'一七四', '驚蟄':'一七四',
+  '小寒':'二八五',
+  '大寒':'三九六', '春分':'三九六',
+  '立春':'八五二',
+  '雨水':'九六三',
+  '清明':'四一七', '立夏':'四一七',
+  '穀雨':'五二八', '小滿':'五二八',
+  '芒種':'六三九',
+  '夏至':'九三六', '白露':'九三六',
+  '小暑':'八二五',
+  '大暑':'七一四', '秋分':'七一四',
+  '立秋':'二五八',
+  '處暑':'一四七',
+  '霜降':'五八二', '小雪':'五八二',
+  '寒露':'六九三', '立冬':'六九三',
+  '大雪':'四七一'
+};
+// 陽遁節氣 (冬至→芒種) vs 陰遁節氣 (夏至→大雪)
+const YANG_JIEQI = new Set(['冬至','小寒','大寒','立春','雨水','驚蟄','春分','清明','穀雨','立夏','小滿','芒種']);
+
+// ── 基礎工具函數 (對應 config.py 的同名函式) ──
+function jiazi() {
+  const arr = [];
+  for (let i = 0; i < 60; i++) arr.push(TIAN_GAN[i % 10] + DI_ZHI[i % 12]);
+  return arr;
+}
+const JIAZI60 = jiazi();
+
+// new_list: 把 olist 旋轉，讓元素 o 排到最前面 (對應 config.py new_list)
+function newList(olist, o) {
+  const idx = olist.indexOf(o);
+  if (idx === -1) return null;
+  return olist.slice(idx).concat(olist.slice(0, idx));
+}
+// new_list_r: 從 o 開始往「前」(逆序) 取，長度同 olist (對應 config.py new_list_r)
+function newListR(olist, o) {
+  let idx = olist.indexOf(o);
+  const res = [];
+  for (let i = 0; i < olist.length; i++) {
+    res.push(olist[((idx % olist.length) + olist.length) % olist.length]);
+    idx -= 1;
+  }
+  return res;
+}
+
+// 旬首: 任一干支 → 它所屬「旬」的甲子頭 (對應 config.py liujiashun_dict 查表邏輯)
+function xunShouOf(gz) {
+  const idx = JIAZI60.indexOf(gz);
+  const headIdx = Math.floor(idx / 10) * 10;
+  return JIAZI60[headIdx];
+}
+
+// 旬首對應的「值符遁干」(對應 config.py shun())
+// 甲子旬→戊 甲戌旬→己 甲申旬→庚 甲午旬→辛 甲辰旬→壬 甲寅旬→癸
+const XUN_TO_DUNGAN = {'甲子':'戊','甲戌':'己','甲申':'庚','甲午':'辛','甲辰':'壬','甲寅':'癸'};
+function shun(dayGz) {
+  return XUN_TO_DUNGAN[xunShouOf(dayGz)];
+}
+
+// ── 干支計算 (用 lunar-javascript 取代 ephem+sxtwl, 邏輯對應 config.py gangzhi()) ──
+// 規則: 整點取時 (分鐘只影響旬空/分干支, 此處先不處理刻家), 23點視為次日子時 (晚子時進位)
+function getGanZhi(Solar, year, month, day, hour, minute) {
+  let y = year, m = month, d = day, h = hour;
+  if (hour === 23) {
+    // 23點 → 次日 00:00 (晚子時進位)
+    const next = Solar.fromYmdHms(year, month, day, 23, 0, 0).next(1); // +1 day via Solar helper
+    y = next.getYear(); m = next.getMonth(); d = next.getDay(); h = 0;
+  }
+  const solar = Solar.fromYmdHms(y, m, d, h, 0, 0);
+  const lunar = solar.getLunar();
+  const yGz = lunar.getYearInGanZhiByLiChun();
+  const mGz = lunar.getMonthInGanZhiByLiChun ? lunar.getMonthInGanZhiByLiChun() : lunar.getMonthInGanZhi();
+  const dGz = lunar.getDayInGanZhi();
+  // 時柱: 用「五鼠遁」依日干獨立推算 (對應 config.py find_lunar_hour, 不直接信任 sxtwl 的時柱)
+  const dayGan = dGz[0];
+  const FIVE_RATS_START = {'甲':'甲子','己':'甲子','乙':'丙子','庚':'丙子','丙':'戊子','辛':'戊子','丁':'庚子','壬':'庚子','戊':'壬子','癸':'壬子'};
+  const startGz = FIVE_RATS_START[dayGan];
+  const startIdx = TIAN_GAN.indexOf(startGz[0]);
+  // 時辰地支: 用「原始」小時 (不是進位後的 h), 因為時辰本身就是依原始時刻判斷
+  const hourBranchIdx = (hour === 23) ? 0 : Math.floor((hour + 1) / 2) % 12;
+  const hGan = TIAN_GAN[(startIdx + hourBranchIdx) % 10];
+  const hGz = hGan + DI_ZHI[hourBranchIdx];
+  return [yGz, mGz, dGz, hGz];
+}
+
+// ── 節氣 (取代 ephem-based config.py jq()): 用 lunar-javascript 的「上一個節氣」 ──
+// lunar-javascript 回傳簡體節氣名 (如"处暑"), 我們的對照表用繁體 (如"處暑"), 需轉換
+const JIEQI_S2T = {
+  '冬至':'冬至','小寒':'小寒','大寒':'大寒','立春':'立春','雨水':'雨水','惊蛰':'驚蟄',
+  '春分':'春分','清明':'清明','谷雨':'穀雨','立夏':'立夏','小满':'小滿','芒种':'芒種',
+  '夏至':'夏至','小暑':'小暑','大暑':'大暑','立秋':'立秋','处暑':'處暑','白露':'白露',
+  '秋分':'秋分','寒露':'寒露','霜降':'霜降','立冬':'立冬','小雪':'小雪','大雪':'大雪',
+  // getJieQiTable() 偶爾會用拼音常數作為key (通常是跨年回溯補的那一筆), 一併對應
+  'DA_HAN':'大寒','DA_XUE':'大雪','DONG_ZHI':'冬至','JING_ZHE':'驚蟄',
+  'LI_CHUN':'立春','XIAO_HAN':'小寒','YU_SHUI':'雨水'
+};
+function getCurrentJieQi(lunar, targetDate) {
+  // getPrevJieQi(true) 只精確到「天」, 同一天內若查詢時刻早於節氣交接的時分秒會誤判,
+  // 改用 getJieQiTable() 逐筆比對完整時間戳, 取小於等於查詢時刻的最近一個節氣
+  const tbl = lunar.getJieQiTable();
+  let best = null, bestTime = null;
+  for (const [name, jq] of Object.entries(tbl)) {
+    const t = new Date(jq.getYear(), jq.getMonth() - 1, jq.getDay(), jq.getHour(), jq.getMinute(), jq.getSecond());
+    if (t <= targetDate && (!bestTime || t > bestTime)) { best = name; bestTime = t; }
+  }
+  return JIEQI_S2T[best] || best;
+}
+
+// ── 排局拆補法 (對應 config.py qimen_ju_name_chaibu) ──
+// 回傳 [陰陽, 局數(中文數字), 上中下元]
+function findYuen(dayGz) {
+  const idx = JIAZI60.indexOf(dayGz);
+  const group = Math.floor(idx / 5);
+  return ['上元','中元','下元'][group % 3];
+}
+function qimenJuChaibu(jieqiName, dayGz) {
+  const yinyang = YANG_JIEQI.has(jieqiName) ? '陽' : '陰';
+  const yuen = findYuen(dayGz);
+  const codes = JIEQI_CODE[jieqiName]; // 三字串: 上中下元局數
+  const yuenIdx = {'上元':0,'中元':1,'下元':2}[yuen];
+  const kook = codes[yuenIdx]; // 中文數字 一~九
+  return { yinyang, kook, yuen, label: `${yinyang}遁${kook}局${yuen}` };
+}
+
+// ── 旬空 / 孤虛 (對應 config.py daykong_shikong) ──
+const GUXU = {
+  '甲子': '戌亥', '甲戌': '申酉', '甲申': '午未',
+  '甲午': '辰巳', '甲辰': '寅卯', '甲寅': '子丑'
+};
+function dayKongShiKong(dayGz, hourGz) {
+  const dXun = xunShouOf(dayGz);
+  const hXun = xunShouOf(hourGz);
+  return { 日空: GUXU[dXun], 時空: GUXU[hXun] };
+}
+
+// ── 局日 (對應 kinqimen.py qimen_ju_day) ──
+const JU_DAY_PAIR = {
+  '甲':'甲己日','己':'甲己日','乙':'乙庚日','庚':'乙庚日',
+  '丙':'丙辛日','辛':'丙辛日','丁':'丁壬日','壬':'丁壬日',
+  '戊':'戊癸日','癸':'戊癸日'
+};
+function juDay(dayGz) { return JU_DAY_PAIR[dayGz[0]]; }
+
+// ── 布六儀三奇 (值符/值使排盤的基礎, 對應 config.py zhifu_pai / zhishi_pai) ──
+// 陽遁/陰遁 各9局的基礎排列 (1-9宮序列字串), 直接轉錄自 config.py
+const ZHIFU_PAI_TABLE = {
+  陽: {'一':'九八七一二三四五六','二':'一九八二三四五六七','三':'二一九三四五六七八',
+       '四':'三二一四五六七八九','五':'四三二五六七八九一','六':'五四三六七八九一二',
+       '七':'六五四七八九一二三','八':'七六五八九一二三四','九':'八七六九一二三四五'},
+  陰: {'九':'一二三九八七六五四','八':'九一二八七六五四三','七':'八九一七六五四三二',
+       '六':'七八九六五四三二一','五':'六七八五四三二一九','四':'五六七四三二一九八',
+       '三':'四五六三二一九八七','二':'三四五二一九八七六','一':'二三四一九八七六五'}
+};
+// 回傳: {旬首甲子: 該旬對應的宮位序列(中文數字+局序列, 6碼字串)}
+function zhifuPai(yinyang, kook) {
+  const pai = ZHIFU_PAI_TABLE[yinyang][kook];
+  const heads = JIAZI60.filter((_, i) => i % 10 === 0); // 6個旬首
+  const rotated = yinyang === '陰' ? newListR(CNUMBER, kook) : newList(CNUMBER, kook);
+  const six = rotated.slice(0, 6).map(x => x + pai);
+  const out = {};
+  heads.forEach((h, i) => { out[h] = six[i]; });
+  return out;
+}
+function zhishiPai(yinyang, kook) {
+  const newKook = newList(CNUMBER, kook);
+  const newRKook = newListR(CNUMBER, kook);
+  const seqArr = yinyang === '陰' ? newRKook : newKook;
+  const seq3 = seqArr.join('') + seqArr.join('') + seqArr.join('');
+  const heads = JIAZI60.filter((_, i) => i % 10 === 0);
+  const six = seqArr.slice(0, 6).map(ch => {
+    const pos = seq3.indexOf(ch) + 1;
+    return ch + seq3.slice(pos, pos + 11);
+  });
+  const out = {};
+  heads.forEach((h, i) => { out[h] = six[i]; });
+  return out;
+}
+
+// ── 值符值使 (對應 config.py zhifu_n_zhishi) ──
+const GONG_BY_CNUM = Object.fromEntries(CNUMBER.map((c, i) => [c, EIGHT_GUA[i]]));
+const EG_DOOR_ORDER = ['休','死','傷','杜','中','開','驚','生','景']; // zspai_values 的星序對映門
+const EIGHT_STAR_ORDER = ['蓬','芮','沖','輔','禽','心','柱','任','英']; // zf_values 對映星
+function zhifuNZhishi(yinyang, kook, dayGz, hourGz) {
+  const hGanIdx = TIAN_GAN.indexOf(hourGz[0]);
+  const hourXun = xunShouOf(hourGz); // chour: 時干支所屬旬首
+  const zs = zhishiPai(yinyang, kook); // 旬首 -> 6碼序列(值使排)
+  const zf = zhifuPai(yinyang, kook);  // 旬首 -> 6碼序列(值符排)
+  const zsSeq = zs[hourXun]; // e.g. "三四五六七八九一二三四五"
+  const zfSeq = zf[hourXun];
+  const doorChar = EG_DOOR_ORDER[CNUMBER.indexOf(zsSeq[0])];
+  const door = doorChar === '中' ? '死' : doorChar;
+  const starChar = EIGHT_STAR_ORDER[CNUMBER.indexOf(zfSeq[0])];
+  const starGong = GONG_BY_CNUM[zfSeq[hGanIdx]];
+  const doorGong = GONG_BY_CNUM[zsSeq[hGanIdx]];
+  const JJ = {'甲子':'戊','甲戌':'己','甲申':'庚','甲午':'辛','甲辰':'壬','甲寅':'癸'};
+  return {
+    值符天干: [hourXun, JJ[hourXun]],
+    值符星宮: [starChar, starGong],
+    值使門宮: [door, doorGong]
+  };
+}
+
+// ── 地盤 (對應 kinqimen.py pan_earth) ──
+const EARTH_YANG = ['戊','己','庚','辛','壬','癸','丁','丙','乙'];
+const EARTH_YIN  = ['戊','乙','丙','丁','癸','壬','辛','庚','己'];
+function panEarth(yinyang, kook) {
+  const order = newList(CNUMBER, kook).map(c => GONG_BY_CNUM[c]);
+  const stems = yinyang === '陽' ? EARTH_YANG : EARTH_YIN;
+  const out = {};
+  order.forEach((g, i) => { out[g] = stems[i]; });
+  return out;
+}
+
+// ── 八門 / 九星 / 八神 旋轉佈局 (對應 config.py pan_door / pan_star / pan_god) ──
+function rotateFromGong(startGong, yinyang) {
+  const rotate = yinyang === '陽' ? CLOCKWISE_EIGHTGUA : [...CLOCKWISE_EIGHTGUA].reverse();
+  const base = startGong === '中' ? '坤' : startGong;
+  return newList(rotate, base);
+}
+function panDoor(yinyang, zfzs) {
+  const [startDoor, startGong] = zfzs.值使門宮;
+  const gongOrder = rotateFromGong(startGong, yinyang);
+  const doorSeq = yinyang === '陽' ? newList(DOOR_R, startDoor) : newList([...DOOR_R].reverse(), startDoor);
+  const out = {};
+  gongOrder.forEach((g, i) => { out[g] = doorSeq[i]; });
+  return out;
+}
+function panStar(yinyang, zfzs) {
+  let [startStar, startGong] = zfzs.值符星宮;
+  if (startStar === '芮') startStar = '禽';
+  const gongOrder = rotateFromGong(startGong, yinyang);
+  const starSeq = yinyang === '陽' ? newList(STAR_R, startStar) : newList([...STAR_R].reverse(), startStar);
+  const out = {};
+  gongOrder.forEach((g, i) => { out[g] = starSeq[i]; });
+  return out;
+}
+function panGod(yinyang, zfzs) {
+  const startGong = zfzs.值符星宮[1];
+  const gongOrder = rotateFromGong(startGong, yinyang);
+  const godSeq = yinyang === '陽' ? GOD_YANG : GOD_YIN;
+  const out = {};
+  gongOrder.forEach((g, i) => { out[g] = godSeq[i]; });
+  return out;
+}
+
+// ── 天盤 (對應 kinqimen.py pan_sky) ──
+// 注意: Python 原始碼在「值符落中宮」分支裡, gong_reorder = new_list(rotate,"中") 必定
+// 找不到"中"(rotate只有8個非中宮位)而拋例外, 因此程式實際永遠走 except 分支, 且該分支
+// 內 pan_god(...).get("坤") 在此情境下恆等於"符"(值符), 故再下一層判斷永遠是
+// earth.get("坤") == fu_head 與否這兩種情況。以下直接實作這兩種真實會發生的情況。
+function panSky(yinyang, kook, zfzs, earth, fuHead, hourGanChar) {
+  const rotate = yinyang === '陽' ? CLOCKWISE_EIGHTGUA : [...CLOCKWISE_EIGHTGUA].reverse();
+  const fuHeadLocation = zfzs.值符星宮[1];
+  const zhifu = zfzs.值符星宮[0];
+
+  if (fuHeadLocation === '中') {
+    const a = rotate.map(g => earth[g]); // 8個非中宮位的地盤干, 依 rotate 順序
+    const gongReorder = newList(rotate, '坤'); // 恆以坤為起點 (見上方說明)
+    let ganReorder;
+    if (earth['坤'] === fuHead) {
+      const lastOfA = a[a.length - 1];
+      ganReorder = newList(a, lastOfA);
+    } else {
+      // 對應 Python 巢狀 try/except: 先試 fuHead, 若 fuHead 本身就是中宮的干
+      // (不在這8個非中宮值之中), 退而求其次改用坤宮本身的干作軸心
+      ganReorder = newList(a, fuHead) || newList(a, earth['坤']);
+    }
+    const out = {};
+    gongReorder.forEach((g, i) => { out[g] = ganReorder[i]; });
+    return out; // 此分支不附加"中"鍵, 與原始邏輯一致
+  }
+
+  // fuLocation: 時干(非時干支旬首遁干, 是時柱本身的天干字元)所在的地盤宮位
+  // 若時干恰為"甲"(旬首本字), 地盤從不直接顯示甲, 此時 fuLocation 為 null
+  const earthR = {};
+  Object.entries(earth).forEach(([g, s]) => { earthR[s] = g; });
+  const fuLocation = Object.prototype.hasOwnProperty.call(earthR, hourGanChar) ? earthR[hourGanChar] : null;
+
+  if (zhifu !== '禽') {
+    const earthSeq = rotate.map(g => earth[g]);
+    const ganReorder = newList(earthSeq, fuHead);
+    const gongReorder = newList(rotate, fuHeadLocation);
+    if (fuLocation === null) {
+      return { ...earth }; // 原始碼: 直接回傳整個地盤 (含"中")
+    }
+    const out = {};
+    gongReorder.forEach((g, i) => { out[g] = ganReorder[i]; });
+    out['中'] = earth['中'];
+    return out;
+  }
+
+  // 值符星 = 禽星 (寄坤二宮) 分支
+  const earthSeq = rotate.map(g => earth[g]);
+  const ganReorder = newList(earthSeq, earth['坤']);
+  const gongReorder = newList(rotate, fuHeadLocation);
+  if (!ganReorder.includes(fuHead)) {
+    const rGongReorder = newList(gongReorder, fuLocation);
+    const out = {};
+    rGongReorder.forEach((g, i) => { out[g] = ganReorder[i]; });
+    return out;
+  }
+  const out = {};
+  gongReorder.forEach((g, i) => { out[g] = ganReorder[i]; });
+  out['中'] = earth['中'];
+  return out;
+}
+
+// ── 值符 (時干支所屬旬首對應的遁干所在地盤宮位的干, 用於天盤公式的 fuHead) ──
+// 對應 kinqimen.py hourganghzi_zhifu(): 找時干支所屬旬首, 取其遁干(戊己庚辛壬癸之一)
+function hourGanzhiZhifu(hourGz) {
+  return XUN_TO_DUNGAN[xunShouOf(hourGz)];
+}
+
+// ── 主函式: 起時家奇門局 (拆補法) ──
+function qimenChaibu(Solar, year, month, day, hour, minute) {
+  const [yGz, mGz, dGz, hGz] = getGanZhi(Solar, year, month, day, hour, minute);
+  const solar = Solar.fromYmdHms(year, month, day, hour, minute, 0);
+  const lunar = solar.getLunar();
+  const jieqiName = getCurrentJieQi(lunar, new Date(year, month - 1, day, hour, minute, 0));
+
+  const ju = qimenJuChaibu(jieqiName, dGz);
+  const zfzs = zhifuNZhishi(ju.yinyang, ju.kook, dGz, hGz);
+  const earth = panEarth(ju.yinyang, ju.kook);
+  const fuHead = hourGanzhiZhifu(hGz);
+  const sky = panSky(ju.yinyang, ju.kook, zfzs, earth, fuHead, hGz[0]);
+  const door = panDoor(ju.yinyang, zfzs);
+  const star = panStar(ju.yinyang, zfzs);
+  const god = panGod(ju.yinyang, zfzs);
+  const kong = dayKongShiKong(dGz, hGz);
+
+  return {
+    排盤方式: '拆補',
+    干支: `${yGz}年${mGz}月${dGz}日${hGz}時`,
+    旬首: shun(dGz),
+    旬空: kong,
+    局日: juDay(dGz),
+    排局: ju.label,
+    節氣: jieqiName,
+    值符值使: zfzs,
+    天盤: sky,
+    地盤: earth,
+    門: door,
+    星: star,
+    神: god
+  };
+}
+
+const QimenJS = { qimenChaibu };
+if (typeof module !== 'undefined' && module.exports) module.exports = QimenJS;
+if (typeof window !== 'undefined') window.QimenJS = QimenJS;
+
+})(typeof window !== 'undefined' ? window : global);
+
+</script>
+
+<script>
+/* ── OpenCC s2t init ── */
+let t2 = x => x;
+function initT2(){
+  if(typeof OpenCC!=='undefined'){
+    try{ t2=OpenCC.Converter({from:'cn',to:'tw'}); }catch(e){}
+  }
+}
+
+/* ── 資料常量 ── */
+const EIGHT_GUA_ORDER=['坎','坤','震','巽','中','乾','兌','艮','離']; // 一~九
+// 九宮在螢幕上的位置 (3×3, 行0上→行2下, 列0左→列2右)
+// 傳統奇門盤方位: 上南下北左東右西 (或上北下南?) — 以最常見的上南下北顯示
+// 實際排列: 
+//  巽4  離9  坤2
+//  震3  中5  兌7
+//  艮8  坎1  乾6
+const GRID_ORDER=['巽','離','坤','震','中','兌','艮','坎','乾'];
+const GUA_NAME={'坎':'坎一水','坤':'坤二土','震':'震三木','巽':'巽四木',
+  '中':'中五土','乾':'乾六金','兌':'兌七金','艮':'艮八土','離':'離九火'};
+
+// 擊刑: 天干克地干 (天盤干克地盤干)
+const WU_XING={'甲':'木','乙':'木','丙':'火','丁':'火','戊':'土',
+  '己':'土','庚':'金','辛':'金','壬':'水','癸':'水'};
+const KE={'木':'土','土':'水','水':'火','火':'金','金':'木'};
+function isJiXing(sky,earth){
+  if(!sky||!earth)return false;
+  return KE[WU_XING[sky]]===WU_XING[earth];
+}
+
+/* 吉凶判斷 (簡易版) */
+const JI_DOOR=new Set(['休','生','開']);
+const XIONG_DOOR=new Set(['死','驚','傷']);
+const JI_STAR=new Set(['天輔','天任','天心','天蓬']);
+const XIONG_STAR=new Set(['天芮','天柱','天英']);
+const JI_GOD=new Set(['值符','太陰','六合','九天']);
+const XIONG_GOD=new Set(['螣蛇','白虎','玄武','九地','勾陳','朱雀']);
+function luckClass(v){
+  if(['休','生','開','天輔','天任','天心','天蓬','值符','太陰','六合','九天'].includes(v))return 'pill-ji';
+  if(['死','驚','傷','天芮','天柱','天英','螣蛇','白虎','玄武','九地','勾陳','朱雀'].includes(v))return 'pill-xiong';
+  return 'pill-neutral';
+}
+
+/* ── 時間工具 ── */
+function pad(n){return String(n).padStart(2,'0');}
+function setNow(){
+  const n=new Date();
+  document.getElementById('iDate').value=`${n.getFullYear()}-${pad(n.getMonth()+1)}-${pad(n.getDate())}`;
+  document.getElementById('iTime').value=`${pad(n.getHours())}:${pad(n.getMinutes())}`;
+}
+function updHeader(){
+  const n=new Date();
+  const dw='日一二三四五六'[n.getDay()];
+  document.getElementById('hdate').innerHTML=`${n.getFullYear()}.${n.getMonth()+1}.${n.getDate()} 星期${dw}<br>${pad(n.getHours())}:${pad(n.getMinutes())}`;
+}
+updHeader();setInterval(updHeader,30000);
+
+/* ── 起局 ── */
+function calc(){
+  const dv=document.getElementById('iDate').value;
+  const tv=document.getElementById('iTime').value;
+  if(!dv||!tv){alert('請輸入日期和時間');return;}
+  const [y,m,d]=dv.split('-').map(Number);
+  const [h,mi]=tv.split(':').map(Number);
+  try{
+    const pan=QimenJS.qimenChaibu(Solar,y,m,d,h,mi);
+    renderPan(pan,y,m,d,h,mi);
+  }catch(e){
+    document.getElementById('result').innerHTML=
+      `<div class="empty"><div class="big">⚠</div>起局失敗：${e.message}</div>`;
+  }
+}
+
+/* ── 渲染盤面 ── */
+function renderPan(pan,y,m,d,h,mi){
+  const sky=pan.天盤||{}, earth=pan.地盤||{};
+  const door=pan.門||{}, star=pan.星||{}, god=pan.神||{};
+  const zfzs=pan.值符值使||{};
+  const zfGong=zfzs.值符星宮?zfzs.值符星宮[1]:'';
+  const zsGong=zfzs.值使門宮?zfzs.值使門宮[1]:'';
+  const kong=pan.旬空||{};
+  const kongZhi=((kong.日空||'')+(kong.時空||'')); // 地支合集
+
+  // 全星/門/神的繁體對應 (library輸出已是繁體, 但防萬一過一遍)
+  const T2=x=>t2(x||'');
+
+  /* 擊刑資訊 */
+  const jxList=[];
+  for(const g of Object.keys(sky)){
+    if(g==='中')continue;
+    if(isJiXing(sky[g],earth[g])){
+      jxList.push(`${T2(g)}宮 天干${T2(sky[g])} 克地干${T2(earth[g])}`);
+    }
+  }
+
+  /* 值符/值使宮判斷 (中宮值符寄坤) */
+  const realZfGong=zfGong==='中'?'坤':zfGong;
+  const realZsGong=zsGong==='中'?'坤':zsGong;
+
+  /* 九宮格格子 */
+  function renderCell(gua){
+    const s=sky[gua]||'', e=earth[gua]||'';
+    const dr=door[gua]||'', st=star[gua]||'', gd=god[gua]||'';
+    const isZf=gua===realZfGong;
+    const isZs=gua===realZsGong;
+    const isCenter=gua==='中';
+    const jx=!isCenter&&isJiXing(s,e);
+    // 旬空: 地支在kong串中
+    const skyZhi=s?({'甲':'子','乙':'丑','丙':'寅','丁':'卯','戊':'辰','己':'巳',
+                      '庚':'午','辛':'未','壬':'申','癸':'酉'}[s]||''):''; 
+    // (空亡按地支判, 此處僅做簡單標記)
+
+    let cls='cell';
+    if(isCenter)cls+=' center-cell';
+    if(isZf&&!isCenter)cls+=' is-zf';
+    if(isZs&&!isCenter&&!isZf)cls+=' is-zs';
+
+    const guaName=GUA_NAME[gua]||gua;
+
+    return `<div class="${cls}">
+      <div class="cell-gua">${guaName}</div>
+      ${s?`<div class="c-sky${jx?' jixing':''}">${T2(s)}</div>`:'<div class="c-sky" style="color:var(--sub)">—</div>'}
+      ${e?`<div class="c-earth">${T2(e)}</div>`:''}
+      ${!isCenter&&dr?`<div class="c-row">
+        <span class="c-tag tag-door">${T2(dr)}</span>
+        <span class="c-tag tag-star">${T2(st)}</span>
+        <span class="c-tag tag-god">${T2(gd)}</span>
+      </div>`:''}
+      ${isZf?'<div class="c-special zf-tag">值符</div>':''}
+      ${isZs&&!isZf?'<div class="c-special zs-tag">值使</div>':''}
+    </div>`;
+  }
+
+  const gridHTML=GRID_ORDER.map(renderCell).join('');
+
+  /* 局資訊 */
+  const juLabel=T2(pan.排局||'');
+  const gz=T2(pan.干支||'');
+  const jq=T2(pan.節氣||'');
+  const xunShou=T2(pan.旬首||'');
+  const rikong=T2(kong.日空||'—');
+  const shikong=T2(kong.時空||'—');
+  const zfStar=T2(zfzs.值符星宮?zfzs.值符星宮[0]:'');
+  const zfGongName=T2(realZfGong);
+  const zsDoor=T2(zfzs.值使門宮?zfzs.值使門宮[0]:'');
+  const zsGongName=T2(realZsGong);
+
+  /* 組合 HTML */
+  const html=`
+  <div class="meta-card">
+    <div class="meta-title">基本資訊</div>
+    <div class="meta-gz">${gz}</div>
+    <div class="meta-ju">${juLabel}</div>
+    <div class="meta-grid">
+      <div class="meta-item">
+        <div class="meta-k">值符星宮</div>
+        <div class="meta-v zf">${zfStar}星 · ${zfGongName}</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-k">值使門宮</div>
+        <div class="meta-v zs">${zsDoor}門 · ${zsGongName}</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-k">旬首 / 旬空</div>
+        <div class="meta-v">${xunShou} &nbsp;·&nbsp; 空${rikong}</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-k">節氣</div>
+        <div class="meta-v">${jq}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pan-wrap">
+    <div class="pan-header">
+      <span style="opacity:.7;font-size:10px;margin-right:8px">南</span>天盤干 / 地盤干 / 門星神
+      <span style="float:right;opacity:.7;font-size:10px">北</span>
+    </div>
+    <div class="pan-grid">${gridHTML}</div>
+  </div>
+
+  ${jxList.length?`<div class="jixing-card">
+    <div class="jixing-title">⚡ 擊刑 / 天干克制</div>
+    ${jxList.map(j=>`<div>· ${j}</div>`).join('')}
+  </div>`:''}
+
+  <div class="info-card">
+    <div class="info-title">吉凶速覽</div>
+    ${GRID_ORDER.filter(g=>g!=='中').map(g=>{
+      const dr=door[g]||'', st=star[g]||'', gd=god[g]||'';
+      if(!dr&&!st)return '';
+      return `<div class="info-row">
+        <div class="info-k">${T2(GUA_NAME[g]||g)}</div>
+        <div class="info-v">
+          <span class="pill ${luckClass(T2(dr))}">${T2(dr)}</span>
+          <span class="pill ${luckClass(T2(st))}">${T2(st)}</span>
+          <span class="pill ${luckClass(T2(gd))}">${T2(gd)}</span>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+
+  document.getElementById('result').innerHTML=html;
+}
+
+/* ── 初始化 ── */
+const init=()=>{
+  if(typeof Solar==='undefined'||typeof QimenJS==='undefined'){setTimeout(init,50);return;}
+  initT2();
+  setNow();
+};
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}else{init();}
+</script>
+
+<div class="cross-nav">
+  <a href="index.html">
+    <span class="nav-icon">📅</span>萬年曆
+  </a>
+</div>
+</body>
+</html>
