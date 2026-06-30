@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>萬年曆</title>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/cn2t.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -17,14 +18,12 @@ html,body{height:100%;overscroll-behavior:none}
 body{font-family:-apple-system,'PingFang TC','Noto Sans TC','Microsoft JhengHei',sans-serif;
   background:var(--bg);max-width:480px;margin:0 auto;min-height:100vh}
 
-/* HEADER */
 header{background:linear-gradient(160deg,var(--red) 0%,var(--dred) 100%);color:#fff;
   padding:18px 16px 13px;display:flex;align-items:center;justify-content:space-between;
   position:sticky;top:0;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.2)}
 .h-title{font-size:20px;font-weight:700;letter-spacing:5px}
 .h-date{font-size:10px;opacity:.75;text-align:right;line-height:1.7}
 
-/* MONTH NAV */
 .mnav{display:flex;align-items:center;justify-content:space-between;
   padding:10px 14px;background:#fff;border-bottom:1px solid var(--brd)}
 .nb{background:none;border:none;color:var(--red);font-size:24px;width:36px;height:36px;
@@ -34,7 +33,6 @@ header{background:linear-gradient(160deg,var(--red) 0%,var(--dred) 100%);color:#
 #ml{font-size:16px;font-weight:600;color:var(--txt)}
 .tb{background:var(--red);color:#fff;border:none;border-radius:12px;padding:3px 11px;font-size:11px;cursor:pointer}
 
-/* CALENDAR */
 .cal{background:#fff;padding-bottom:10px;border-bottom:1px solid var(--brd)}
 .wh{display:grid;grid-template-columns:repeat(7,1fr);padding:8px 6px 4px;text-align:center}
 .wh>span{font-size:11px;color:var(--sub);font-weight:500}
@@ -52,10 +50,8 @@ header{background:linear-gradient(160deg,var(--red) 0%,var(--dred) 100%);color:#
 .dot{width:4px;height:4px;border-radius:50%;background:var(--red);margin:2px auto 0}.d.sel .dot{background:#fff}
 .ddot{width:4px;height:4px;border-radius:50%;background:var(--gold);margin:1px auto 0}.d.sel .ddot{background:#FFD54F}
 
-/* DETAIL */
 .det{margin:12px 8px 24px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.09)}
 
-/* hero */
 .dh{background:var(--lgrn);padding:18px 16px;display:flex;gap:14px;align-items:flex-start}
 .bigd{font-size:72px;font-weight:900;color:var(--grn);line-height:1;min-width:80px;text-align:center;flex-shrink:0}
 .dmeta{flex:1;padding-top:2px}
@@ -67,11 +63,9 @@ header{background:linear-gradient(160deg,var(--red) 0%,var(--dred) 100%);color:#
 .bf{background:#FEF9E7;color:#B7770D;padding:2px 9px;border-radius:10px;font-size:10px}
 .bx{background:#FDE8E8;color:#C0392B;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:600}
 
-/* sections */
 .sec{padding:13px 16px;border-top:1px solid var(--brd)}
 .st{font-size:9.5px;color:#BBB;letter-spacing:1.5px;font-weight:600;margin-bottom:11px}
 
-/* 宜忌 */
 .yjr{display:flex;align-items:flex-start;gap:9px;margin-bottom:9px}.yjr:last-child{margin-bottom:0}
 .yjb{width:22px;height:22px;border-radius:50%;font-size:12px;font-weight:700;color:#fff;
   display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
@@ -79,15 +73,12 @@ header{background:linear-gradient(160deg,var(--red) 0%,var(--dred) 100%);color:#
 .yt{font-size:12.5px;color:#1A5E1A;line-height:1.85;flex:1}
 .jt{font-size:12.5px;color:#B71C1C;line-height:1.85;flex:1}
 
-/* === DEITY BIRTHDAY SECTION === */
 .deity-sec{background:linear-gradient(to bottom,#FFFDE7,#FFF8E1)}
 .deity-tablets{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px}
-.tablet{
-  flex:1;min-width:calc(50% - 4px);max-width:calc(50% - 4px);
+.tablet{flex:1;min-width:calc(50% - 4px);max-width:calc(50% - 4px);
   background:linear-gradient(to bottom,#FFFBF0,#FFF3CC);
   border:1px solid #D4A00A;border-top:4px solid var(--gold);
-  border-radius:3px 3px 10px 10px;padding:10px 8px;text-align:center;
-}
+  border-radius:3px 3px 10px 10px;padding:10px 8px;text-align:center}
 .tablet-icon{font-size:16px;margin-bottom:3px}
 .tablet-name{font-size:13px;font-weight:700;color:#7B3F00;line-height:1.4}
 .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
@@ -96,7 +87,6 @@ header{background:linear-gradient(160deg,var(--red) 0%,var(--dred) 100%);color:#
 .tag.gld{background:#FFF8E1;color:var(--gold);border-color:#FFE082}
 .tag.red{background:#FEF0F0;color:#C0392B;border-color:#F5C6C6}
 
-/* === 值神 & 建除 expanded === */
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .exp{border-radius:12px;padding:14px 10px;text-align:center}
 .exp.good{background:#E8F5E9;border:1.5px solid #A5D6A7}
@@ -109,7 +99,6 @@ header{background:linear-gradient(160deg,var(--red) 0%,var(--dred) 100%);color:#
 .exp.good .lp{background:var(--grn);color:#fff}.exp.bad .lp{background:var(--red);color:#fff}.exp.neu .lp{background:#888;color:#fff}
 .exp-desc{font-size:10.5px;color:#666;line-height:1.6}
 
-/* 吉神凶煞 */
 .jsw{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .jsc{background:#F7FAF7;border-radius:9px;padding:9px 10px}
 .jsc.bad{background:#FEF5F5}
@@ -118,7 +107,6 @@ header{background:linear-gradient(160deg,var(--red) 0%,var(--dred) 100%);color:#
 .jsi{font-size:11px;color:#555;line-height:1.9}
 .jsc.bad .jsi{color:#B71C1C}
 
-/* grids */
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
 .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
 .gc{background:#F7FAF7;border-radius:9px;padding:9px 4px;text-align:center}
@@ -126,18 +114,15 @@ header{background:linear-gradient(160deg,var(--red) 0%,var(--dred) 100%);color:#
 .gv{font-size:12.5px;color:var(--grn);font-weight:700}
 .gvl{font-size:14px;color:var(--grn);font-weight:700}
 
-/* calendar text */
 .caltext{font-size:13px;color:#4A5A4A;line-height:1.85;background:#F7FAF7;border-radius:9px;padding:11px 13px}
 .caltext strong{color:var(--grn)}
 
-/* 节气 */
 .jqrow{display:flex;justify-content:space-between;margin-bottom:7px}
 .jqp{font-size:13px;font-weight:700;color:var(--grn)}.jqn{font-size:13px;font-weight:700;color:#D67D00}
 .jqbar{height:5px;background:#E0E0E0;border-radius:3px;overflow:hidden}
 .jqfill{height:100%;background:linear-gradient(to right,var(--grn),#D67D00);border-radius:3px}
 .jqinfo{display:flex;justify-content:space-between;margin-top:5px;font-size:10px;color:#AAA}
 
-/* 時辰 */
 .shbox{background:#F7FAF7;border-radius:9px;padding:11px 13px}
 .shcur{font-size:13px;color:var(--grn);font-weight:700;margin-bottom:7px}
 .shg{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
@@ -179,51 +164,51 @@ const T=new Date();
 let CY=T.getFullYear(),CM=T.getMonth()+1,SY=CY,SM=CM,SD=T.getDate();
 const s=(f,d='')=>{try{const r=f();return r==null?d:r}catch{return d}};
 
-/* ══ DATA TABLES ══════════════════════════════ */
+/* ══ Simplified → Traditional conversion ══════ */
+let t2 = x => x; // identity fallback until OpenCC loads
+function initOpenCC(){
+  if(typeof OpenCC!=='undefined'){
+    try{ t2 = OpenCC.Converter({from:'cn',to:'tw'}); }catch(e){}
+  }
+}
 
-/* 十二值神 */
+/* ══ 值神(TianShen) lookup — keys are SIMPLIFIED (raw lib output) ══ */
 const SHEN={
-  '青龍':{lk:'吉',desc:'萬事大吉，百事順遂，宜出行求財、動土開市'},
-  '明堂':{lk:'吉',desc:'宜修造嫁娶、開市立業，百事吉祥如意'},
-  '天刑':{lk:'凶',desc:'主刑罰官非，忌動土訴訟出行，諸事不利'},
-  '朱雀':{lk:'凶',desc:'主口舌是非，忌出行嫁娶、遷移動土'},
-  '金匱':{lk:'吉',desc:'司財庫，宜求財開市、交易買賣立約'},
-  '天德':{lk:'吉',desc:'百煞盡消，宜嫁娶求子、移徙入宅、百事皆吉'},
-  '白虎':{lk:'凶',desc:'主喪煞血光，忌出行動土嫁娶，宜制化'},
-  '玉堂':{lk:'吉',desc:'宜嫁娶移徙、安床立柱，吉慶喜神'},
-  '天牢':{lk:'凶',desc:'主囚禁牢獄，忌出行開市詞訟上任'},
-  '玄武':{lk:'凶',desc:'主盜賊暗昧，忌出行交易嫁娶'},
-  '司命':{lk:'平',desc:'司壽命祭祀，宜入宅祭祖，諸事宜謹慎'},
-  '勾陳':{lk:'凶',desc:'主爭訟田土，忌婚嫁出行詞訟官非'},
+  '青龙':{lk:'吉',desc:'万事大吉，百事顺遂，宜出行求财、动土开市'},
+  '明堂':{lk:'吉',desc:'宜修造嫁娶、开市立业，百事吉祥如意'},
+  '天刑':{lk:'凶',desc:'主刑罚官非，忌动土诉讼出行，诸事不利'},
+  '朱雀':{lk:'凶',desc:'主口舌是非，忌出行嫁娶、迁移动土'},
+  '金匮':{lk:'吉',desc:'司财库，宜求财开市、交易买卖立约'},
+  '天德':{lk:'吉',desc:'百煞尽消，宜嫁娶求子、移徙入宅、百事皆吉'},
+  '白虎':{lk:'凶',desc:'主丧煞血光，忌出行动土嫁娶，宜制化'},
+  '玉堂':{lk:'吉',desc:'宜嫁娶移徙、安床立柱，吉庆喜神'},
+  '天牢':{lk:'凶',desc:'主囚禁牢狱，忌出行开市词讼上任'},
+  '玄武':{lk:'凶',desc:'主盗贼暗昧，忌出行交易嫁娶'},
+  '司命':{lk:'平',desc:'司寿命祭祀，宜入宅祭祖，诸事宜谨慎'},
+  '勾陈':{lk:'凶',desc:'主争讼田土，忌婚嫁出行词讼官非'},
 };
 
-/* 十二建除 */
+/* ══ 十二建除(ZhiXing) lookup — keys SIMPLIFIED ══ */
 const JIAN={
-  '建':{lk:'平',desc:'宜出行祭祀求財，忌婚嫁動土，建設立威之日'},
-  '除':{lk:'吉',desc:'除舊迎新之日，宜求醫沐浴掃舍，百邪皆除'},
-  '滿':{lk:'凶',desc:'大凶，諸事不宜，惟宜祭祀納財，勿輕舉妄動'},
-  '平':{lk:'平',desc:'平穩中庸之日，宜一般事務，忌重大決策'},
-  '定':{lk:'吉',desc:'定局之日，宜婚嫁開市動土，吉事皆宜'},
-  '執':{lk:'平',desc:'宜田獵捕獲，忌婚嫁出行動土嫁娶'},
-  '破':{lk:'凶',desc:'大耗大凶，萬事不成，忌一切事，百無一利'},
-  '危':{lk:'凶',desc:'凶日，宜攀登高處，忌動土出行嫁娶遷移'},
-  '成':{lk:'吉',desc:'百事皆成，大吉之日，宜婚嫁開市入宅求財'},
-  '收':{lk:'吉',desc:'宜收藏納財入庫，忌出行詞訟葬送'},
-  '開':{lk:'吉',desc:'大吉，宜開光入宅嫁娶求財，諸事順遂'},
-  '閉':{lk:'凶',desc:'宜安葬填穴，忌開市嫁娶動土百事'},
-};
-
-/* 二十八宿 簡表 */
-const XIU_LK={
-  '角':'吉','亢':'凶','氐':'凶','房':'吉','心':'凶','尾':'吉','箕':'吉',
-  '斗':'吉','牛':'凶','女':'凶','虛':'凶','危':'凶','室':'吉','壁':'吉',
-  '奎':'凶','婁':'吉','胃':'吉','昴':'凶','畢':'吉','觜':'凶','參':'吉',
-  '井':'吉','鬼':'凶','柳':'凶','星':'凶','張':'吉','翼':'凶','軫':'吉',
+  '建':{lk:'平',desc:'宜出行祭祀求财，忌婚嫁动土，建设立威之日'},
+  '除':{lk:'吉',desc:'除旧迎新之日，宜求医沐浴扫舍，百邪皆除'},
+  '满':{lk:'凶',desc:'大凶，诸事不宜，惟宜祭祀纳财，勿轻举妄动'},
+  '平':{lk:'平',desc:'平稳中庸之日，宜一般事务，忌重大决策'},
+  '定':{lk:'吉',desc:'定局之日，宜婚嫁开市动土，吉事皆宜'},
+  '执':{lk:'平',desc:'宜田猎捕获，忌婚嫁出行嫁娶'},
+  '破':{lk:'凶',desc:'大耗大凶，万事不成，忌一切事，百无一利'},
+  '危':{lk:'凶',desc:'凶日，宜攀登高处，忌动土出行嫁娶迁移'},
+  '成':{lk:'吉',desc:'百事皆成，大吉之日，宜婚嫁开市入宅求财'},
+  '收':{lk:'吉',desc:'宜收藏纳财入库，忌出行词讼葬送'},
+  '开':{lk:'吉',desc:'大吉，宜开光入宅嫁娶求财，诸事顺遂'},
+  '闭':{lk:'凶',desc:'宜安葬填穴，忌开市嫁娶动土百事'},
 };
 
 /* ══ HELPERS ══════════════════════════════════ */
 const sl=(y,m,d)=>s(()=>Solar.fromYmd(y,m,d));
 const ll=(y,m,d)=>s(()=>sl(y,m,d).getLunar());
+const tao=(y,m,d)=>s(()=>Tao.fromLunar(ll(y,m,d)));
+const foto=(y,m,d)=>s(()=>Foto.fromLunar(ll(y,m,d)));
 
 function jqFor(y,m,d){
   return s(()=>{
@@ -231,14 +216,20 @@ function jqFor(y,m,d){
     return Object.keys(tbl).find(k=>{const x=tbl[k];return x.getYear()===y&&x.getMonth()===m&&x.getDay()===d;})||'';
   },'');
 }
-function fesFor(y,m,d){
-  const sf=s(()=>sl(y,m,d).getFestivals(),[]);if(sf&&sf.length)return sf[0];
-  const lf=s(()=>ll(y,m,d).getFestivals(),[]);if(lf&&lf.length)return lf[0];
-  return '';
+/* general (non-deity) festivals: solar + lunar "other" days */
+function genFesFor(y,m,d){
+  const sf=s(()=>sl(y,m,d).getFestivals(),[]);
+  const lf=s(()=>ll(y,m,d).getFestivals(),[]);
+  const sof=s(()=>sl(y,m,d).getOtherFestivals(),[]);
+  return [...(sf||[]),...(lf||[]),...(sof||[])];
 }
-function othFor(y,m,d){return s(()=>ll(y,m,d).getOtherFestivals(),[])||[];}
+/* deity birthdays: Tao (道教) + Foto (佛教) festival tables */
+function deityFesFor(y,m,d){
+  const tf=s(()=>tao(y,m,d).getFestivals().map(f=>f.getName()),[]);
+  const ff=s(()=>foto(y,m,d).getFestivals().map(f=>f.getName()),[]);
+  return [...(tf||[]),...(ff||[])];
+}
 
-function toCD(n){const m=['〇','一','二','三','四','五','六','七','八','九'];return String(n).split('').map(d=>m[+d]).join('');}
 function siIdx(){const h=new Date().getHours();return h===23?0:Math.floor((h+1)/2);}
 const HZ=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
 const HT=['23–01','01–03','03–05','05–07','07–09','09–11','11–13','13–15','15–17','17–19','19–21','21–23'];
@@ -273,17 +264,18 @@ function mc(y,m,d,oth){
   el.className='d'+(oth?' oth':'')+(isS?' sel':'')+(isT?' tod':'')+(dw===0?' sun':dw===6?' sat':'');
   const sv=document.createElement('div');sv.className='sol';sv.textContent=d;el.appendChild(sv);
   if(!oth){
-    const lun=ll(y,m,d),jq=jqFor(y,m,d),fv=fesFor(y,m,d);
+    const lun=ll(y,m,d),jq=jqFor(y,m,d);
+    const gf=genFesFor(y,m,d),df=deityFesFor(y,m,d);
+    const fv=df[0]||gf[0]||'';
     const sub=document.createElement('div');
-    if(jq){sub.className='jqt';sub.textContent=jq;}
-    else if(fv){sub.className='lun';sub.style.color='#C07A00';sub.textContent=fv.length>4?fv.slice(0,4):fv;}
+    if(jq){sub.className='jqt';sub.textContent=t2(jq);}
+    else if(fv){sub.className='lun';sub.style.color='#C07A00';
+      const tf=t2(fv);sub.textContent=tf.length>4?tf.slice(0,4):tf;}
     else if(lun){sub.className='lun';
-      if(lun.getDay()===1){sub.textContent=lun.getMonthInChinese()+'月';sub.style.fontWeight='700';sub.style.color='#555';}
-      else sub.textContent=lun.getDayInChinese();}
+      if(lun.getDay()===1){sub.textContent=t2(lun.getMonthInChinese())+'月';sub.style.fontWeight='700';sub.style.color='#555';}
+      else sub.textContent=t2(lun.getDayInChinese());}
     el.appendChild(sub);
-    // gold dot for deity birthday days
-    const of=othFor(y,m,d);
-    if(of.some(f=>f.includes('誕'))){const dot=document.createElement('div');dot.className='ddot';el.appendChild(dot);}
+    if(df.length){const dot=document.createElement('div');dot.className='ddot';el.appendChild(dot);}
     if(isT&&!isS){const dot=document.createElement('div');dot.className='dot';el.appendChild(dot);}
     el.onclick=()=>{SY=y;SM=m;SD=d;rc();rd();setTimeout(()=>document.getElementById('det').scrollIntoView({behavior:'smooth'}),50);};
   }
@@ -309,10 +301,11 @@ function rd(){
   const sx   =g(()=>lun.getYearShengXiao());
   const ch   =g(()=>lun.getDayChong());
   const ny   =g(()=>lun.getDayNaYin());
-  const sh   =g(()=>lun.getDayShen());
+  const sh   =g(()=>lun.getDayTianShen());        // 值神 (correct method)
+  const shLk =g(()=>lun.getDayTianShenLuck());     // 吉/凶
   const xu   =g(()=>lun.getXiu());
-  const xuLk =g(()=>lun.getXiuLuck())||XIU_LK[xu]||'';
-  const j12  =g(()=>lun.getDayShen12());
+  const xuLk =g(()=>lun.getXiuLuck());
+  const j12  =g(()=>lun.getZhiXing());             // 十二建除 (correct method)
   const yi   =g(()=>lun.getDayYi(),[]);
   const ji   =g(()=>lun.getDayJi(),[]);
   const pc   =g(()=>lun.getDayPositionCai());
@@ -321,29 +314,22 @@ function rd(){
   const py   =g(()=>lun.getDayPositionYangGui());
   const pi   =g(()=>lun.getDayPositionYinGui());
 
-  /* 吉神 / 凶煞 comprehensive lists */
-  const jiShen  =g(()=>lun.getDayJiShen(),[]);
-  const xiongSha=g(()=>lun.getDayXiongSha(),[]);
-  const ji_arr  =Array.isArray(jiShen)?jiShen:[];
-  const xs_arr  =Array.isArray(xiongSha)?xiongSha:[];
+  /* 吉神 / 凶煞 full lists */
+  const ji_arr=g(()=>lun.getDayJiShen(),[]);
+  const xs_arr=g(()=>lun.getDayXiongSha(),[]);
 
-  /* festivals */
-  const solarFes=g(()=>sl(SY,SM,SD).getFestivals(),[]);
-  const lunarFes=g(()=>lun.getFestivals(),[]);
-  const other   =othFor(SY,SM,SD);
-  const allFes  =[...(Array.isArray(solarFes)?solarFes:[]),...(Array.isArray(lunarFes)?lunarFes:[])];
-  /* split other festivals: deity birthdays vs special days */
-  const deityFes=other.filter(f=>f.includes('誕'));
-  const specFes =other.filter(f=>!f.includes('誕'));
+  /* festivals: general (solar/lunar/intl) + deity birthdays (Tao/Foto) */
+  const genFes  =genFesFor(SY,SM,SD);
+  const deityFes=deityFesFor(SY,SM,SD);
 
-  /* calendar strings */
-  const buddhaYr=toCD(SY+544);   /* 佛歷: Gregorian + 544 */
-  const taoYr   =toCD(SY+2697);  /* 道歷: Gregorian + 2697 (黃帝紀元) */
-  const curShi  =HZ[siIdx()];
-  const curIdx  =siIdx();
+  /* official calendar strings straight from the library */
+  const buddhaStr=g(()=>foto(SY,SM,SD).toString());   // e.g. 二五七〇年五月十二
+  const taoStr   =g(()=>tao(SY,SM,SD).toString());    // e.g. 四七二三年五月十二
+  const curShi   =HZ[siIdx()];
+  const curIdx   =siIdx();
 
-  /* lookup info */
-  const shenInfo=SHEN[sh]||{lk:'',desc:'今日值神資料未收錄'};
+  /* lookups (simplified keys match raw lib output) */
+  const shenInfo=SHEN[sh]||{lk:shLk||'',desc:'今日值神資料未收錄'};
   const jianInfo=JIAN[j12]||{lk:'',desc:'建除資料未收錄'};
 
   /* 节气 progress */
@@ -359,15 +345,16 @@ function rd(){
     }
     if(pN&&nN){const tot=pD+nD||1,pct=Math.min(100,Math.round(pD/tot*100));
       jqHtml=`<div class="sec"><div class="st">節　氣</div>
-        <div class="jqrow"><span class="jqp">${pN}</span><span class="jqn">${nN}</span></div>
+        <div class="jqrow"><span class="jqp">${t2(pN)}</span><span class="jqn">${t2(nN)}</span></div>
         <div class="jqbar"><div class="jqfill" style="width:${pct}%"></div></div>
         <div class="jqinfo"><span>已過 ${pD} 天</span><span>還有 ${nD} 天</span></div>
       </div>`;
     }
   });
 
-  const ys=Array.isArray(yi)?yi.join('　'):yi;
-  const js=Array.isArray(ji)?ji.join('　'):ji;
+  const T2=x=>t2(x); // shorthand
+  const ys=(Array.isArray(yi)?yi:[]).map(T2).join('　');
+  const js=(Array.isArray(ji)?ji:[]).map(T2).join('　');
   const shg=HZ.map((hz,i)=>`<div class="sc${i===curIdx?' now':''}"><div class="hz">${hz}</div><div>${HT[i]}</div></div>`).join('');
 
   box.innerHTML=`
@@ -376,13 +363,13 @@ function rd(){
   <div class="dh">
     <div class="bigd">${SD}</div>
     <div class="dmeta">
-      <div class="dlun">${lM}月${lD}</div>
-      <div class="dgz">${yGZ}年 · ${mGZ}月 · ${dGZ}日<br>農曆 ${lYr} 年 · 星期${DW[new Date(SY,SM-1,SD).getDay()]}</div>
+      <div class="dlun">${T2(lM)}月${T2(lD)}</div>
+      <div class="dgz">${T2(yGZ)}年 · ${T2(mGZ)}月 · ${T2(dGZ)}日<br>農曆 ${lYr} 年 · 星期${DW[new Date(SY,SM-1,SD).getDay()]}</div>
       <div class="bdg">
-        ${sx?`<span class="bc">[${sx}] 衝${ch}</span>`:''}
+        ${sx?`<span class="bc">[${T2(sx)}] 衝${T2(ch)}</span>`:''}
         ${xuLk==='凶'?'<span class="bx">凶日</span>':xuLk==='吉'?'<span class="bj">吉日</span>':''}
-        ${jq?`<span class="bj">🌿 ${jq}</span>`:''}
-        ${allFes.map(f=>`<span class="bf">🎊 ${f}</span>`).join('')}
+        ${jq?`<span class="bj">🌿 ${T2(jq)}</span>`:''}
+        ${genFes.map(f=>`<span class="bf">🎊 ${T2(f)}</span>`).join('')}
       </div>
     </div>
   </div>
@@ -395,17 +382,14 @@ function rd(){
 
   <!-- ③ 神佛聖誕 -->
   <div class="sec deity-sec">
-    <div class="st">神　佛　聖　誕　／　諸　天　神　煞</div>
+    <div class="st">神　佛　聖　誕　／　道　教　節　日</div>
     ${deityFes.length?`<div class="deity-tablets">
       ${deityFes.map(f=>`
       <div class="tablet">
         <div class="tablet-icon">⛩</div>
-        <div class="tablet-name">${f}</div>
+        <div class="tablet-name">${T2(f)}</div>
       </div>`).join('')}
-    </div>`:`<div style="color:#CCA850;font-size:12px;padding:4px 0 2px;opacity:.8">今日無特定神佛聖誕</div>`}
-    ${specFes.length?`<div class="tags">
-      ${specFes.map(f=>`<span class="tag gld">${f}</span>`).join('')}
-    </div>`:''}
+    </div>`:`<div style="color:#CCA850;font-size:12px;padding:4px 0 2px;opacity:.8">今日無特定神佛聖誕記載</div>`}
   </div>
 
   <!-- ④ 值神 & 十二建除 詳解 -->
@@ -414,15 +398,15 @@ function rd(){
     <div class="two-col">
       <div class="exp ${cc(shenInfo.lk)}">
         <div class="exp-lbl">今日值神</div>
-        <div class="exp-nm">${sh||'—'}</div>
+        <div class="exp-nm">${T2(sh)||'—'}</div>
         ${shenInfo.lk?`<div class="lp">${shenInfo.lk}</div>`:''}
-        <div class="exp-desc">${shenInfo.desc}</div>
+        <div class="exp-desc">${T2(shenInfo.desc)}</div>
       </div>
       <div class="exp ${cc(jianInfo.lk)}">
         <div class="exp-lbl">十二建除</div>
-        <div class="exp-nm">${j12||'—'}<span style="font-size:16px">日</span></div>
+        <div class="exp-nm">${T2(j12)||'—'}<span style="font-size:16px">日</span></div>
         ${jianInfo.lk?`<div class="lp">${jianInfo.lk}</div>`:''}
-        <div class="exp-desc">${jianInfo.desc}</div>
+        <div class="exp-desc">${T2(jianInfo.desc)}</div>
       </div>
     </div>
   </div>
@@ -433,11 +417,11 @@ function rd(){
     <div class="jsw">
       ${ji_arr.length?`<div class="jsc">
         <div class="jst">✦ 吉神宜趨</div>
-        <div class="jsi">${ji_arr.join('　')}</div>
+        <div class="jsi">${ji_arr.map(T2).join('　')}</div>
       </div>`:``}
       ${xs_arr.length?`<div class="jsc bad">
         <div class="jst">✦ 凶煞宜避</div>
-        <div class="jsi">${xs_arr.join('　')}</div>
+        <div class="jsi">${xs_arr.map(T2).join('　')}</div>
       </div>`:``}
     </div>
   </div>`:''}
@@ -446,13 +430,13 @@ function rd(){
   <div class="sec">
     <div class="st">神　煞　概　覽</div>
     <div class="g4">
-      <div class="gc"><div class="gl">五行納音</div><div class="gv">${ny||'—'}</div></div>
+      <div class="gc"><div class="gl">五行納音</div><div class="gv">${T2(ny)||'—'}</div></div>
       <div class="gc"><div class="gl">星宿${xuLk?` (${xuLk})`:''}</div>
-        <div class="gv" style="color:${xuLk==='凶'?'var(--red)':'var(--grn)'}">${xu||'—'}</div></div>
+        <div class="gv" style="color:${xuLk==='凶'?'var(--red)':'var(--grn)'}">${T2(xu)||'—'}</div></div>
       <div class="gc"><div class="gl">值神</div>
-        <div class="gv" style="color:${shenInfo.lk==='凶'?'var(--red)':shenInfo.lk==='吉'?'var(--grn)':'#888'}">${sh||'—'}</div></div>
+        <div class="gv" style="color:${shenInfo.lk==='凶'?'var(--red)':shenInfo.lk==='吉'?'var(--grn)':'#888'}">${T2(sh)||'—'}</div></div>
       <div class="gc"><div class="gl">建除</div>
-        <div class="gv" style="color:${jianInfo.lk==='凶'?'var(--red)':jianInfo.lk==='吉'?'var(--grn)':'#888'}">${j12||'—'}</div></div>
+        <div class="gv" style="color:${jianInfo.lk==='凶'?'var(--red)':jianInfo.lk==='吉'?'var(--grn)':'#888'}">${T2(j12)||'—'}</div></div>
     </div>
   </div>
 
@@ -460,29 +444,25 @@ function rd(){
   <div class="sec">
     <div class="st">吉　神　方　位</div>
     <div class="g3">
-      <div class="gc"><div class="gl">💰 財神</div><div class="gvl">${pc||'—'}</div></div>
-      <div class="gc"><div class="gl">🙏 福神</div><div class="gvl">${pf||'—'}</div></div>
-      <div class="gc"><div class="gl">🎊 喜神</div><div class="gvl">${px||'—'}</div></div>
-      <div class="gc"><div class="gl">陽 貴 神</div><div class="gvl">${py||'—'}</div></div>
-      <div class="gc"><div class="gl">陰 貴 神</div><div class="gvl">${pi||'—'}</div></div>
+      <div class="gc"><div class="gl">💰 財神</div><div class="gvl">${T2(pc)||'—'}</div></div>
+      <div class="gc"><div class="gl">🙏 福神</div><div class="gvl">${T2(pf)||'—'}</div></div>
+      <div class="gc"><div class="gl">🎊 喜神</div><div class="gvl">${T2(px)||'—'}</div></div>
+      <div class="gc"><div class="gl">陽 貴 神</div><div class="gvl">${T2(py)||'—'}</div></div>
+      <div class="gc"><div class="gl">陰 貴 神</div><div class="gvl">${T2(pi)||'—'}</div></div>
     </div>
   </div>
 
   <!-- ⑧ 佛歷 -->
   <div class="sec">
     <div class="st">佛　歷</div>
-    <div class="caltext"><strong>${buddhaYr}年</strong>${lM}月${lD}
-      ${other.length?`（${other.join('、')}）`:''}
-    </div>
-    ${other.length?`<div class="tags">${other.map(f=>`<span class="tag ${f.includes('誕')?'grn':'gld'}">${f}</span>`).join('')}</div>`:''}
+    <div class="caltext"><strong>${T2(buddhaStr)}</strong></div>
   </div>
 
   <!-- ⑨ 道歷 -->
   <div class="sec">
     <div class="st">道　歷</div>
     <div class="caltext">
-      道歷<strong>${taoYr}年</strong>，天運${yGZ}年，${mGZ}月，${dGZ}日。<br>
-      ${lM}月${lD}日，<strong>${curShi}時</strong>。
+      道歷<strong>${T2(taoStr)}</strong>，天運${T2(yGZ)}年，${T2(mGZ)}月，${T2(dGZ)}日，<strong>${curShi}時</strong>。
     </div>
   </div>
 
@@ -504,7 +484,11 @@ window.cm=d=>{CM+=d;if(CM>12){CM=1;CY++;}if(CM<1){CM=12;CY--;}rc();};
 window.gt=()=>{CY=T.getFullYear();CM=T.getMonth()+1;SY=CY;SM=CM;SD=T.getDate();rc();rd();};
 
 /* ══ INIT ═════════════════════════════════════ */
-const init=()=>{if(typeof Solar==='undefined'){setTimeout(init,50);return;}rc();rd();};
+const init=()=>{
+  if(typeof Solar==='undefined'||typeof Tao==='undefined'||typeof Foto==='undefined'){setTimeout(init,50);return;}
+  initOpenCC();
+  rc();rd();
+};
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}else{init();}
 }();
 </script>
