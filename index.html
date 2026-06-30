@@ -75,7 +75,7 @@ header{background:linear-gradient(160deg,var(--red) 0%,var(--dred) 100%);color:#
 
 .deity-sec{background:linear-gradient(to bottom,#FFFDE7,#FFF8E1)}
 .deity-tablets{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px}
-.tablet{flex:1;min-width:calc(50% - 4px);max-width:calc(50% - 4px);
+.tablet{flex:1;min-width:calc(50% - 4px);max-width:calc(50% - 4px);cursor:pointer;
   background:linear-gradient(to bottom,#FFFBF0,#FFF3CC);
   border:1px solid #D4A00A;border-top:4px solid var(--gold);
   border-radius:3px 3px 10px 10px;padding:10px 8px;text-align:center}
@@ -88,7 +88,8 @@ header{background:linear-gradient(160deg,var(--red) 0%,var(--dred) 100%);color:#
 .tag.red{background:#FEF0F0;color:#C0392B;border-color:#F5C6C6}
 
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.exp{border-radius:12px;padding:14px 10px;text-align:center}
+.exp{border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer}
+.exp:active{opacity:.85}
 .exp.good{background:#E8F5E9;border:1.5px solid #A5D6A7}
 .exp.bad{background:#FFEBEE;border:1.5px solid #EF9A9A}
 .exp.neu{background:#F5F5F5;border:1.5px solid #E0E0E0}
@@ -131,6 +132,23 @@ header{background:linear-gradient(160deg,var(--red) 0%,var(--dred) 100%);color:#
 .sc .hz{font-size:11px;font-weight:700}
 
 footer{text-align:center;font-size:10px;color:#CCC;padding:12px 16px 20px;letter-spacing:.5px}
+
+/* ── clickable terms ── */
+.term{cursor:pointer;border-bottom:1px dotted currentColor;padding-bottom:1px}
+.term:active{opacity:.6}
+
+/* ── bottom sheet ── */
+.sheet-mask{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:90;
+  opacity:0;pointer-events:none;transition:opacity .2s}
+.sheet-mask.show{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;
+  background:#fff;border-radius:18px 18px 0 0;z-index:91;
+  padding:8px 20px 28px;transform:translateY(100%);transition:transform .25s ease;
+  box-shadow:0 -6px 24px rgba(0,0,0,.18)}
+.sheet.show{transform:translateY(0)}
+.sheet-bar{width:36px;height:4px;background:#E0E0E0;border-radius:2px;margin:6px auto 14px}
+.sheet-term{font-size:20px;font-weight:800;color:var(--grn);margin-bottom:8px}
+.sheet-desc{font-size:14px;color:#444;line-height:1.8}
 </style>
 </head>
 <body>
@@ -155,6 +173,14 @@ footer{text-align:center;font-size:10px;color:#CCC;padding:12px 16px 20px;letter
   <div style="padding:36px;text-align:center;color:#CCC;font-size:14px">載入農曆資料中…</div>
 </div>
 
+<div class="sheet-mask" id="smask" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-bar"></div>
+  <div class="sheet-term" id="sterm"></div>
+  <div class="sheet-desc" id="sdesc"></div>
+</div>
+
+
 <footer>lunar-javascript (6tail) · 無廣告 · 開源自用</footer>
 
 <script>
@@ -163,6 +189,39 @@ footer{text-align:center;font-size:10px;color:#CCC;padding:12px 16px 20px;letter
 const T=new Date();
 let CY=T.getFullYear(),CM=T.getMonth()+1,SY=CY,SM=CM,SD=T.getDate();
 const s=(f,d='')=>{try{const r=f();return r==null?d:r}catch{return d}};
+
+/* ══ 術語百科 GLOSSARY (key=simplified library term, val=traditional explanation) ══ */
+const GLOSSARY = {"入宅": "遷入新居，舉行安宅儀式", "移徙": "搬家遷移住所", "出行": "外出旅行、遠行辦事", "进人口": "迎入新成員，如收養、聘僱、娶妾入門", "修造": "修繕、建造房屋", "动土": "破土興建，建築工程開工", "起基": "建築物打地基", "上梁": "房屋上樑，安裝屋頂主樑", "安门": "安裝大門", "造仓": "建造倉庫", "补垣": "修補圍牆", "塞穴": "填補洞穴孔隙", "造畜稠": "建造牲畜欄舍", "教牛马": "訓練牛馬等牲畜", "订盟": "訂立婚約、結拜盟誓", "纳采": "男方向女方送聘禮，提親之始", "造车器": "製造車輛器具", "祭祀": "祭拜神明祖先", "祈福": "祈求神明賜福", "安香": "安置香火、神位", "开市": "店鋪開張營業", "交易": "買賣交易、簽訂合約", "立券": "簽訂契約文書", "会亲友": "拜訪聚會親友", "安机械": "安裝機械設備", "栽种": "種植作物花木", "纳畜": "購入飼養牲畜", "盖屋": "建造房屋", "安床": "安置新床鋪", "开光": "佛像、神像舉行開光儀式", "竖柱": "豎立柱子", "造桥": "建造橋樑", "移柩": "移動靈柩", "入殓": "將遺體放入棺木", "启钻": "撿骨遷葬時打開墓穴", "修坟": "修整墳墓", "立碑": "豎立墓碑", "安葬": "下葬安置遺體", "纳财": "進財、收受錢財", "开池": "開挖池塘", "嫁娶": "舉行婚禮", "取渔": "捕魚撈漁", "解除": "除穢解厄、清理不潔之事", "修饰垣墙": "粉刷裝飾圍牆", "平治道涂": "修整道路", "馀事勿取": "除上列事項外，其餘事務不宜進行", "求嗣": "祈求子嗣", "牧养": "放牧飼養牲畜", "开厕": "修建廁所", "破屋": "拆除房屋", "坏垣": "拆除圍牆", "出火": "神位、香爐遷出舊址", "拆卸": "拆除建築物或設施", "破土": "陰宅動土（與陽宅動土不同）", "除服": "喪期結束除去喪服", "成服": "治喪期間穿著喪服", "裁衣": "裁剪製作衣物", "针灸": "進行針灸治療", "沐浴": "沐浴齋戒淨身", "塑绘": "塑像、繪製神像", "定磉": "安放柱基石", "放水": "引水、開渠放水", "理发": "剪髮整理儀容", "伐木": "砍伐樹木", "谢土": "動土完工後謝神祭土", "畋猎": "打獵", "掘井": "挖鑿水井", "斋醮": "道教設壇祭祀法事", "捕捉": "捕捉魚獸", "入学": "入學就讀、拜師習藝", "治病": "就醫治療疾病", "安碓磑": "安裝石磨、舂米器具", "问名": "男方詢問女方生辰八字，議婚步驟之一", "挂匾": "懸掛匾額", "置产": "購置房地產", "整手足甲": "修剪手足指甲", "开仓": "開倉取糧放糧", "出货财": "出貨、運出財物", "结网": "編織漁網", "雇佣": "僱用人員", "合帐": "婚禮中懸掛新帳幔", "经络": "推拿整治經絡", "作梁": "製作房屋樑木", "作灶": "建造或修整灶台", "冠笄": "古代成年禮（男冠女笄）", "求医": "尋求醫師診治", "开生坟": "生前預建墳墓（壽墳）", "合寿木": "合製棺木（壽木）", "扫舍": "打掃房舍", "筑堤": "修築堤防", "架马": "搭建棚架支撐", "诸事不宜": "此日不利進行任何重大事務", "开柱眼": "在柱子上鑿孔", "纳婿": "招贅女婿入門", "赴任": "就任新職", "造庙": "建造廟宇", "修门": "修繕門戶", "断蚁": "滅除白蟻", "习艺": "學習技藝", "开渠": "開鑿水渠", "造船": "建造船隻", "割蜜": "採收蜂蜜", "归岫": "僧人歸還寺院（佛教用語）", "雕刻": "雕刻製作", "普渡": "佛教超渡法會", "合脊": "屋頂封脊完工", "归宁": "已婚女子回娘家", "分居": "與家人分開居住", "词讼": "打官司、訴訟", "乘船": "搭乘船隻出行", "行丧": "舉行出殯送葬儀式", "探病": "探望病人", "四相": "四季旺相之氣會聚，宜興造修作", "王日": "帝王之日，宜上書赴任、出行謀事", "月空": "月中空亡之神當值，宜上書陳事、申訴", "官日": "宜祈福求官、上任赴職", "敬安": "宜謹慎行事，諸事可成", "金匮": "財庫之神，宜求財、開市、立券交易", "鸣吠对": "適合安葬下葬之吉神", "月德合": "月德的合神，與月德同主吉祥，宜興造嫁娶", "阴德": "宜積德行善、賑濟貧困", "守日": "宜守成不宜冒進，安分行事", "吉期": "婚嫁吉利之神，宜嫁娶", "六合": "夫妻和合之神，宜嫁娶、合作議事", "不将": "宜嫁娶吉神，避開將軍箭", "普护": "佛教護法之神，宜祭祀祈福", "宝光": "宜開光、塑繪神像", "时德": "隨四時當令的吉神，宜興造修作", "相日": "與月德並列吉神，宜興造、嫁娶", "驿马": "主奔波遠行之神，宜出行、遷徙、求財", "天后": "宜祈福、嫁娶", "天马": "宜出行、上任、遠行", "天巫": "宜祈福、求醫、求子嗣", "福德": "宜祈福、求財、興造", "福生": "宜祈福、納財", "五合": "宜簽約、合夥、嫁娶", "天恩": "天降恩澤，宜施恩濟貧、上書陳情", "民日": "宜興造、移徙、嫁娶等民間事務", "天仓": "主豐收儲糧之神，宜開倉、納財", "金堂": "宜興造房屋、安門", "天德": "眾煞退避的大吉神，宜興造嫁娶、百事皆宜", "月德": "月之德神，宜興造、嫁娶、移徙", "月恩": "宜祈福、施恩行善", "三合": "三方和合，宜婚嫁、合夥、簽約", "时阴": "宜陰宅相關事務", "六仪": "宜上書、陳情議事", "玉堂": "宜嫁娶、上樑、安床", "解神": "解除厄運之神，宜解除、消災", "鸣吠": "宜安葬的吉神（次於鳴吠對）", "母仓": "主生育養育之神，宜納畜、栽種", "阳德": "宜行善積德、施恩於人", "五富": "宜求財、置產", "生气": "生機旺盛之神，宜興造、栽種", "除神": "宜清掃除穢、解除不潔", "司命": "掌管壽命祭祀之神，宜祭祀祈福", "天德合": "天德的合神，與天德同主大吉", "临日": "宜祭祀、會親友", "天喜": "喜慶之神，宜嫁娶、慶賀", "天医": "宜求醫治病、針灸", "圣心": "宜祭祀、祈福", "青龙": "四方吉神之一，宜興造、出行、求財", "益后": "宜求嗣、栽種", "明堂": "宜上任、見貴、議事", "续世": "宜求嗣、栽種", "要安": "宜祈福、求安", "玉宇": "宜興造、安宅", "时阳": "宜興造、出行", "天愿": "宜許願、祈福、嫁娶", "天赦": "赦免罪過之吉神，諸事可解厄消災", "天符": "宜祭祀、上書", "游祸": "主災禍流轉，忌祭祀、出行", "血支": "主血光之災，忌針灸、手術、見血之事", "重日": "吉凶皆重複放大，忌婚喪重複之事", "朱雀": "主口舌是非，忌爭訟、簽約", "月建": "忌興造動土、移徙", "小时": "忌出行、興造", "土府": "土神當值，忌動土、修造", "月厌": "忌出行、嫁娶", "地火": "忌動土、栽種、入宅", "触水龙": "忌行船、戲水、近水之事", "三丧": "主喪事連連，忌探病、送葬", "鬼哭": "忌安葬、探病、夜行", "大退": "忌求財、交易，財運退散", "五虚": "主破財損耗，忌開倉、出貨", "归忌": "忌歸寧、遠行返家", "白虎": "主血光喪事，忌動土、安葬、出行", "灾煞": "主災禍降臨，忌興造、出行", "天火": "忌動土、修造、蓋屋，恐有火災", "复日": "吉凶重複出現，忌重複進行同類事", "河魁": "忌出行、嫁娶、移徙", "死神": "忌探病、求醫、出行", "月煞": "忌興造、嫁娶", "月虚": "忌求財、開倉，恐財運空虛", "厌对": "忌嫁娶、會親友", "招摇": "忌乘船、出行水路", "死气": "忌求醫、探病，恐病情加重", "九坎": "忌出行、掘井、近水", "九焦": "忌動土、興造，恐有損耗", "月害": "忌嫁娶、安床", "大时": "忌興造、出行", "大败": "諸事大凶，忌求財、開市", "咸池": "主桃花是非，忌嫁娶、會親友", "小耗": "忌開倉、出貨財，恐有小破財", "天牢": "忌詞訟、出行、上任", "月破": "月之破敗日，諸事不宜，忌興造嫁娶", "大耗": "忌開市、交易，恐有大破財", "四击": "忌出行、興造", "九空": "忌開倉、納財，恐財庫空虛", "元武": "忌出行、交易，防盜賊暗算", "五离": "忌嫁娶、合夥，恐離散", "大煞": "大凶之神，忌興造、嫁娶、出行", "勾陈": "忌詞訟、爭訟田土", "天罡": "忌出行、興造", "月刑": "忌訴訟、刑罰相關之事", "天吏": "忌詞訟、上書", "致死": "忌探病、求醫、出行", "土符": "忌動土、修造", "血忌": "忌針灸、手術、見血之事", "天刑": "主刑罰官非，忌動土、訴訟、出行", "逐阵": "忌出行、興造", "往亡": "忌出行、遠行，恐有去無回", "劫煞": "忌出行、求財，恐遭劫奪", "天贼": "忌出行、開市，防盜竊", "四废": "忌興造、開市，諸事少成", "八专": "忌嫁娶，主感情不睦", "阳破阴冲": "忌嫁娶、安葬", "阴错": "忌嫁娶，主姻緣不順", "四耗": "忌開市、求財，恐財物耗損", "阳错": "忌嫁娶，主姻緣不順", "八风": "忌出行、興造", "三阴": "忌嫁娶，主陰氣較重", "四忌": "諸事少取，宜謹慎行事", "八龙": "忌動土、興造", "地囊": "忌動土、掘井", "大会": "忌嫁娶、會親友重複舉行", "四穷": "忌求財、開市，恐財運不濟", "小会": "忌會親友、聚會", "五墓": "忌安葬、修墳", "孤辰": "忌嫁娶，主孤獨不利婚配", "单阴": "忌嫁娶，陰陽不調", "七鸟": "忌出行、興造", "行狠": "忌出行、爭訟", "岁薄": "忌興造、嫁娶，財運淺薄", "了戾": "忌訴訟、爭執", "阴阳击冲": "忌嫁娶，陰陽相沖", "天狗": "忌祭祀、安葬，防意外損傷", "七符": "忌出行、興造", "九虎": "忌出行、興造", "阴位": "忌安葬、陰宅相關事務", "绝阳": "忌嫁娶，主陽氣斷絕", "纯阴": "忌嫁娶，陰氣過盛", "六蛇": "忌出行、興造"};
+
+let curSheetTimer=null;
+function term(txt){
+  if(!txt) return '';
+  const tt = t2(txt);
+  return `<span class="term" onclick="openSheet('${txt.replace(/'/g,"\\'")}')">${tt}</span>`;
+}
+function openSheet(rawTerm){
+  const def = GLOSSARY[rawTerm];
+  document.getElementById('sterm').textContent = t2(rawTerm);
+  document.getElementById('sdesc').textContent = def ? t2(def) : '該術語說明尚未收錄，可自行查閱通書或黃曆資料。';
+  document.getElementById('smask').classList.add('show');
+  document.getElementById('sheet').classList.add('show');
+}
+window.openSheet = openSheet;
+function openDeitySheet(name, src){
+  const label = src==='佛' ? '佛教節日' : '道教節日／民間信仰';
+  const note = src==='佛'
+    ? '此為佛教傳統紀念日，信眾常於此日持齋、誦經、禮佛，表達虔敬與祈福之意。'
+    : '此為道教或民間信仰所奉祀神祇之聖誕／紀念日，信眾常於此日上香、祭祀、還願，表達敬意。';
+  document.getElementById('sterm').textContent = t2(name);
+  document.getElementById('sdesc').textContent = `〔${label}〕${note}　（注：具體典故各地廟宇傳承略有不同，此處僅作通用說明，詳情可諮詢當地宮廟。）`;
+  document.getElementById('smask').classList.add('show');
+  document.getElementById('sheet').classList.add('show');
+}
+window.openDeitySheet = openDeitySheet;
+window.closeSheet = function(){
+  document.getElementById('smask').classList.remove('show');
+  document.getElementById('sheet').classList.remove('show');
+};
 
 /* ══ Simplified → Traditional conversion ══════ */
 let t2 = x => x; // identity fallback until OpenCC loads
@@ -223,10 +282,10 @@ function genFesFor(y,m,d){
   const sof=s(()=>sl(y,m,d).getOtherFestivals(),[]);
   return [...(sf||[]),...(lf||[]),...(sof||[])];
 }
-/* deity birthdays: Tao (道教) + Foto (佛教) festival tables */
+/* deity birthdays: Tao (道教) + Foto (佛教) festival tables. Tag with source. */
 function deityFesFor(y,m,d){
-  const tf=s(()=>tao(y,m,d).getFestivals().map(f=>f.getName()),[]);
-  const ff=s(()=>foto(y,m,d).getFestivals().map(f=>f.getName()),[]);
+  const tf=s(()=>tao(y,m,d).getFestivals().map(f=>({name:f.getName(),src:'道'})),[]);
+  const ff=s(()=>foto(y,m,d).getFestivals().map(f=>({name:f.getName(),src:'佛'})),[]);
   return [...(tf||[]),...(ff||[])];
 }
 
@@ -266,7 +325,7 @@ function mc(y,m,d,oth){
   if(!oth){
     const lun=ll(y,m,d),jq=jqFor(y,m,d);
     const gf=genFesFor(y,m,d),df=deityFesFor(y,m,d);
-    const fv=df[0]||gf[0]||'';
+    const fv=(df[0]&&df[0].name)||gf[0]||'';
     const sub=document.createElement('div');
     if(jq){sub.className='jqt';sub.textContent=t2(jq);}
     else if(fv){sub.className='lun';sub.style.color='#C07A00';
@@ -315,8 +374,8 @@ function rd(){
   const pi   =g(()=>lun.getDayPositionYinGui());
 
   /* 吉神 / 凶煞 full lists */
-  const ji_arr=g(()=>lun.getDayJiShen(),[]);
-  const xs_arr=g(()=>lun.getDayXiongSha(),[]);
+  const ji_arr=g(()=>lun.getDayJiShen(),[]).filter(x=>x&&x!=='无');
+  const xs_arr=g(()=>lun.getDayXiongSha(),[]).filter(x=>x&&x!=='无');
 
   /* festivals: general (solar/lunar/intl) + deity birthdays (Tao/Foto) */
   const genFes  =genFesFor(SY,SM,SD);
@@ -353,8 +412,8 @@ function rd(){
   });
 
   const T2=x=>t2(x); // shorthand
-  const ys=(Array.isArray(yi)?yi:[]).map(T2).join('　');
-  const js=(Array.isArray(ji)?ji:[]).map(T2).join('　');
+  const ys=(Array.isArray(yi)?yi:[]).map(term).join('　');
+  const js=(Array.isArray(ji)?ji:[]).map(term).join('　');
   const shg=HZ.map((hz,i)=>`<div class="sc${i===curIdx?' now':''}"><div class="hz">${hz}</div><div>${HT[i]}</div></div>`).join('');
 
   box.innerHTML=`
@@ -385,9 +444,9 @@ function rd(){
     <div class="st">神　佛　聖　誕　／　道　教　節　日</div>
     ${deityFes.length?`<div class="deity-tablets">
       ${deityFes.map(f=>`
-      <div class="tablet">
-        <div class="tablet-icon">⛩</div>
-        <div class="tablet-name">${T2(f)}</div>
+      <div class="tablet" onclick="openDeitySheet('${f.name.replace(/'/g,"\\'")}','${f.src}')">
+        <div class="tablet-icon">${f.src==='佛'?'🪷':'⛩'}</div>
+        <div class="tablet-name">${T2(f.name)}</div>
       </div>`).join('')}
     </div>`:`<div style="color:#CCA850;font-size:12px;padding:4px 0 2px;opacity:.8">今日無特定神佛聖誕記載</div>`}
   </div>
@@ -396,13 +455,13 @@ function rd(){
   <div class="sec">
     <div class="st">值　神　&amp;　十　二　建　除</div>
     <div class="two-col">
-      <div class="exp ${cc(shenInfo.lk)}">
+      <div class="exp ${cc(shenInfo.lk)}" onclick="openSheet('${(sh||'').replace(/'/g,"\\'")}')">
         <div class="exp-lbl">今日值神</div>
         <div class="exp-nm">${T2(sh)||'—'}</div>
         ${shenInfo.lk?`<div class="lp">${shenInfo.lk}</div>`:''}
         <div class="exp-desc">${T2(shenInfo.desc)}</div>
       </div>
-      <div class="exp ${cc(jianInfo.lk)}">
+      <div class="exp ${cc(jianInfo.lk)}" onclick="openSheet('${(j12||'').replace(/'/g,"\\'")}')">
         <div class="exp-lbl">十二建除</div>
         <div class="exp-nm">${T2(j12)||'—'}<span style="font-size:16px">日</span></div>
         ${jianInfo.lk?`<div class="lp">${jianInfo.lk}</div>`:''}
@@ -417,11 +476,11 @@ function rd(){
     <div class="jsw">
       ${ji_arr.length?`<div class="jsc">
         <div class="jst">✦ 吉神宜趨</div>
-        <div class="jsi">${ji_arr.map(T2).join('　')}</div>
+        <div class="jsi">${ji_arr.map(term).join('　')}</div>
       </div>`:``}
       ${xs_arr.length?`<div class="jsc bad">
         <div class="jst">✦ 凶煞宜避</div>
-        <div class="jsi">${xs_arr.map(T2).join('　')}</div>
+        <div class="jsi">${xs_arr.map(term).join('　')}</div>
       </div>`:``}
     </div>
   </div>`:''}
