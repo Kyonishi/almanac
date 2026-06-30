@@ -603,6 +603,13 @@ const GRID_ORDER=['巽','離','坤','震','中','兌','艮','坎','乾'];
 const GUA_NAME={'坎':'坎一水','坤':'坤二土','震':'震三木','巽':'巽四木',
   '中':'中五土','乾':'乾六金','兌':'兌七金','艮':'艮八土','離':'離九火'};
 
+// 後天八卦配支 (固定對照, 十二地支分配到八宮, 四角宮各佔兩支)
+// 用於把「日空/時空」的地支標到正確宮位上 — 此對照表是業界通用慣例,
+// 並非 kinqimen 函式庫本身輸出(該庫只回傳地支字串, 不含宮位對應), 故未經交叉驗證,
+// 採用傳統命理通行寫法。
+const ZHI_TO_GONG={'子':'坎','丑':'艮','寅':'艮','卯':'震','辰':'巽','巳':'巽',
+  '午':'離','未':'坤','申':'坤','酉':'兌','戌':'乾','亥':'乾'};
+
 // 擊刑: 天干克地干 (天盤干克地盤干)
 const WU_XING={'甲':'木','乙':'木','丙':'火','丁':'火','戊':'土',
   '己':'土','庚':'金','辛':'金','壬':'水','癸':'水'};
@@ -681,6 +688,19 @@ function renderPan(pan,y,m,d,h,mi){
   const realZfGong=zfGong==='中'?'坤':zfGong;
   const realZsGong=zsGong==='中'?'坤':zsGong;
 
+  /* 旬空宮位對照: 把「日空/時空」的地支拆開, 透過固定配支表查出對應宮位 */
+  const kongGongMap={}; // gong -> ['日空'] / ['時空'] / ['日空','時空']
+  function markKong(zhiStr,label){
+    if(!zhiStr)return;
+    for(const zhi of zhiStr){
+      const g=ZHI_TO_GONG[zhi];
+      if(!g)continue;
+      (kongGongMap[g]=kongGongMap[g]||[]).push(label);
+    }
+  }
+  markKong(kong.日空,'日');
+  markKong(kong.時空,'時');
+
   /* 九宮格格子 */
   function renderCell(gua){
     const s=sky[gua]||'', e=earth[gua]||'';
@@ -689,10 +709,7 @@ function renderPan(pan,y,m,d,h,mi){
     const isZs=gua===realZsGong;
     const isCenter=gua==='中';
     const jx=!isCenter&&isJiXing(s,e);
-    // 旬空: 地支在kong串中
-    const skyZhi=s?({'甲':'子','乙':'丑','丙':'寅','丁':'卯','戊':'辰','己':'巳',
-                      '庚':'午','辛':'未','壬':'申','癸':'酉'}[s]||''):''; 
-    // (空亡按地支判, 此處僅做簡單標記)
+    const kongLabels=kongGongMap[gua]||[];
 
     let cls='cell';
     if(isCenter)cls+=' center-cell';
@@ -702,6 +719,7 @@ function renderPan(pan,y,m,d,h,mi){
     const guaName=GUA_NAME[gua]||gua;
 
     return `<div class="${cls}">
+      ${kongLabels.length?`<div class="c-kong">空${kongLabels.join('')}</div>`:''}
       <div class="cell-gua">${guaName}</div>
       ${s?`<div class="c-sky${jx?' jixing':''}">${T2(s)}</div>`:'<div class="c-sky" style="color:var(--sub)">—</div>'}
       ${e?`<div class="c-earth">${T2(e)}</div>`:''}
