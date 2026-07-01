@@ -166,6 +166,31 @@ header{
 }
 .cross-nav a:hover{opacity:.88;transform:scale(1.04)}
 .cross-nav a .nav-icon{font-size:16px}
+
+/* ── clickable terms ── */
+.term{cursor:pointer}
+.term:active{opacity:.6}
+.c-sky.term, .c-earth.term{border-bottom:1px dotted currentColor;padding-bottom:1px}
+
+/* ── bottom sheet ── */
+.sheet-mask{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:990;
+  opacity:0;pointer-events:none;transition:opacity .2s}
+.sheet-mask.show{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-width:500px;margin:0 auto;
+  background:var(--card);border-radius:18px 18px 0 0;z-index:991;
+  padding:8px 20px 28px;transform:translateY(100%);transition:transform .25s ease;
+  box-shadow:0 -6px 24px rgba(0,0,0,.18);max-height:75vh;overflow-y:auto}
+.sheet.show{transform:translateY(0)}
+.sheet-bar{width:36px;height:4px;background:var(--brd);border-radius:2px;margin:6px auto 14px}
+.sheet-term{font-size:20px;font-weight:800;color:var(--red);margin-bottom:4px}
+.sheet-sub{font-size:12px;color:var(--gold);font-weight:600;margin-bottom:10px;letter-spacing:1px}
+.sheet-meta{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.sheet-tag{font-size:11px;padding:2px 9px;border-radius:10px;font-weight:600}
+.sheet-tag.color{background:#F5F0E8;color:var(--ink)}
+.sheet-tag.luck-ji{background:#E8F5E9;color:var(--grn)}
+.sheet-tag.luck-xiong{background:#FEF0F0;color:var(--red)}
+.sheet-tag.luck-neu{background:#F0F0F0;color:var(--sub)}
+.sheet-desc{font-size:14px;color:var(--ink);line-height:1.85}
 footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spacing:.5px}
 
 /* empty state */
@@ -203,6 +228,16 @@ footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spa
     <span style="font-size:11px;opacity:.7">拆補法 · 時家轉盤</span>
   </div>
 </div>
+
+<div class="sheet-mask" id="smask" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-bar"></div>
+  <div class="sheet-term" id="sterm"></div>
+  <div class="sheet-sub" id="ssub"></div>
+  <div class="sheet-meta" id="smeta"></div>
+  <div class="sheet-desc" id="sdesc"></div>
+</div>
+
 
 <footer>時家奇門遁甲 · 拆補法 · lunar-javascript (6tail) · 無廣告</footer>
 
@@ -583,6 +618,117 @@ if (typeof window !== 'undefined') window.QimenJS = QimenJS;
 </script>
 
 <script>
+/* ══ 取象詞典 LEX_DATA ══════════════════════════
+   來源：多個獨立命理資料來源交叉比對整理（十天干/十二地支/八門/九星/八神
+   為跨流派共識內容，非荀爽老師獨家），以及荀爽老師視頻中的顏色材質對照表。
+   所有文字均為重新整理改寫，非逐字摘錄任何單一來源。
+*/
+const LEX_DATA = {
+  // ── 十天干：色彩 / 材質 / 性格取象 ──
+  stems: {
+    '甲': {name:'甲', color:'亮綠', material:'硬木', keyword:'權威 · 領導 · 一流',
+      desc:'光明磊落、公正無私的統帥之相。又高又直，凡事爭先，對應現實中的領導、長官、權威人物，或大樹、摩天大樓等高聳挺拔之物。甲本身不直接上盤，而是隱藏在六儀之下，象徵真正的權威往往深居幕後、藉由代理人傳話行事。'},
+    '乙': {name:'乙', color:'暗綠', material:'軟植',keyword:'柔弱 · 依附 · 溝通',
+      desc:'柔弱可彎曲、依附性強，沒有強烈主見，往好處說是溫柔隨和，往壞處說是牆頭草。對應中醫、草藥、文學藝術等領域。最大特點是溝通力強，柔能克剛，遇到棘手狀況時適合放低姿態、以溝通化解。'},
+    '丙': {name:'丙', color:'大紅', material:'燈光', keyword:'表現 · 光芒 · 急躁',
+      desc:'如太陽般由中心向外放射能量，對應表演慾、舞台魅力、領袖光環。正面是光明磊落、雄心壯志；負面則容易自戀、浮躁多動、喜怒形於色。物相上是各種圓形物體、燈光照明、強調形象塑造之物。'},
+    '丁': {name:'丁', color:'暗紅', material:'尖刺', keyword:'突出 · 奇異 · 不穩定',
+      desc:'平凡中的不平凡，黑暗中的一點燭光，極具辨識度與吸引力。物相上對應尖銳突出之物、重要的身份憑證（證件、票券）。在感情關係中代表變數與不穩定，傳統上視為破壞穩定關係的因素。'},
+    '戊': {name:'戊', color:'棕黃', material:'容器', keyword:'收納 · 財富 · 保守',
+      desc:'具收容、契約之性，對應金錢、資產、各類容器。性格包容穩重，但容易保守到固執，傾向不斷吸納外界資源充實自己，抗拒被索取或改變既有模式。'},
+    '己': {name:'己', color:'暗黃', material:'彎曲', keyword:'謀略 · 陰柔 · 陷阱',
+      desc:'如蛇般彎曲隱伏，性格內斂、城府深、善於謀劃，正面是足智多謀，負面則暗藏心機、布局算計。遇事需留意是否落入他人精心設計的圈套。'},
+    '庚': {name:'庚', color:'亮白', material:'金屬', keyword:'危險 · 武力 · 阻隔',
+      desc:'剛猛強硬、極具攻擊性，對應金屬器械、武器、軍警等高風險高對抗性的領域。若無外部目標可發洩，容易轉向內耗、對身邊人發脾氣。是六害之中公認最危險的一個天干。'},
+    '辛': {name:'辛', color:'金黃', material:'首飾', keyword:'改革 · 求新 · 突破',
+      desc:'敢於挑戰舊有秩序、追求創新變革，性格內斂但態度堅決，認準問題便會直插要害。正面適合做開創性、研究性的工作；負面則容易顯得叛逆、不安於現狀。物相上對應顆粒狀的精緻小物（首飾、藥丸、硬幣）。'},
+    '壬': {name:'壬', color:'亮藍', material:'淨水', keyword:'聰明 · 流動 · 迷失',
+      desc:'邏輯思維能力強，喜好鑽研問題，但容易沉溺於思考本身而忽略現實。如奔流入海的江水般方向多變、難以掌控。物相上對應乾淨、快速流動的液體。'},
+    '癸': {name:'癸', color:'黑藍', material:'渾水', keyword:'沉溺 · 多情 · 上癮',
+      desc:'天干序位最末，象徵事物的末端、深陷其中難以自拔的狀態。性格陰柔、多愁善感、容易沉迷上癮，無論是感情、娛樂或物質依賴皆然。物相上對應渾濁、停滯不動的液體。'},
+  },
+
+  // ── 十二地支：依五行對應同色天干，並附生肖 ──
+  branches: {
+    '子':{zodiac:'鼠', sameAs:'壬', note:'五行屬水（陽），顏色材質同壬：亮藍 · 淨水'},
+    '丑':{zodiac:'牛', sameAs:'己', note:'五行屬土（陰），顏色材質同己：暗黃 · 彎曲，為四庫之一'},
+    '寅':{zodiac:'虎', sameAs:'甲', note:'五行屬木（陽），顏色材質同甲：亮綠 · 硬木'},
+    '卯':{zodiac:'兔', sameAs:'乙', note:'五行屬木（陰），顏色材質同乙：暗綠 · 軟植'},
+    '辰':{zodiac:'龍', sameAs:'戊', note:'五行屬土（陽），顏色材質同戊：棕黃 · 容器，為四庫之一'},
+    '巳':{zodiac:'蛇', sameAs:'丁', note:'五行屬火（陰），顏色材質同丁：暗紅 · 尖刺'},
+    '午':{zodiac:'馬', sameAs:'丙', note:'五行屬火（陽），顏色材質同丙：大紅 · 燈光'},
+    '未':{zodiac:'羊', sameAs:'己', note:'五行屬土（陰），顏色材質同己：暗黃 · 彎曲，為四庫之一'},
+    '申':{zodiac:'猴', sameAs:'庚', note:'五行屬金（陽），顏色材質同庚：亮白 · 金屬'},
+    '酉':{zodiac:'雞', sameAs:'辛', note:'五行屬金（陰），顏色材質同辛：金黃 · 首飾'},
+    '戌':{zodiac:'狗', sameAs:'戊', note:'五行屬土（陽），顏色材質同戊：棕黃 · 容器，為四庫之一'},
+    '亥':{zodiac:'豬', sameAs:'壬', note:'五行屬水（陰），顏色材質同壬：亮藍 · 淨水'},
+  },
+
+  // ── 八門 ──
+  doors: {
+    '休':{name:'休門', keyword:'清閒 · 安逸 · 不爭', desc:'舒適、放鬆、悠閒不理事，性格寬鬆溫和。職業上對應公務員等規律穩定、壓力不大的工作。感情上是理想化的相處狀態：互相呵護、不猜忌、共享平淡美好的時光。過度安逸也可能滋生得過且過、暗箱操作的風氣。'},
+    '生':{name:'生門', keyword:'生機 · 利潤 · 持續', desc:'生生不息，對應生產、生意、利潤、買賣交易。性情樂觀活躍，看待事物的眼光是動態變化的。需留意：若是長期累積的問題（如慢性病），遇生門也代表會持續延續，並非絕對的吉象。'},
+    '傷':{name:'傷門', keyword:'攻擊 · 損壞 · 競技', desc:'伤害、破損、衝突對抗。最常見的取象是「東西壞了」或「人受傷了」。性情上喜歡刺激冒險、競爭性強，適合搏鬥、競技、軍警或執法相關領域，帶有「以暴制暴」的雙面性。'},
+    '杜':{name:'杜門', keyword:'阻隔 · 保密 · 排他', desc:'阻塞、限制、隱藏不外露。對應任何具有保密性、排他性、防禦性質的事物，如商業機密、專利技術。實戰中遇杜門，往往代表這件事有隱情，或者正面臨某種阻礙。'},
+    '景':{name:'景門', keyword:'外觀 · 形象 · 展示', desc:'美麗、顯眼、形象塑造。對應裝飾品、化妝品、各類顯示器（手機、電視螢幕），也代表透過某種媒介去「看」、去呈現事物。過於追求外在光鮮，也可能成為不切實際幻想的來源。'},
+    '死':{name:'死門', keyword:'靜止 · 陳舊 · 固守', desc:'靜止不動、沒有變化。對應老舊物件、長期閒置的東西、固定資產，也跟醫院、喪葬等與終止相關的場所有關。性情深沉保守、固執己見，學習上適合鑽研古老冷門的領域。'},
+    '驚':{name:'驚門', keyword:'口才 · 刺激 · 波動', desc:'驚嚇、口舌是非、嘈雜刺激。與口才、語言表達相關的職業（律師、主播、歌手）都對應驚門，也對應高風險高波動的投機行為。實戰中常見會發出聲響的物件（樂器、鈴鐺）或喧鬧場所。'},
+    '開':{name:'開門', keyword:'公開 · 透明 · 遠行', desc:'開闊、公開、透明。對應公權力、公開場合、團體組織，事業上代表是否有公開的上升管道。因為公開透明，需要保密的事一旦碰上開門容易洩露。也與遠行出差、長途旅行相關。'},
+  },
+
+  // ── 九星 ──
+  stars: {
+    '蓬':{name:'天蓬星', wuxing:'水', luck:'凶', keyword:'冒險 · 風流 · 善變',
+      desc:'性格像古代游俠，膽大有魄力、臨機應變，但也好色、性格多變、行事不按常理。適合做需要打破常規、邊緣突破的事，正派經營容易出狀況，行事帶有「危險的魅力」。物相上對應蓬鬆物（雨傘、棚架）。'},
+    '任':{name:'天任星', wuxing:'土', luck:'吉', keyword:'忠厚 · 穩重 · 任勞任怨',
+      desc:'性格像踏實的農民或工人，忠厚老實、穩重保守、不願冒險，缺點是略顯無趣、缺乏魅力。適合從事規章制度明確、不需自行承擔風險的穩定工作。'},
+    '沖':{name:'天冲星', wuxing:'木', luck:'次吉', keyword:'衝動 · 正直 · 行動力',
+      desc:'好動易衝動，但正直仁義、剛健果決，行事雷厲風行，跑得快、反應快。對應運動員、軍警等需要爆發力與行動力的職業。狀態不佳時則表現為魯莽暴躁。'},
+    '輔':{name:'天輔星', wuxing:'木', luck:'吉', keyword:'溫文 · 學識 · 輔佐',
+      desc:'溫柔浪漫、言行高雅、有修養有學識，對應文化教育領域，利於考試升學。狀態不佳時則顯得迂腐懦弱、缺乏主見、優柔寡斷。'},
+    '英':{name:'天英星', wuxing:'火', luck:'中平', keyword:'名氣 · 表現 · 急躁',
+      desc:'重視名譽與禮節，擅長交際應酬，與火、媒體、影視等領域相關。狀態不佳時則脾氣急躁、虛榮愛面子、容易動怒。'},
+    '芮':{name:'天芮星', wuxing:'土', luck:'凶', keyword:'疾病 · 學習 · 包容',
+      desc:'傳統上的「病星」，奇門占問疾病健康多以此星為主要參考。正面特質是好學、忠厚大度、樂於交友；狀態不佳時則貪婪自私、體質較弱。'},
+    '禽':{name:'天禽星', wuxing:'土', luck:'吉', keyword:'誠信 · 穩重 · 居中',
+      desc:'具大地中心之土性，忠誠老實、厚德載物，行事循規蹈矩、值得信賴。永遠寄居坤二宮，象徵居中調度、不偏不倚的核心角色。狀態不佳時則顯得死板僵化。'},
+    '柱':{name:'天柱星', wuxing:'金', luck:'凶', keyword:'善辯 · 中流砥柱 · 叛逆',
+      desc:'能言善辯，外冷內熱，對應律師、演員、軍警等需要口才或對抗性的職業，兼具建設與破壞兩種力量。狀態不佳時則性格叛逆、容易流於空想。'},
+    '心':{name:'天心星', wuxing:'金', luck:'吉', keyword:'領導 · 醫術 · 心機',
+      desc:'聰明能幹、有領導才能，也對應醫療、哲學等需要縝密心思的領域，能屈能伸、做事周全。狀態不佳時則心機過重、工於算計。'},
+  },
+
+  // ── 八神 ──
+  gods: {
+    '符':{name:'值符', wuxing:'土', luck:'吉', keyword:'權威 · 貴人 · 化解',
+      desc:'諸神之首，至吉之神。所到之處能化凶為吉，即使遇上最凶猛的煞氣也會被壓制收斂。對應長官、貴人、核心人物，也象徵局勢有了主心骨。'},
+    '蛇':{name:'螣蛇', wuxing:'火', luck:'凶', keyword:'虛驚 · 多疑 · 變化',
+      desc:'性格虛偽、口舌尖刻、疑神疑鬼，對應怪夢、虛驚、變化無常、糾纏不清的狀況。也常與宗教信仰或玄學興趣有所關聯。'},
+    '陰':{name:'太陰', wuxing:'金', luck:'吉', keyword:'隱秘 · 謀略 · 庇護',
+      desc:'深藏不露、善於謀劃布局，利於密謀策劃、避難隱蔽之事。也常代表女性、私密、暗中相助的力量。'},
+    '合':{name:'六合', wuxing:'木', luck:'吉', keyword:'和合 · 人緣 · 中介',
+      desc:'性格隨和、人緣極佳、擅長居中協調，對應婚姻媒合、合作談判、交易仲介等需要橋樑角色的事務。'},
+    '勾':{name:'勾陳', wuxing:'土', luck:'凶', keyword:'糾纏 · 拖延 · 牽絆',
+      desc:'隱於白虎之下的角色，性格牽滯纏繞，象徵事情拖泥帶水、難以了結，常與田產、訴訟糾紛相關。'},
+    '雀':{name:'朱雀', wuxing:'火', luck:'凶', keyword:'口舌 · 文書 · 是非',
+      desc:'隱於玄武之下，掌文書與口舌之事。得勢時主文件公文往來順利，失勢時則代表口舌是非、糾紛不斷。'},
+    '虎':{name:'白虎', wuxing:'金', luck:'凶', keyword:'剛猛 · 衝突 · 意外',
+      desc:'性格剛烈好鬥，對應打鬥衝突、交通意外、傷病喪事等突發性危險，也可代表掌握實權或武力的一方。'},
+    '玄':{name:'玄武', wuxing:'水', luck:'凶', keyword:'盜竊 · 欺瞞 · 暗昧',
+      desc:'性格陰謀詭詐，對應偷盜、逃亡、曖昧不軌之事，也常用來代表假冒偽劣或暗中行事的狀況。'},
+    '地':{name:'九地', wuxing:'土', luck:'吉', keyword:'安穩 · 屯藏 · 持久',
+      desc:'性格溫順內斂、能屯能藏，對應穩固持久、長期經營、按部就班累積實力的狀態。'},
+    '天':{name:'九天', wuxing:'金', luck:'吉', keyword:'威猛 · 遠行 · 宏圖',
+      desc:'性格剛強好動、志向遠大，對應遠行出兵、開拓擴張、大展宏圖的積極進取狀態。'},
+  }
+};
+
+if (typeof module !== 'undefined' && module.exports) module.exports = LEX_DATA;
+if (typeof window !== 'undefined') window.LEX_DATA = LEX_DATA;
+
+</script>
+
+<script>
 /* ── OpenCC s2t init ── */
 let t2 = x => x;
 function initT2(){
@@ -590,6 +736,51 @@ function initT2(){
     try{ t2=OpenCC.Converter({from:'cn',to:'tw'}); }catch(e){}
   }
 }
+
+/* ── 取象詞典彈窗 ── */
+function luckBadge(luck){
+  if(luck==='吉')return '<span class="sheet-tag luck-ji">吉</span>';
+  if(luck==='凶')return '<span class="sheet-tag luck-xiong">凶</span>';
+  if(luck)return `<span class="sheet-tag luck-neu">${luck}</span>`;
+  return '';
+}
+function openSheet(kind, key){
+  const L=window.LEX_DATA||{};
+  let title='', sub='', metaHtml='', desc='請查閱資料';
+  if(kind==='stem'){
+    const d=L.stems&&L.stems[key];
+    if(d){
+      title=`${d.name} 天干`;
+      sub=d.keyword||'';
+      metaHtml=`<span class="sheet-tag color">${d.color} · ${d.material}</span>`;
+      desc=d.desc;
+    }
+  }else if(kind==='door'){
+    const d=L.doors&&L.doors[key];
+    if(d){title=d.name;sub=d.keyword||'';desc=d.desc;}
+  }else if(kind==='star'){
+    const d=L.stars&&L.stars[key];
+    if(d){title=d.name;sub=d.keyword||'';
+      metaHtml=luckBadge(d.luck)+(d.wuxing?`<span class="sheet-tag color">五行屬${d.wuxing}</span>`:'');
+      desc=d.desc;}
+  }else if(kind==='god'){
+    const d=L.gods&&L.gods[key];
+    if(d){title=d.name;sub=d.keyword||'';
+      metaHtml=luckBadge(d.luck)+(d.wuxing?`<span class="sheet-tag color">五行屬${d.wuxing}</span>`:'');
+      desc=d.desc;}
+  }
+  document.getElementById('sterm').textContent=t2(title)||key;
+  document.getElementById('ssub').textContent=t2(sub);
+  document.getElementById('smeta').innerHTML=metaHtml;
+  document.getElementById('sdesc').textContent=t2(desc);
+  document.getElementById('smask').classList.add('show');
+  document.getElementById('sheet').classList.add('show');
+}
+window.openSheet=openSheet;
+window.closeSheet=function(){
+  document.getElementById('smask').classList.remove('show');
+  document.getElementById('sheet').classList.remove('show');
+};
 
 /* ── 資料常量 ── */
 const EIGHT_GUA_ORDER=['坎','坤','震','巽','中','乾','兌','艮','離']; // 一~九
@@ -721,12 +912,12 @@ function renderPan(pan,y,m,d,h,mi){
     return `<div class="${cls}">
       ${kongLabels.length?`<div class="c-kong">空${kongLabels.join('')}</div>`:''}
       <div class="cell-gua">${guaName}</div>
-      ${s?`<div class="c-sky${jx?' jixing':''}">${T2(s)}</div>`:'<div class="c-sky" style="color:var(--sub)">—</div>'}
-      ${e?`<div class="c-earth">${T2(e)}</div>`:''}
+      ${s?`<div class="c-sky term${jx?' jixing':''}" onclick="openSheet('stem','${s}')">${T2(s)}</div>`:'<div class="c-sky" style="color:var(--sub)">—</div>'}
+      ${e?`<div class="c-earth term" onclick="openSheet('stem','${e}')">${T2(e)}</div>`:''}
       ${!isCenter&&dr?`<div class="c-row">
-        <span class="c-tag tag-door">${T2(dr)}</span>
-        <span class="c-tag tag-star">${T2(st)}</span>
-        <span class="c-tag tag-god">${T2(gd)}</span>
+        <span class="c-tag tag-door term" onclick="openSheet('door','${dr}')">${T2(dr)}</span>
+        <span class="c-tag tag-star term" onclick="openSheet('star','${st}')">${T2(st)}</span>
+        <span class="c-tag tag-god term" onclick="openSheet('god','${gd}')">${T2(gd)}</span>
       </div>`:''}
       ${isZf?'<div class="c-special zf-tag">值符</div>':''}
       ${isZs&&!isZf?'<div class="c-special zs-tag">值使</div>':''}
