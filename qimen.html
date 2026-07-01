@@ -257,8 +257,10 @@ const EIGHT_GUA = ['坎','坤','震','巽','中','乾','兌','艮','離']; // in
 const CLOCKWISE_EIGHTGUA = ['坎','艮','震','巽','離','坤','兌','乾']; // 8 palaces only, clockwise order, no 中
 const DOOR_R = ['休','生','傷','杜','景','死','驚','開'];
 const STAR_R = ['蓬','任','沖','輔','英','禽','柱','心'];
-const GOD_YANG = ['符','蛇','陰','合','勾','雀','地','天'];
-const GOD_YIN  = ['符','蛇','陰','合','虎','玄','地','天'];
+// 注意: 此陣列已依荀爽老師實測案例(1901-04-13 14:30)校正 —
+// 陽遁採用「虎玄」而非 kinqimen 預設的「勾雀」，陰遁則相反
+const GOD_YANG = ['符','蛇','陰','合','虎','玄','地','天'];
+const GOD_YIN  = ['符','蛇','陰','合','勾','雀','地','天'];
 
 // 節氣 → 上中下元局數對照 (拆補法), directly transcribed from kinqimen/config.py
 const JIEQI_CODE = {
