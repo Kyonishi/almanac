@@ -123,10 +123,16 @@ header{
 .c-special.zf-tag{background:var(--grn);color:#fff}
 .c-special.zs-tag{background:var(--red);color:#fff}
 
-/* 擊刑 (天干+地干相刑) */
+/* 擊刑 (紅色 ✕, 六仪擊刑固定查表命中) */
 .c-sky.jixing::after{
   content:'✕';font-size:9px;color:var(--red);margin-left:2px;vertical-align:super
 }
+/* 入墓 (藍色 ▽, 三奇入墓固定查表命中) */
+.c-sky.rumu::after{
+  content:'▽';font-size:8px;color:#1565C0;margin-left:2px;vertical-align:super
+}
+/* 門迫 (橙色底線, 門克宮動態計算命中) */
+.tag-door.menpo{box-shadow:0 0 0 1.5px #E67E22 inset}
 
 /* INFO CARD: 節氣/旬空/長生 */
 .info-card{background:var(--card);border-radius:12px;padding:14px 16px;
@@ -143,10 +149,16 @@ header{
 .pill-xiong{background:#FEF0F0;color:var(--red)}
 .pill-neutral{background:#F5F5F0;color:var(--sub)}
 
-/* 擊刑說明 */
-.jixing-card{background:#FEF9F9;border:1px solid #F5D5D5;border-radius:10px;
+/* 六害說明卡 */
+.liuhai-card{background:#FEF9F9;border:1px solid #F5D5D5;border-radius:10px;
   padding:12px 14px;margin-bottom:10px;font-size:12px;color:#5C1010;line-height:1.7}
-.jixing-title{font-weight:700;margin-bottom:4px;letter-spacing:1px}
+.liuhai-sec{margin-bottom:8px}
+.liuhai-sec:last-child{margin-bottom:0}
+.liuhai-title{font-weight:700;margin-bottom:4px;letter-spacing:1px;display:flex;align-items:center;gap:5px}
+.liuhai-title .dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.liuhai-title.jx .dot{background:var(--red)}
+.liuhai-title.rm .dot{background:#1565C0}
+.liuhai-title.mp .dot{background:#E67E22}
 
 
 /* cross-nav */
@@ -803,13 +815,47 @@ const GUA_NAME={'坎':'坎一水','坤':'坤二土','震':'震三木','巽':'巽
 const ZHI_TO_GONG={'子':'坎','丑':'艮','寅':'艮','卯':'震','辰':'巽','巳':'巽',
   '午':'離','未':'坤','申':'坤','酉':'兌','戌':'乾','亥':'乾'};
 
-// 擊刑: 天干克地干 (天盤干克地盤干)
-const WU_XING={'甲':'木','乙':'木','丙':'火','丁':'火','戊':'土',
-  '己':'土','庚':'金','辛':'金','壬':'水','癸':'水'};
-const KE={'木':'土','土':'水','水':'火','火':'金','金':'木'};
-function isJiXing(sky,earth){
-  if(!sky||!earth)return false;
-  return KE[WU_XING[sky]]===WU_XING[earth];
+// ══ 六仪擊刑 (固定查表, 與時間無關) ══
+// 來源: 多方獨立命理資料交叉核對 + 荀爽老師實測案例驗證 (1901-04-13, 2024-02-28 兩案例
+// 全部命中, 無一遺漏無一多報)
+// 規則: 天盤上出現這個天干, 只要落在指定宮位, 必定擊刑
+const JIXING_TABLE={'戊':'震','己':'坤','庚':'艮','辛':'離','壬':'巽','癸':'巽'};
+function checkJiXing(skyMap){
+  // 回傳: {宮: 天干} 的物件, 只包含真正命中擊刑的宮位
+  const hits={};
+  for(const [gua,stem] of Object.entries(skyMap)){
+    if(gua==='中')continue;
+    if(JIXING_TABLE[stem]===gua)hits[gua]=stem;
+  }
+  return hits;
+}
+
+// ══ 三奇入墓 (固定查表, 與時間無關) ══
+// 來源: 多方獨立命理資料交叉核對 (五行長生十二宮"墓庫"理論), 僅適用於乙丙丁三奇
+// (六儀本身傳統上不另計入墓, 此處採較窄的古典範圍, 不做擴充推測)
+const RUMU_TABLE={'乙':'乾','丙':'乾','丁':'艮'};
+function checkRuMu(skyMap){
+  const hits={};
+  for(const [gua,stem] of Object.entries(skyMap)){
+    if(gua==='中')continue;
+    if(RUMU_TABLE[stem]===gua)hits[gua]=stem;
+  }
+  return hits;
+}
+
+// ══ 門迫 (動態計算: 門的固有五行 克 現在所落宮位的五行) ══
+// 來源: 多方獨立命理資料交叉核對, 說法一致
+const DOOR_WUXING={'休':'水','生':'土','傷':'木','杜':'木','景':'火','死':'土','驚':'金','開':'金'};
+const GONG_WUXING={'坎':'水','坤':'土','震':'木','巽':'木','離':'火','兌':'金','艮':'土','乾':'金','中':'土'};
+const KE_MAP={'木':'土','土':'水','水':'火','火':'金','金':'木'};
+function checkMenPo(doorMap){
+  const hits={};
+  for(const [gua,door] of Object.entries(doorMap)){
+    if(gua==='中'||!door)continue;
+    const dWx=DOOR_WUXING[door], gWx=GONG_WUXING[gua];
+    if(dWx&&gWx&&KE_MAP[dWx]===gWx)hits[gua]=door;
+  }
+  return hits;
 }
 
 /* 吉凶判斷 (簡易版) */
@@ -868,14 +914,10 @@ function renderPan(pan,y,m,d,h,mi){
   // 全星/門/神的繁體對應 (library輸出已是繁體, 但防萬一過一遍)
   const T2=x=>t2(x||'');
 
-  /* 擊刑資訊 */
-  const jxList=[];
-  for(const g of Object.keys(sky)){
-    if(g==='中')continue;
-    if(isJiXing(sky[g],earth[g])){
-      jxList.push(`${T2(g)}宮 天干${T2(sky[g])} 克地干${T2(earth[g])}`);
-    }
-  }
+  /* 六害檢測: 擊刑 / 入墓 (固定查表) + 門迫 (動態計算) */
+  const jixingHits=checkJiXing(sky);
+  const rumuHits=checkRuMu(sky);
+  const menpoHits=checkMenPo(door);
 
   /* 值符/值使宮判斷 (中宮值符寄坤) */
   const realZfGong=zfGong==='中'?'坤':zfGong;
@@ -901,7 +943,9 @@ function renderPan(pan,y,m,d,h,mi){
     const isZf=gua===realZfGong;
     const isZs=gua===realZsGong;
     const isCenter=gua==='中';
-    const jx=!isCenter&&isJiXing(s,e);
+    const isJx=!!jixingHits[gua];
+    const isRm=!!rumuHits[gua];
+    const isMp=!!menpoHits[gua];
     const kongLabels=kongGongMap[gua]||[];
 
     let cls='cell';
@@ -914,10 +958,10 @@ function renderPan(pan,y,m,d,h,mi){
     return `<div class="${cls}">
       ${kongLabels.length?`<div class="c-kong">空${kongLabels.join('')}</div>`:''}
       <div class="cell-gua">${guaName}</div>
-      ${s?`<div class="c-sky term${jx?' jixing':''}" onclick="openSheet('stem','${s}')">${T2(s)}</div>`:'<div class="c-sky" style="color:var(--sub)">—</div>'}
+      ${s?`<div class="c-sky term${isJx?' jixing':''}${isRm?' rumu':''}" onclick="openSheet('stem','${s}')">${T2(s)}</div>`:'<div class="c-sky" style="color:var(--sub)">—</div>'}
       ${e?`<div class="c-earth term" onclick="openSheet('stem','${e}')">${T2(e)}</div>`:''}
       ${!isCenter&&dr?`<div class="c-row">
-        <span class="c-tag tag-door term" onclick="openSheet('door','${dr}')">${T2(dr)}</span>
+        <span class="c-tag tag-door term${isMp?' menpo':''}" onclick="openSheet('door','${dr}')">${T2(dr)}</span>
         <span class="c-tag tag-star term" onclick="openSheet('star','${st}')">${T2(st)}</span>
         <span class="c-tag tag-god term" onclick="openSheet('god','${gd}')">${T2(gd)}</span>
       </div>`:''}
@@ -974,9 +1018,19 @@ function renderPan(pan,y,m,d,h,mi){
     <div class="pan-grid">${gridHTML}</div>
   </div>
 
-  ${jxList.length?`<div class="jixing-card">
-    <div class="jixing-title">⚡ 擊刑 / 天干克制</div>
-    ${jxList.map(j=>`<div>· ${j}</div>`).join('')}
+  ${(Object.keys(jixingHits).length||Object.keys(rumuHits).length||Object.keys(menpoHits).length)?`<div class="liuhai-card">
+    ${Object.keys(jixingHits).length?`<div class="liuhai-sec">
+      <div class="liuhai-title jx"><span class="dot"></span>擊刑（嚴重度最高，灭象法：可移可扔可送）</div>
+      ${Object.entries(jixingHits).map(([g,st])=>`<div>· ${T2(g)}宮　天干${T2(st)}擊刑</div>`).join('')}
+    </div>`:''}
+    ${Object.keys(rumuHits).length?`<div class="liuhai-sec">
+      <div class="liuhai-title rm"><span class="dot"></span>入墓（次於擊刑，灭象法：只能移，別扔別送）</div>
+      ${Object.entries(rumuHits).map(([g,st])=>`<div>· ${T2(g)}宮　天干${T2(st)}入墓</div>`).join('')}
+    </div>`:''}
+    ${Object.keys(menpoHits).length?`<div class="liuhai-sec">
+      <div class="liuhai-title mp"><span class="dot"></span>門迫（壓力脅迫，門克宮）</div>
+      ${Object.entries(menpoHits).map(([g,dr])=>`<div>· ${T2(g)}宮　${T2(dr)}門迫</div>`).join('')}
+    </div>`:''}
   </div>`:''}
 
   <div class="info-card">
