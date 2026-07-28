@@ -45,6 +45,37 @@ header{
 }
 .btn-calc:hover{opacity:.9}
 .btn-calc:active{transform:scale(.98)}
+.btn-ritual{
+  width:100%;background:transparent;border:1px solid var(--gold);color:var(--gold);
+  border-radius:8px;padding:8px;font-size:12px;letter-spacing:2px;cursor:pointer;
+  font-family:inherit;margin-top:4px
+}
+.btn-ritual:hover{background:rgba(212,175,55,.1)}
+.ritual-panel{
+  margin-top:8px;padding:12px;background:#FAF6ED;border:1px solid var(--gold);
+  border-radius:10px;font-size:12.5px;line-height:1.9;color:#3A2E1F
+}
+.ritual-panel .r-sec{margin-bottom:10px}
+.ritual-panel .r-sec:last-child{margin-bottom:0}
+.ritual-panel .r-title{font-weight:700;color:var(--red);margin-bottom:3px}
+.ritual-panel .r-no{color:#B03030}
+.ritual-panel .r-yes{color:#1565C0}
+.ritual-panel .r-quote{font-style:italic;opacity:.9;padding:4px 8px;background:#fff;border-radius:6px;margin:3px 0}
+
+.h-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-size:11px;opacity:.85}
+.h-btn{background:#fff;border:1px solid var(--gold);color:#3A2E1F;border-radius:6px;
+  padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit}
+.h-btn:hover{background:rgba(212,175,55,.15)}
+.h-btn-danger{border-color:#B03030;color:#B03030}
+.h-list{max-height:320px;overflow-y:auto}
+.h-row{display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid #EEE0BB}
+.h-row:last-child{border-bottom:none}
+.h-row-main{flex:1;cursor:pointer}
+.h-row-main:hover{opacity:.7}
+.h-row-date{font-weight:700}
+.h-row-info{opacity:.8;font-size:11.5px}
+.h-row-hits{font-size:11px;color:var(--red);margin-top:2px}
+.h-row-del{background:none;border:none;color:#B03030;cursor:pointer;font-size:14px;padding:4px}
 
 /* RESULT */
 .result{margin:10px 8px}
@@ -243,6 +274,10 @@ footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spa
       <option value="求突破變革">求突破變革</option>
     </select>
   </div>
+  <button class="btn-ritual" onclick="toggleRitual()" type="button">☯ 起局須知 / 起局儀式</button>
+  <div class="ritual-panel" id="ritualPanel" style="display:none"></div>
+  <button class="btn-ritual" onclick="toggleHistory()" type="button">🕘 起局歷史記錄</button>
+  <div class="ritual-panel" id="historyPanel" style="display:none"></div>
   <button class="btn-calc" onclick="calc()">起　局</button>
 </div>
 
@@ -753,6 +788,49 @@ const LEX_DATA = {
 if (typeof module !== 'undefined' && module.exports) module.exports = LEX_DATA;
 if (typeof window !== 'undefined') window.LEX_DATA = LEX_DATA;
 
+/* ══ 起局儀軌 RITUAL_DATA ══════════════════════════
+   來源：荀爽老師視頻截圖逐字轉錄（起局前的可/不可起局判斷、起局儀式口訣、
+   起局後成效篤定原則、有效期與封局規則）。此為民俗儀軌文字，非命理算法，
+   純供使用者參考執行，不影響排盤本身的計算邏輯。
+*/
+const RITUAL_DATA = {
+  // 起局前自我檢查: 三不起局 / 三可起局
+  notOk: ['蒜皮小事，不起局！','心亂如麻，不起局！','害人害己，不起局！'],
+  ok: ['利我利他，可起局！','心念純一，才起局！','絕境求生，必起局！'],
+  oneEventOneJu: {title:'一事只起一局', note:'事無變化，不起新局'},
+
+  // 起局前儀式
+  preRitual: {
+    action: '面向北方 · 點頭示意（也可鞠躬或作揖），向中國傳統致敬',
+    incantationClassic: '天門天門，急來開之。我欲為某事，要往殿廷。速為抽取金關，為我速收金鑰。救我形身，輔我勿停。',
+    incantationModern: '所有符號，聽我號令。世間萬象，助我性命。',
+    afterModern: '臨兵鬥者皆陣列前行',
+    note: '古典版與現代版皆代表「當仁不讓、捨我其誰」的唯物正能量氣魄，非迷信祈求，是自我心念的收束與確認。'
+  },
+
+  // 成效篤定原則
+  efficacy: {
+    title: '成效強弱，取決於你的篤定程度',
+    forbid: ['禁止患得患失', '禁止朝三暮四', '禁止左右狐疑', '禁止自我懷疑'],
+    note: '你是符號的主人，是你命令了一切——就堅定走下去。'
+  },
+
+  // 有效期與結束後必須封局
+  validity: {
+    period: '三個月局勢到最強，有可能提前變化結束',
+  },
+  sealAfter: {
+    rule: '結束後必須封局',
+    classic: '古代蓋印',
+    modern: '想想任一位中國英雄，刪掉遁甲局（即從記錄中移除本次起局）',
+  },
+
+  // 完整流程總覽
+  flow: '遇到困難 → 解決不了 → 收束心神 → 起局 → 入局 → 解局(灭象/布阵/換局) → 繼續生活 → 等待變化 → 封局',
+};
+if (typeof module !== 'undefined' && module.exports) module.exports.RITUAL_DATA = RITUAL_DATA;
+if (typeof window !== 'undefined') window.RITUAL_DATA = RITUAL_DATA;
+
 </script>
 
 <script>
@@ -807,6 +885,154 @@ window.openSheet=openSheet;
 window.closeSheet=function(){
   document.getElementById('smask').classList.remove('show');
   document.getElementById('sheet').classList.remove('show');
+};
+
+/* ── 起局須知 / 起局儀式 面板 ── */
+function renderRitualHtml(){
+  const R=RITUAL_DATA;
+  return `
+  <div class="r-sec">
+    <div class="r-title">起局前自我檢查</div>
+    ${R.notOk.map(t=>`<div class="r-no">✕ ${t2(t)}</div>`).join('')}
+    ${R.ok.map(t=>`<div class="r-yes">✓ ${t2(t)}</div>`).join('')}
+    <div style="margin-top:4px">${t2(R.oneEventOneJu.title)}，${t2(R.oneEventOneJu.note)}</div>
+  </div>
+  <div class="r-sec">
+    <div class="r-title">起局前儀式</div>
+    <div>${t2(R.preRitual.action)}</div>
+    <div class="r-quote">${t2(R.preRitual.incantationClassic)}</div>
+    <div style="opacity:.8">（現代版）</div>
+    <div class="r-quote">${t2(R.preRitual.incantationModern)}</div>
+    <div>起局後默念：${t2(R.preRitual.afterModern)}</div>
+  </div>
+  <div class="r-sec">
+    <div class="r-title">${t2(R.efficacy.title)}</div>
+    <div>${R.efficacy.forbid.map(t=>t2(t)).join('，')}</div>
+    <div style="margin-top:3px">${t2(R.efficacy.note)}</div>
+  </div>
+  <div class="r-sec">
+    <div class="r-title">有效期與封局</div>
+    <div>${t2(R.validity.period)}</div>
+    <div>${t2(R.sealAfter.rule)}：古代蓋印 / 現代版——${t2(R.sealAfter.modern)}</div>
+  </div>
+  <div class="r-sec" style="opacity:.75">
+    <div class="r-title">完整流程</div>
+    <div>${t2(R.flow)}</div>
+  </div>`;
+}
+window.toggleRitual=function(){
+  const p=document.getElementById('ritualPanel');
+  if(p.style.display==='none'){
+    p.innerHTML=renderRitualHtml();
+    p.style.display='block';
+  }else{
+    p.style.display='none';
+  }
+};
+
+/* ── 起局歷史記錄 (localStorage, 僅存本機瀏覽器, 不同裝置不互通, 建議定期匯出備份) ── */
+const HISTORY_KEY='qimen_history_v1';
+const HISTORY_MAX=300;
+function loadHistory(){
+  try{
+    const raw=localStorage.getItem(HISTORY_KEY);
+    return raw?JSON.parse(raw):[];
+  }catch(e){ return []; }
+}
+function saveHistoryList(list){
+  try{ localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); }
+  catch(e){ console.warn('歷史記錄儲存失敗(可能是瀏覽器儲存空間已滿)', e); }
+}
+// 只存起局的「輸入條件」與「摘要結果」，不存完整盤面 —— 之後重新排盤用同一套算法算，
+// 未來算法若有修正，回看歷史時會自動用最新邏輯重算，而不是凍結在存檔當下的舊結果
+function pushHistoryRecord(rec){
+  const list=loadHistory();
+  list.unshift(rec); // 最新的放最前面
+  if(list.length>HISTORY_MAX) list.length=HISTORY_MAX;
+  saveHistoryList(list);
+}
+function deleteHistoryRecord(id){
+  const list=loadHistory().filter(r=>r.id!==id);
+  saveHistoryList(list);
+  renderHistoryPanel();
+}
+function clearHistoryAll(){
+  if(!confirm('確定清空全部起局歷史記錄？此操作無法復原。'))return;
+  saveHistoryList([]);
+  renderHistoryPanel();
+}
+function reloadHistoryRecord(id){
+  const rec=loadHistory().find(r=>r.id===id);
+  if(!rec)return;
+  document.getElementById('iDate').value=rec.dateStr;
+  document.getElementById('iTime').value=rec.timeStr;
+  document.getElementById('iNeed').value=rec.needKey||'求財';
+  document.getElementById('ritualPanel').style.display='none';
+  document.getElementById('historyPanel').style.display='none';
+  calc();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function exportHistoryJson(){
+  const list=loadHistory();
+  const blob=new Blob([JSON.stringify(list,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`qimen_history_${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function importHistoryJson(fileInput){
+  const file=fileInput.files&&fileInput.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const imported=JSON.parse(e.target.result);
+      if(!Array.isArray(imported))throw new Error('格式不對');
+      const existing=loadHistory();
+      const existingIds=new Set(existing.map(r=>r.id));
+      const merged=existing.concat(imported.filter(r=>r&&r.id&&!existingIds.has(r.id)));
+      merged.sort((a,b)=>b.id-a.id);
+      saveHistoryList(merged.slice(0,HISTORY_MAX));
+      renderHistoryPanel();
+      alert(`已匯入，目前共有 ${merged.length} 筆歷史記錄`);
+    }catch(err){ alert('匯入失敗：檔案格式不正確'); }
+  };
+  reader.readAsText(file);
+  fileInput.value='';
+}
+function renderHistoryPanel(){
+  const p=document.getElementById('historyPanel');
+  const list=loadHistory();
+  const rows=list.map(r=>`
+    <div class="h-row">
+      <div class="h-row-main" onclick="reloadHistoryRecord(${r.id})">
+        <div class="h-row-date">${r.dateStr} ${r.timeStr}</div>
+        <div class="h-row-info">${t2(r.juLabel||'')} · ${t2(r.gz||'')}${r.needKey?(' · 所求：'+r.needKey):''}</div>
+        ${r.hitsSummary?`<div class="h-row-hits">${t2(r.hitsSummary)}</div>`:''}
+      </div>
+      <button class="h-row-del" onclick="deleteHistoryRecord(${r.id})" title="刪除">✕</button>
+    </div>`).join('');
+  p.innerHTML=`
+    <div class="h-toolbar">
+      <span>共 ${list.length} 筆記錄（僅存本機瀏覽器）</span>
+      <button class="h-btn" onclick="exportHistoryJson()">匯出備份</button>
+      <label class="h-btn" style="cursor:pointer">匯入
+        <input type="file" accept="application/json" style="display:none" onchange="importHistoryJson(this)">
+      </label>
+      <button class="h-btn h-btn-danger" onclick="clearHistoryAll()">清空</button>
+    </div>
+    <div class="h-list">${rows||'<div style="opacity:.6;padding:10px 0">尚無記錄</div>'}</div>`;
+}
+window.toggleHistory=function(){
+  const p=document.getElementById('historyPanel');
+  if(p.style.display==='none'){
+    renderHistoryPanel();
+    p.style.display='block';
+    document.getElementById('ritualPanel').style.display='none';
+  }else{
+    p.style.display='none';
+  }
 };
 
 /* ── 資料常量 ── */
@@ -1178,6 +1404,9 @@ function renderPan(pan,y,m,d,h,mi,needKey){
         <div class="meta-v">${jq}</div>
       </div>
     </div>
+    <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #E5D5A8;font-size:11px;opacity:.75">
+      本局有效期約三個月（局勢到最強，也可能提前變化結束），一事只起一局，事無變化不起新局。用完記得封局。
+    </div>
   </div>
 
   <div class="pan-wrap">
@@ -1289,6 +1518,24 @@ function renderPan(pan,y,m,d,h,mi,needKey){
   </div>`;
 
   document.getElementById('result').innerHTML=html;
+
+  /* 存入起局歷史記錄 (只存輸入條件與摘要, 不存完整盤面, 便於未來以最新算法回看) */
+  const hitLabels=[];
+  if(Object.keys(jixingHits).length)hitLabels.push('刑');
+  if(Object.keys(rumuHits).length)hitLabels.push('墓');
+  if(Object.keys(gengHits).length)hitLabels.push('庚');
+  if(Object.keys(baihuHits).length)hitLabels.push('虎');
+  if(Object.keys(menpoHits).length)hitLabels.push('迫');
+  if(Object.keys(kongGongMap).filter(g=>g!=='中').length)hitLabels.push('空');
+  pushHistoryRecord({
+    id: Date.now(),
+    dateStr: `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`,
+    timeStr: `${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}`,
+    needKey,
+    juLabel,
+    gz,
+    hitsSummary: hitLabels.length?`六害命中：${hitLabels.join('、')}`:'六害：無命中',
+  });
 }
 
 /* ── 初始化 ── */
