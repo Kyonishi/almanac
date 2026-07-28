@@ -1,0 +1,11 @@
+{
+  "name": "almanac",
+  "private": true,
+  "description": "萬年曆 + 奇門遁甲 (拆補法)",
+  "scripts": {
+    "test": "node tests/regression.test.js"
+  },
+  "devDependencies": {
+    "lunar-javascript": "^1.7.7"
+  }
+}
