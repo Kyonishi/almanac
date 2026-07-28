@@ -187,9 +187,20 @@ header{
 .liuhai-sec:last-child{margin-bottom:0}
 .liuhai-title{font-weight:700;margin-bottom:4px;letter-spacing:1px;display:flex;align-items:center;gap:5px}
 .liuhai-title .dot{width:6px;height:6px;border-radius:50%;display:inline-block}
-.liuhai-title.jx .dot{background:var(--red)}
-.liuhai-title.rm .dot{background:#1565C0}
-.liuhai-title.mp .dot{background:#E67E22}
+/* 六害配色 據荀爽視頻「六害」對照表逐字轉錄: 刑=紅 墓=淺藍 庚=金黃 迫=金黃 虎=金黃 空=藍
+   (其餘說明文字不額外上色, 沿用預設文字色) */
+.lh-word{font-weight:700}
+.lh-xing{color:#C0392B} /* 刑：紅 */
+.lh-mu{color:#4FC3F7}   /* 墓：淺藍 */
+.lh-geng{color:#D4AF37} /* 庚：金黃 */
+.lh-po{color:#4A9B4A}   /* 迫：綠 */
+.lh-hu{color:#D4AF37}   /* 虎：金黃 */
+.lh-kong{color:#2E6FD9} /* 空：藍 */
+.liuhai-title.jx .dot{background:#C0392B}
+.liuhai-title.rm .dot{background:#4FC3F7}
+.liuhai-title.mp .dot{background:#D4AF37}
+.liuhai-title.po .dot{background:#4A9B4A}
+.liuhai-title.kw .dot{background:#2E6FD9}
 .cure-line{margin-top:3px;padding:6px 8px;background:#FFF3F3;border-radius:6px;font-size:12px;line-height:1.6}
 
 
@@ -316,7 +327,7 @@ const CNUMBER = ['一','二','三','四','五','六','七','八','九']; // 1-9 
 const EIGHT_GUA = ['坎','坤','震','巽','中','乾','兌','艮','離']; // index by CNUMBER position (1-9)
 const CLOCKWISE_EIGHTGUA = ['坎','艮','震','巽','離','坤','兌','乾']; // 8 palaces only, clockwise order, no 中
 const DOOR_R = ['休','生','傷','杜','景','死','驚','開'];
-const STAR_R = ['蓬','任','沖','輔','英','禽','柱','心'];
+const STAR_R = ['蓬','任','沖','輔','英','芮','柱','心'];
 // 注意: 此陣列已依荀爽老師實測案例(1901-04-13 14:30)校正 —
 // 陽遁採用「虎玄」而非 kinqimen 預設的「勾雀」，陰遁則相反
 const GOD_YANG = ['符','蛇','陰','合','虎','玄','地','天'];
@@ -1438,7 +1449,7 @@ function renderPan(pan,y,m,d,h,mi,needKey){
 
     if(Object.keys(jixingHits).length){
       html+=`<div class="liuhai-sec">
-        <div class="liuhai-title jx"><span class="dot"></span>刑（嚴重度最高，灭象：${MIEXIANG_RULE['刑'].action}，布阵：用合）</div>
+        <div class="liuhai-title jx"><span class="dot"></span><span class="lh-word lh-xing">刑</span>（嚴重度最高，灭象：${MIEXIANG_RULE['刑'].action}，布阵：用合）</div>
         ${Object.entries(jixingHits).map(([g,st])=>{
           const cure=getCureForJiXing(g,st);
           return `<div>· ${T2(g)}宮　天干${T2(st)}擊刑${cureLine(cure)}</div>`;
@@ -1448,7 +1459,7 @@ function renderPan(pan,y,m,d,h,mi,needKey){
 
     if(Object.keys(rumuHits).length){
       html+=`<div class="liuhai-sec">
-        <div class="liuhai-title rm"><span class="dot"></span>墓（灭象：${MIEXIANG_RULE['墓'].action}，布阵：用冲）</div>
+        <div class="liuhai-title rm"><span class="dot"></span><span class="lh-word lh-mu">墓</span>（灭象：${MIEXIANG_RULE['墓'].action}，布阵：用冲）</div>
         ${Object.entries(rumuHits).map(([g,st])=>{
           const cure=getCureForRuMu(g,st);
           return `<div>· ${T2(g)}宮　天干${T2(st)}入墓${cureLine(cure)}</div>`;
@@ -1458,7 +1469,7 @@ function renderPan(pan,y,m,d,h,mi,needKey){
 
     if(Object.keys(gengHits).length){
       html+=`<div class="liuhai-sec">
-        <div class="liuhai-title jx"><span class="dot"></span>庚（灭象：${MIEXIANG_RULE['庚'].action}，布阵：無腦用乙）</div>
+        <div class="liuhai-title mp"><span class="dot"></span><span class="lh-word lh-geng">庚</span>（灭象：${MIEXIANG_RULE['庚'].action}，布阵：無腦用乙）</div>
         ${Object.entries(gengHits).map(([g,st])=>{
           const cure=getCureForGengOrHu(g,'庚');
           return `<div>· ${T2(g)}宮　天干庚${cureLine(cure)}</div>`;
@@ -1468,7 +1479,7 @@ function renderPan(pan,y,m,d,h,mi,needKey){
 
     if(Object.keys(baihuHits).length){
       html+=`<div class="liuhai-sec">
-        <div class="liuhai-title rm"><span class="dot"></span>虎（白虎，布阵：無腦用乙；灭象動作暫沿用「刑」的通用規則，未經視頻明確驗證）</div>
+        <div class="liuhai-title mp"><span class="dot"></span><span class="lh-word lh-hu">虎</span>（白虎，布阵：無腦用乙；灭象動作暫沿用「刑」的通用規則，未經視頻明確驗證）</div>
         ${Object.entries(baihuHits).map(([g,gd])=>{
           const cure=getCureForGengOrHu(g,'虎');
           return `<div>· ${T2(g)}宮　白虎${cureLine(cure)}</div>`;
@@ -1478,7 +1489,7 @@ function renderPan(pan,y,m,d,h,mi,needKey){
 
     if(Object.keys(menpoHits).length){
       html+=`<div class="liuhai-sec">
-        <div class="liuhai-title mp"><span class="dot"></span>迫（門迫，壓力脅迫，門克宮；布阵：用合）</div>
+        <div class="liuhai-title po"><span class="dot"></span><span class="lh-word lh-po">迫</span>（門迫，壓力脅迫，門克宮；布阵：用合）</div>
         ${Object.entries(menpoHits).map(([g,dr])=>{
           const cure=getCureForMenPo(g);
           const cureHtml=cure?`<div class="cure-line">→ 用合：擺放「${cure.doorsText}」門象、對應地支「${cure.branchesText}」</div>`:'';
@@ -1489,7 +1500,7 @@ function renderPan(pan,y,m,d,h,mi,needKey){
 
     if(kongHitGongs.length){
       html+=`<div class="liuhai-sec">
-        <div class="liuhai-title mp"><span class="dot"></span>空（空亡，嚴重度最低，布阵：缺啥補啥——目前所求「${needKey}」）</div>
+        <div class="liuhai-title kw"><span class="dot"></span><span class="lh-word lh-kong">空</span>（空亡，嚴重度最低，布阵：缺啥補啥——目前所求「${needKey}」）</div>
         ${kongHitGongs.map(g=>{
           const cure=getCureForKongWang(g,needKey);
           return `<div>· ${T2(g)}宮　空亡（${kongGongMap[g].join('')}空）${cureLine(cure)}</div>`;
