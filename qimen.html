@@ -76,6 +76,14 @@ header{
 .h-row-info{opacity:.8;font-size:11.5px}
 .h-row-hits{font-size:11px;color:var(--red);margin-top:2px}
 .h-row-del{background:none;border:none;color:#B03030;cursor:pointer;font-size:14px;padding:4px}
+.h-row-top{display:flex;align-items:flex-start;gap:6px}
+.h-badge{font-size:10px;padding:1px 6px;border-radius:8px;margin-left:6px;font-weight:700}
+.h-badge-done{background:#E3F2E3;color:#2E7D32}
+.h-badge-todo{background:#F0F0F0;color:#999}
+.h-review{margin-top:6px}
+.h-review-input{width:100%;min-height:44px;box-sizing:border-box;border:1px solid #DDD;border-radius:6px;
+  padding:6px 8px;font-size:12px;font-family:inherit;resize:vertical;margin-bottom:4px}
+.h-review-input:focus{outline:none;border-color:var(--gold)}
 
 /* RESULT */
 .result{margin:10px 8px}
@@ -202,6 +210,9 @@ header{
 .liuhai-title.po .dot{background:#4A9B4A}
 .liuhai-title.kw .dot{background:#2E6FD9}
 .cure-line{margin-top:3px;padding:6px 8px;background:#FFF3F3;border-radius:6px;font-size:12px;line-height:1.6}
+.hl-badge{font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px;font-weight:700}
+.hl-hit{background:#FDE8E8;color:var(--red)}
+.hl-bg{background:#EFEFEF;color:#888}
 
 
 /* cross-nav */
@@ -272,6 +283,10 @@ footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spa
   <div class="input-row">
     <div class="input-label">時間</div>
     <input class="inp" type="time" id="iTime">
+  </div>
+  <div class="input-row">
+    <div class="input-label">生年</div>
+    <input class="inp" type="text" id="iYears" placeholder="家中長住者生年,如 1990,1988,2015">
   </div>
   <div class="input-row">
     <div class="input-label">所求</div>
@@ -978,6 +993,7 @@ function reloadHistoryRecord(id){
   document.getElementById('iDate').value=rec.dateStr;
   document.getElementById('iTime').value=rec.timeStr;
   document.getElementById('iNeed').value=rec.needKey||'求財';
+  document.getElementById('iYears').value=rec.yearsInput||'';
   document.getElementById('ritualPanel').style.display='none';
   document.getElementById('historyPanel').style.display='none';
   calc();
@@ -1012,18 +1028,33 @@ function importHistoryJson(fileInput){
   reader.readAsText(file);
   fileInput.value='';
 }
+/* 簡易 HTML 轉義, 避免復盤文字裡的 < > 等符號破壞畫面結構 */
+function escHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 function renderHistoryPanel(){
   const p=document.getElementById('historyPanel');
   const list=loadHistory();
-  const rows=list.map(r=>`
+  const rows=list.map(r=>{
+    const reviewed=r.review&&r.review.trim();
+    return `
     <div class="h-row">
-      <div class="h-row-main" onclick="reloadHistoryRecord(${r.id})">
-        <div class="h-row-date">${r.dateStr} ${r.timeStr}</div>
-        <div class="h-row-info">${t2(r.juLabel||'')} · ${t2(r.gz||'')}${r.needKey?(' · 所求：'+r.needKey):''}</div>
-        ${r.hitsSummary?`<div class="h-row-hits">${t2(r.hitsSummary)}</div>`:''}
+      <div class="h-row-top">
+        <div class="h-row-main" onclick="reloadHistoryRecord(${r.id})">
+          <div class="h-row-date">${r.dateStr} ${r.timeStr}
+            <span class="h-badge ${reviewed?'h-badge-done':'h-badge-todo'}">${reviewed?'已復盤':'未復盤'}</span>
+          </div>
+          <div class="h-row-info">${t2(r.juLabel||'')} · ${t2(r.gz||'')}${r.needKey?(' · 所求：'+r.needKey):''}</div>
+          ${r.hitsSummary?`<div class="h-row-hits">${t2(r.hitsSummary)}</div>`:''}
+        </div>
+        <button class="h-row-del" onclick="deleteHistoryRecord(${r.id})" title="刪除">✕</button>
       </div>
-      <button class="h-row-del" onclick="deleteHistoryRecord(${r.id})" title="刪除">✕</button>
-    </div>`).join('');
+      <div class="h-review">
+        <textarea class="h-review-input" id="review_${r.id}" placeholder="事後回看：這局準不準？實際發生了什麼？（用來校對方法論）">${r.review?escHtml(r.review):''}</textarea>
+        <button class="h-btn" onclick="saveReview(${r.id})">保存復盤</button>
+      </div>
+    </div>`;
+  }).join('');
   p.innerHTML=`
     <div class="h-toolbar">
       <span>共 ${list.length} 筆記錄（僅存本機瀏覽器）</span>
@@ -1035,6 +1066,17 @@ function renderHistoryPanel(){
     </div>
     <div class="h-list">${rows||'<div style="opacity:.6;padding:10px 0">尚無記錄</div>'}</div>`;
 }
+function saveReview(id){
+  const list=loadHistory();
+  const rec=list.find(r=>r.id===id);
+  if(!rec)return;
+  const ta=document.getElementById('review_'+id);
+  rec.review=ta?ta.value:'';
+  rec.reviewedAt=Date.now();
+  saveHistoryList(list);
+  renderHistoryPanel();
+}
+window.saveReview=saveReview;
 window.toggleHistory=function(){
   const p=document.getElementById('historyPanel');
   if(p.style.display==='none'){
@@ -1261,6 +1303,46 @@ function getCureForKongWang(gua, needKey){
     verified: typeof target==='string'?true:!!target.verified, note: typeof target==='object'?target.note:undefined};
 }
 
+// ══════════════════ 號令: 日時/生年/意象/符使 四要素 ══════════════════
+// 來源: 荀爽視頻「保護各干」截圖逐字轉錄
+// 生年天干對照表 (西元年尾數 → 天干): 0庚 1辛 2壬 3癸 4甲 5乙 6丙 7丁 8戊 9己
+const YEAR_LASTDIGIT_STEM={0:'庚',1:'辛',2:'壬',3:'癸',4:'甲',5:'乙',6:'丙',7:'丁',8:'戊',9:'己'};
+function yearToStem(year){
+  const y=parseInt(year,10);
+  if(isNaN(y))return null;
+  return YEAR_LASTDIGIT_STEM[((y%10)+10)%10];
+}
+// 從干支字串 (如「甲辰年丙寅月壬戌日己酉時」) 抽出日干/時干
+function parseDayHourStem(ganzhiStr){
+  const m=String(ganzhiStr||'').match(/(.)(.)年(.)(.)月(.)(.)日(.)(.)時/);
+  if(!m)return {dayStem:null, hourStem:null};
+  return {dayStem:m[5], hourStem:m[7]};
+}
+// 解析使用者輸入的多個生年 (逗號/頓號/空白分隔, 支援「家裡長住的所有人」多人同時保護)
+function parseYearsInput(str){
+  if(!str)return [];
+  return String(str).split(/[,，、\s]+/).map(s=>s.trim()).filter(Boolean)
+    .map(yearToStem).filter(Boolean);
+}
+// 組合出本次起局需要保護的天干集合 (號令四要素: 日時/生年/意象/符使)
+function buildProtectedStems(ganzhiStr, yearsInput, needKey, zhifuStem){
+  const set=new Set();
+  const {dayStem,hourStem}=parseDayHourStem(ganzhiStr);
+  if(dayStem)set.add(dayStem);
+  if(hourStem)set.add(hourStem);
+  parseYearsInput(yearsInput).forEach(s=>set.add(s));
+  const target=NEED_TO_STEM[needKey];
+  const needStem=typeof target==='string'?target:(target&&target.stem);
+  if(needStem)set.add(needStem);
+  if(zhifuStem)set.add(zhifuStem);
+  return set;
+}
+// 判斷某宮是否「命中號令」: 該宮的天盤干或地盤干落在保護天干集合內
+function gongHitsProtected(gua, sky, earth, protectedStems){
+  if(!protectedStems||protectedStems.size===0)return false;
+  return protectedStems.has(sky[gua])||protectedStems.has(earth[gua]);
+}
+
 /* 吉凶判斷 (簡易版) */
 const JI_DOOR=new Set(['休','生','開']);
 const XIONG_DOOR=new Set(['死','驚','傷']);
@@ -1296,9 +1378,10 @@ function calc(){
   const [y,m,d]=dv.split('-').map(Number);
   const [h,mi]=tv.split(':').map(Number);
   const needKey=document.getElementById('iNeed').value;
+  const yearsInput=document.getElementById('iYears').value;
   try{
     const pan=QimenJS.qimenChaibu(Solar,y,m,d,h,mi);
-    renderPan(pan,y,m,d,h,mi,needKey);
+    renderPan(pan,y,m,d,h,mi,needKey,yearsInput);
   }catch(e){
     document.getElementById('result').innerHTML=
       `<div class="empty"><div class="big">⚠</div>起局失敗：${e.message}</div>`;
@@ -1306,7 +1389,7 @@ function calc(){
 }
 
 /* ── 渲染盤面 ── */
-function renderPan(pan,y,m,d,h,mi,needKey){
+function renderPan(pan,y,m,d,h,mi,needKey,yearsInput){
   needKey=needKey||'求財';
   const sky=pan.天盤||{}, earth=pan.地盤||{};
   const door=pan.門||{}, star=pan.星||{}, god=pan.神||{};
@@ -1325,6 +1408,11 @@ function renderPan(pan,y,m,d,h,mi,needKey){
   const menpoHits=checkMenPo(door);
   const gengHits=checkGeng(sky);
   const baihuHits=checkBaiHu(god);
+
+  /* 號令: 日時/生年/意象/符使 四要素合併的保護天干集合 */
+  const zhifuStem=zfzs.值符天干?zfzs.值符天干[1]:null;
+  const protectedStems=buildProtectedStems(pan.干支, yearsInput, needKey, zhifuStem);
+  const hasProtected=protectedStems.size>0;
 
   /* 值符/值使宮判斷 (中宮值符寄坤) */
   const realZfGong=zfGong==='中'?'坤':zfGong;
@@ -1444,15 +1532,26 @@ function renderPan(pan,y,m,d,h,mi,needKey){
         <span style="opacity:.85">字：${x.wu?x.wu:''}　字：${x.zi}</span><br>
         <span style="opacity:.85">意：${x.yi}　行：${x.xing}</span></div>`;
     };
+    // 標記該條六害是否「命中號令」(日時/生年/意象/符使 之一): 命中者正常顯示, 未命中者弱化
+    const hlTag=(isHit)=>isHit
+      ?`<span class="hl-badge hl-hit">命中號令</span>`
+      :`<span class="hl-badge hl-bg">背景凶象</span>`;
+    const rowClass=(isHit)=>isHit?'':' style="opacity:.45"';
 
     let html='<div class="liuhai-card">';
+    if(hasProtected){
+      html+=`<div style="font-size:11px;opacity:.7;margin-bottom:8px">
+        本次號令保護天干：${[...protectedStems].map(s=>T2(s)).join('、')}
+        （日時/生年/意象/符使）——只有命中這些天干或其所在宮位，才是真正衝著這次問事來的凶象；其餘為盤面背景，僅供參考</div>`;
+    }
 
     if(Object.keys(jixingHits).length){
       html+=`<div class="liuhai-sec">
         <div class="liuhai-title jx"><span class="dot"></span><span class="lh-word lh-xing">刑</span>（嚴重度最高，灭象：${MIEXIANG_RULE['刑'].action}，布阵：用合）</div>
         ${Object.entries(jixingHits).map(([g,st])=>{
+          const isHit=protectedStems.has(st);
           const cure=getCureForJiXing(g,st);
-          return `<div>· ${T2(g)}宮　天干${T2(st)}擊刑${cureLine(cure)}</div>`;
+          return `<div${rowClass(isHit)}>· ${T2(g)}宮　天干${T2(st)}擊刑 ${hlTag(isHit)}${cureLine(cure)}</div>`;
         }).join('')}
       </div>`;
     }
@@ -1461,8 +1560,9 @@ function renderPan(pan,y,m,d,h,mi,needKey){
       html+=`<div class="liuhai-sec">
         <div class="liuhai-title rm"><span class="dot"></span><span class="lh-word lh-mu">墓</span>（灭象：${MIEXIANG_RULE['墓'].action}，布阵：用冲）</div>
         ${Object.entries(rumuHits).map(([g,st])=>{
+          const isHit=protectedStems.has(st);
           const cure=getCureForRuMu(g,st);
-          return `<div>· ${T2(g)}宮　天干${T2(st)}入墓${cureLine(cure)}</div>`;
+          return `<div${rowClass(isHit)}>· ${T2(g)}宮　天干${T2(st)}入墓 ${hlTag(isHit)}${cureLine(cure)}</div>`;
         }).join('')}
       </div>`;
     }
@@ -1471,8 +1571,9 @@ function renderPan(pan,y,m,d,h,mi,needKey){
       html+=`<div class="liuhai-sec">
         <div class="liuhai-title mp"><span class="dot"></span><span class="lh-word lh-geng">庚</span>（灭象：${MIEXIANG_RULE['庚'].action}，布阵：無腦用乙）</div>
         ${Object.entries(gengHits).map(([g,st])=>{
+          const isHit=protectedStems.has('庚');
           const cure=getCureForGengOrHu(g,'庚');
-          return `<div>· ${T2(g)}宮　天干庚${cureLine(cure)}</div>`;
+          return `<div${rowClass(isHit)}>· ${T2(g)}宮　天干庚 ${hlTag(isHit)}${cureLine(cure)}</div>`;
         }).join('')}
       </div>`;
     }
@@ -1481,8 +1582,9 @@ function renderPan(pan,y,m,d,h,mi,needKey){
       html+=`<div class="liuhai-sec">
         <div class="liuhai-title mp"><span class="dot"></span><span class="lh-word lh-hu">虎</span>（白虎，布阵：無腦用乙；灭象動作暫沿用「刑」的通用規則，未經視頻明確驗證）</div>
         ${Object.entries(baihuHits).map(([g,gd])=>{
+          const isHit=gongHitsProtected(g,sky,earth,protectedStems);
           const cure=getCureForGengOrHu(g,'虎');
-          return `<div>· ${T2(g)}宮　白虎${cureLine(cure)}</div>`;
+          return `<div${rowClass(isHit)}>· ${T2(g)}宮　白虎 ${hlTag(isHit)}${cureLine(cure)}</div>`;
         }).join('')}
       </div>`;
     }
@@ -1491,19 +1593,20 @@ function renderPan(pan,y,m,d,h,mi,needKey){
       html+=`<div class="liuhai-sec">
         <div class="liuhai-title po"><span class="dot"></span><span class="lh-word lh-po">迫</span>（門迫，壓力脅迫，門克宮；布阵：用合）</div>
         ${Object.entries(menpoHits).map(([g,dr])=>{
+          const isHit=gongHitsProtected(g,sky,earth,protectedStems)||dr===zfzs.值使門宮?.[0];
           const cure=getCureForMenPo(g);
           const cureHtml=cure?`<div class="cure-line">→ 用合：擺放「${cure.doorsText}」門象、對應地支「${cure.branchesText}」</div>`:'';
-          return `<div>· ${T2(g)}宮　${T2(dr)}門迫${cureHtml}</div>`;
+          return `<div${rowClass(isHit)}>· ${T2(g)}宮　${T2(dr)}門迫 ${hlTag(isHit)}${cureHtml}</div>`;
         }).join('')}
       </div>`;
     }
 
     if(kongHitGongs.length){
       html+=`<div class="liuhai-sec">
-        <div class="liuhai-title kw"><span class="dot"></span><span class="lh-word lh-kong">空</span>（空亡，嚴重度最低，布阵：缺啥補啥——目前所求「${needKey}」）</div>
+        <div class="liuhai-title kw"><span class="dot"></span><span class="lh-word lh-kong">空</span>（空亡，嚴重度最低，源自日時本身，布阵：缺啥補啥——目前所求「${needKey}」）</div>
         ${kongHitGongs.map(g=>{
           const cure=getCureForKongWang(g,needKey);
-          return `<div>· ${T2(g)}宮　空亡（${kongGongMap[g].join('')}空）${cureLine(cure)}</div>`;
+          return `<div>· ${T2(g)}宮　空亡（${kongGongMap[g].join('')}空）${hlTag(true)}${cureLine(cure)}</div>`;
         }).join('')}
       </div>`;
     }
@@ -1543,6 +1646,7 @@ function renderPan(pan,y,m,d,h,mi,needKey){
     dateStr: `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`,
     timeStr: `${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}`,
     needKey,
+    yearsInput: yearsInput||'',
     juLabel,
     gz,
     hitsSummary: hitLabels.length?`六害命中：${hitLabels.join('、')}`:'六害：無命中',
