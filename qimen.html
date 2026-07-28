@@ -159,6 +159,7 @@ header{
 .liuhai-title.jx .dot{background:var(--red)}
 .liuhai-title.rm .dot{background:#1565C0}
 .liuhai-title.mp .dot{background:#E67E22}
+.cure-line{margin-top:3px;padding:6px 8px;background:#FFF3F3;border-radius:6px;font-size:12px;line-height:1.6}
 
 
 /* cross-nav */
@@ -229,6 +230,18 @@ footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spa
   <div class="input-row">
     <div class="input-label">時間</div>
     <input class="inp" type="time" id="iTime">
+  </div>
+  <div class="input-row">
+    <div class="input-label">所求</div>
+    <select class="inp" id="iNeed">
+      <option value="求財">求財</option>
+      <option value="求事業">求事業（推導，未經視頻原文驗證）</option>
+      <option value="求權威地位">求權威地位</option>
+      <option value="求表現曝光">求表現曝光</option>
+      <option value="求情感情欲">求情感情欲</option>
+      <option value="求桃花">求桃花（推導，未經視頻原文驗證）</option>
+      <option value="求突破變革">求突破變革</option>
+    </select>
   </div>
   <button class="btn-calc" onclick="calc()">起　局</button>
 </div>
@@ -678,61 +691,61 @@ const LEX_DATA = {
     '亥':{zodiac:'豬', sameAs:'壬', note:'五行屬水（陰），顏色材質同壬：亮藍 · 淨水'},
   },
 
-  // ── 八門 ──
+  // ── 八門：色彩/五行/原始宮位據荀爽視頻截圖交叉核對 ──
   doors: {
-    '休':{name:'休門', keyword:'清閒 · 安逸 · 不爭', desc:'舒適、放鬆、悠閒不理事，性格寬鬆溫和。職業上對應公務員等規律穩定、壓力不大的工作。感情上是理想化的相處狀態：互相呵護、不猜忌、共享平淡美好的時光。過度安逸也可能滋生得過且過、暗箱操作的風氣。'},
-    '生':{name:'生門', keyword:'生機 · 利潤 · 持續', desc:'生生不息，對應生產、生意、利潤、買賣交易。性情樂觀活躍，看待事物的眼光是動態變化的。需留意：若是長期累積的問題（如慢性病），遇生門也代表會持續延續，並非絕對的吉象。'},
-    '傷':{name:'傷門', keyword:'攻擊 · 損壞 · 競技', desc:'伤害、破損、衝突對抗。最常見的取象是「東西壞了」或「人受傷了」。性情上喜歡刺激冒險、競爭性強，適合搏鬥、競技、軍警或執法相關領域，帶有「以暴制暴」的雙面性。'},
-    '杜':{name:'杜門', keyword:'阻隔 · 保密 · 排他', desc:'阻塞、限制、隱藏不外露。對應任何具有保密性、排他性、防禦性質的事物，如商業機密、專利技術。實戰中遇杜門，往往代表這件事有隱情，或者正面臨某種阻礙。'},
-    '景':{name:'景門', keyword:'外觀 · 形象 · 展示', desc:'美麗、顯眼、形象塑造。對應裝飾品、化妝品、各類顯示器（手機、電視螢幕），也代表透過某種媒介去「看」、去呈現事物。過於追求外在光鮮，也可能成為不切實際幻想的來源。'},
-    '死':{name:'死門', keyword:'靜止 · 陳舊 · 固守', desc:'靜止不動、沒有變化。對應老舊物件、長期閒置的東西、固定資產，也跟醫院、喪葬等與終止相關的場所有關。性情深沉保守、固執己見，學習上適合鑽研古老冷門的領域。'},
-    '驚':{name:'驚門', keyword:'口才 · 刺激 · 波動', desc:'驚嚇、口舌是非、嘈雜刺激。與口才、語言表達相關的職業（律師、主播、歌手）都對應驚門，也對應高風險高波動的投機行為。實戰中常見會發出聲響的物件（樂器、鈴鐺）或喧鬧場所。'},
-    '開':{name:'開門', keyword:'公開 · 透明 · 遠行', desc:'開闊、公開、透明。對應公權力、公開場合、團體組織，事業上代表是否有公開的上升管道。因為公開透明，需要保密的事一旦碰上開門容易洩露。也與遠行出差、長途旅行相關。'},
+    '休':{name:'休門', wuxing:'水', color:'藍', origGong:'坎', keyword:'清閒 · 安逸 · 不爭', desc:'舒適、放鬆、悠閒不理事，性格寬鬆溫和。職業上對應公務員等規律穩定、壓力不大的工作。感情上是理想化的相處狀態：互相呵護、不猜忌、共享平淡美好的時光。過度安逸也可能滋生得過且過、暗箱操作的風氣。'},
+    '生':{name:'生門', wuxing:'土', color:'黃褐', origGong:'艮', keyword:'生機 · 利潤 · 持續', desc:'生生不息，對應生產、生意、利潤、買賣交易。性情樂觀活躍，看待事物的眼光是動態變化的。需留意：若是長期累積的問題（如慢性病），遇生門也代表會持續延續，並非絕對的吉象。'},
+    '傷':{name:'傷門', wuxing:'木', color:'綠', origGong:'震', keyword:'攻擊 · 損壞 · 競技', desc:'伤害、破損、衝突對抗。最常見的取象是「東西壞了」或「人受傷了」。性情上喜歡刺激冒險、競爭性強，適合搏鬥、競技、軍警或執法相關領域，帶有「以暴制暴」的雙面性。'},
+    '杜':{name:'杜門', wuxing:'木', color:'綠', origGong:'巽', keyword:'阻隔 · 保密 · 排他', desc:'阻塞、限制、隱藏不外露。對應任何具有保密性、排他性、防禦性質的事物，如商業機密、專利技術。實戰中遇杜門，往往代表這件事有隱情，或者正面臨某種阻礙。'},
+    '景':{name:'景門', wuxing:'火', color:'紅', origGong:'離', keyword:'外觀 · 形象 · 展示', desc:'美麗、顯眼、形象塑造。對應裝飾品、化妝品、各類顯示器（手機、電視螢幕），也代表透過某種媒介去「看」、去呈現事物。過於追求外在光鮮，也可能成為不切實際幻想的來源。'},
+    '死':{name:'死門', wuxing:'土', color:'黃', origGong:'坤', keyword:'靜止 · 陳舊 · 固守', desc:'靜止不動、沒有變化。對應老舊物件、長期閒置的東西、固定資產，也跟醫院、喪葬等與終止相關的場所有關。性情深沉保守、固執己見，學習上適合鑽研古老冷門的領域。'},
+    '驚':{name:'驚門', wuxing:'金', color:'金黃', origGong:'兌', keyword:'口才 · 刺激 · 波動', desc:'驚嚇、口舌是非、嘈雜刺激。與口才、語言表達相關的職業（律師、主播、歌手）都對應驚門，也對應高風險高波動的投機行為。實戰中常見會發出聲響的物件（樂器、鈴鐺）或喧鬧場所。'},
+    '開':{name:'開門', wuxing:'金', color:'金黃', origGong:'乾', keyword:'公開 · 透明 · 遠行', desc:'開闊、公開、透明。對應公權力、公開場合、團體組織，事業上代表是否有公開的上升管道。因為公開透明，需要保密的事一旦碰上開門容易洩露。也與遠行出差、長途旅行相關。'},
   },
 
-  // ── 九星 ──
+  // ── 九星：色彩據荀爽視頻截圖交叉核對（天禽鎮中宮不參與變化，顏色未見視頻明說，暫standard土黃，需覆核）──
   stars: {
-    '蓬':{name:'天蓬星', wuxing:'水', luck:'凶', keyword:'冒險 · 風流 · 善變',
+    '蓬':{name:'天蓬星', wuxing:'水', color:'黑', luck:'凶', keyword:'冒險 · 風流 · 善變',
       desc:'性格像古代游俠，膽大有魄力、臨機應變，但也好色、性格多變、行事不按常理。適合做需要打破常規、邊緣突破的事，正派經營容易出狀況，行事帶有「危險的魅力」。物相上對應蓬鬆物（雨傘、棚架）。'},
-    '任':{name:'天任星', wuxing:'土', luck:'吉', keyword:'忠厚 · 穩重 · 任勞任怨',
+    '任':{name:'天任星', wuxing:'土', color:'黃', luck:'吉', keyword:'忠厚 · 穩重 · 任勞任怨',
       desc:'性格像踏實的農民或工人，忠厚老實、穩重保守、不願冒險，缺點是略顯無趣、缺乏魅力。適合從事規章制度明確、不需自行承擔風險的穩定工作。'},
-    '沖':{name:'天冲星', wuxing:'木', luck:'次吉', keyword:'衝動 · 正直 · 行動力',
+    '沖':{name:'天冲星', wuxing:'木', color:'綠', luck:'次吉', keyword:'衝動 · 正直 · 行動力',
       desc:'好動易衝動，但正直仁義、剛健果決，行事雷厲風行，跑得快、反應快。對應運動員、軍警等需要爆發力與行動力的職業。狀態不佳時則表現為魯莽暴躁。'},
-    '輔':{name:'天輔星', wuxing:'木', luck:'吉', keyword:'溫文 · 學識 · 輔佐',
+    '輔':{name:'天輔星', wuxing:'木', color:'綠藍', luck:'吉', keyword:'溫文 · 學識 · 輔佐',
       desc:'溫柔浪漫、言行高雅、有修養有學識，對應文化教育領域，利於考試升學。狀態不佳時則顯得迂腐懦弱、缺乏主見、優柔寡斷。'},
-    '英':{name:'天英星', wuxing:'火', luck:'中平', keyword:'名氣 · 表現 · 急躁',
+    '英':{name:'天英星', wuxing:'火', color:'紅', luck:'中平', keyword:'名氣 · 表現 · 急躁',
       desc:'重視名譽與禮節，擅長交際應酬，與火、媒體、影視等領域相關。狀態不佳時則脾氣急躁、虛榮愛面子、容易動怒。'},
-    '芮':{name:'天芮星', wuxing:'土', luck:'凶', keyword:'疾病 · 學習 · 包容',
+    '芮':{name:'天芮星', wuxing:'土', color:'黃', luck:'凶', keyword:'疾病 · 學習 · 包容',
       desc:'傳統上的「病星」，奇門占問疾病健康多以此星為主要參考。正面特質是好學、忠厚大度、樂於交友；狀態不佳時則貪婪自私、體質較弱。'},
-    '禽':{name:'天禽星', wuxing:'土', luck:'吉', keyword:'誠信 · 穩重 · 居中',
+    '禽':{name:'天禽星', wuxing:'土', color:'黃', luck:'吉', keyword:'誠信 · 穩重 · 居中',
       desc:'具大地中心之土性，忠誠老實、厚德載物，行事循規蹈矩、值得信賴。永遠寄居坤二宮，象徵居中調度、不偏不倚的核心角色。狀態不佳時則顯得死板僵化。'},
-    '柱':{name:'天柱星', wuxing:'金', luck:'凶', keyword:'善辯 · 中流砥柱 · 叛逆',
+    '柱':{name:'天柱星', wuxing:'金', color:'白', luck:'凶', keyword:'善辯 · 中流砥柱 · 叛逆',
       desc:'能言善辯，外冷內熱，對應律師、演員、軍警等需要口才或對抗性的職業，兼具建設與破壞兩種力量。狀態不佳時則性格叛逆、容易流於空想。'},
-    '心':{name:'天心星', wuxing:'金', luck:'吉', keyword:'領導 · 醫術 · 心機',
+    '心':{name:'天心星', wuxing:'金', color:'白', luck:'吉', keyword:'領導 · 醫術 · 心機',
       desc:'聰明能幹、有領導才能，也對應醫療、哲學等需要縝密心思的領域，能屈能伸、做事周全。狀態不佳時則心機過重、工於算計。'},
   },
 
-  // ── 八神 ──
+  // ── 八神：色彩據荀爽視頻截圖交叉核對（勾陳/朱雀為十神變體，視頻未涉及，顏色暫缺）──
   gods: {
-    '符':{name:'值符', wuxing:'土', luck:'吉', keyword:'權威 · 貴人 · 化解',
+    '符':{name:'值符', wuxing:'火', color:'紅', luck:'吉', keyword:'權威 · 貴人 · 化解',
       desc:'諸神之首，至吉之神。所到之處能化凶為吉，即使遇上最凶猛的煞氣也會被壓制收斂。對應長官、貴人、核心人物，也象徵局勢有了主心骨。'},
-    '蛇':{name:'螣蛇', wuxing:'火', luck:'凶', keyword:'虛驚 · 多疑 · 變化',
+    '蛇':{name:'螣蛇', wuxing:'火', color:'紅', luck:'凶', keyword:'虛驚 · 多疑 · 變化',
       desc:'性格虛偽、口舌尖刻、疑神疑鬼，對應怪夢、虛驚、變化無常、糾纏不清的狀況。也常與宗教信仰或玄學興趣有所關聯。'},
-    '陰':{name:'太陰', wuxing:'金', luck:'吉', keyword:'隱秘 · 謀略 · 庇護',
+    '陰':{name:'太陰', wuxing:'金', color:'黃', luck:'吉', keyword:'隱秘 · 謀略 · 庇護',
       desc:'深藏不露、善於謀劃布局，利於密謀策劃、避難隱蔽之事。也常代表女性、私密、暗中相助的力量。'},
-    '合':{name:'六合', wuxing:'木', luck:'吉', keyword:'和合 · 人緣 · 中介',
+    '合':{name:'六合', wuxing:'木', color:'綠', luck:'吉', keyword:'和合 · 人緣 · 中介',
       desc:'性格隨和、人緣極佳、擅長居中協調，對應婚姻媒合、合作談判、交易仲介等需要橋樑角色的事務。'},
     '勾':{name:'勾陳', wuxing:'土', luck:'凶', keyword:'糾纏 · 拖延 · 牽絆',
       desc:'隱於白虎之下的角色，性格牽滯纏繞，象徵事情拖泥帶水、難以了結，常與田產、訴訟糾紛相關。'},
     '雀':{name:'朱雀', wuxing:'火', luck:'凶', keyword:'口舌 · 文書 · 是非',
       desc:'隱於玄武之下，掌文書與口舌之事。得勢時主文件公文往來順利，失勢時則代表口舌是非、糾紛不斷。'},
-    '虎':{name:'白虎', wuxing:'金', luck:'凶', keyword:'剛猛 · 衝突 · 意外',
+    '虎':{name:'白虎', wuxing:'金', color:'黃', luck:'凶', keyword:'剛猛 · 衝突 · 意外',
       desc:'性格剛烈好鬥，對應打鬥衝突、交通意外、傷病喪事等突發性危險，也可代表掌握實權或武力的一方。'},
-    '玄':{name:'玄武', wuxing:'水', luck:'凶', keyword:'盜竊 · 欺瞞 · 暗昧',
+    '玄':{name:'玄武', wuxing:'水', color:'藍', luck:'凶', keyword:'盜竊 · 欺瞞 · 暗昧',
       desc:'性格陰謀詭詐，對應偷盜、逃亡、曖昧不軌之事，也常用來代表假冒偽劣或暗中行事的狀況。'},
-    '地':{name:'九地', wuxing:'土', luck:'吉', keyword:'安穩 · 屯藏 · 持久',
+    '地':{name:'九地', wuxing:'土', color:'黃', luck:'吉', keyword:'安穩 · 屯藏 · 持久',
       desc:'性格溫順內斂、能屯能藏，對應穩固持久、長期經營、按部就班累積實力的狀態。'},
-    '天':{name:'九天', wuxing:'金', luck:'吉', keyword:'威猛 · 遠行 · 宏圖',
+    '天':{name:'九天', wuxing:'金', color:'黃', luck:'吉', keyword:'威猛 · 遠行 · 宏圖',
       desc:'性格剛強好動、志向遠大，對應遠行出兵、開拓擴張、大展宏圖的積極進取狀態。'},
   }
 };
@@ -858,6 +871,159 @@ function checkMenPo(doorMap){
   return hits;
 }
 
+// ══ 庚 (六害之一, 獨立於擊刑檢測: 只要天盤出現庚即命中) ══
+// 來源: 荀爽視頻「六害: 刑墓庚虎迫空」明確列出庚為獨立一害, 與擊刑表中庚落艮宮的
+// "六儀擊刑"是兩件事 (庚本身即為害, 不論落在哪一宮)
+function checkGeng(skyMap){
+  const hits={};
+  for(const [gua,stem] of Object.entries(skyMap)){
+    if(gua==='中')continue;
+    if(stem==='庚')hits[gua]=stem;
+  }
+  return hits;
+}
+
+// ══ 白虎 (六害之一: 八神出現白虎即命中) ══
+function checkBaiHu(godMap){
+  const hits={};
+  for(const [gua,god] of Object.entries(godMap)){
+    if(gua==='中')continue;
+    if(god==='白虎'||god==='虎')hits[gua]=god;
+  }
+  return hits;
+}
+
+// ══ 空亡 (地支旬空對應宮位, 沿用既有 kongGongMap 邏輯, 此處另建查詢函式供解法引擎調用) ══
+// 由 renderPan 內既有 markKong/kongGongMap 產生, 此函式僅為統一介面, 邏輯不變
+
+// ══════════════════ 解法引擎: 灭象 + 布阵 ══════════════════
+// 來源: 荀爽視頻「布干支大阵 镇压六害」「先灭象后布阵」完整流程截圖交叉核對
+
+// 天干五合 (刑→用合): 甲己合, 乙庚合, 丙辛合, 丁壬合, 戊癸合
+const HE_TABLE={'甲':'己','己':'甲','乙':'庚','庚':'乙','丙':'辛','辛':'丙','丁':'壬','壬':'丁','戊':'癸','癸':'戊'};
+// 十二地支六冲 (墓→用冲): 子午冲, 丑未冲, 寅申冲, 卯酉冲, 辰戌冲, 巳亥冲
+const CHONG_TABLE={'子':'午','午':'子','丑':'未','未':'丑','寅':'申','申':'寅','卯':'酉','酉':'卯','辰':'戌','戌':'辰','巳':'亥','亥':'巳'};
+// 布阵無腦安全位: 遍查擊刑/入墓方位表, 正西(兌)、正北(坎)從未出現, 可作預設推薦
+const SAFE_BUZHEN_GONG=['兌','坎'];
+
+// 灭象規則 (刑/墓/庚三者必須灭象; 目前只有刑墓的具體動作已由荀爽視頻明確給出)
+const MIEXIANG_RULE={
+  '刑':{action:'可移、可扔、可送', verified:true},
+  '墓':{action:'只能移，別扔別送', verified:true},
+  '庚':{action:'風險/武力行業(軍警等)不灭；其餘情況放到最後灭', verified:true, conditional:true},
+  '虎':{action:'（荀爽視頻未明確給出灭象具體動作，暫沿用刑的通用規則：可移可扔可送）', verified:false},
+  '迫':{action:'（灭象動作未見視頻明確說明，建議直接進入布阵「用合」化解）', verified:false},
+  '空':{action:'不做灭象，直接布阵「缺啥補啥」', verified:true},
+};
+
+// 依「字/物/意/行」四維，用 LEX_DATA 的顏色材質生成布阵化解物描述 (物維度可自動生成, 字/意/行為五行通用推導)
+const WUXING_YI_XING={ // 五行對應的通用「意/行」提示 (非逐字視頻原文, 為五行常理推導, 供参考)
+  '木':{yi:'學習成長型知識(如植物、規劃、教育)', xing:'伸展類運動(如瑜伽、太極)'},
+  '火':{yi:'學習表達/展示型知識(如演講、藝術)', xing:'有氧/爆發類運動(如跑步、拳擊)'},
+  '土':{yi:'學習沉穩積累型知識(如理財、歷史)', xing:'穩定持久類運動(如負重、徒步)'},
+  '金':{yi:'學習決斷/規則型知識(如法律、金融)', xing:'剛強類運動(如器械、武術)'},
+  '水':{yi:'學習流動/謀略型知識(如哲學、心理)', xing:'流動類運動(如游泳、慢跑)'},
+};
+function stemWuxing(stem){
+  const map={'甲':'木','乙':'木','丙':'火','丁':'火','戊':'土','己':'土','庚':'金','辛':'金','壬':'水','癸':'水'};
+  return map[stem];
+}
+
+// 針對「墓」: 用冲。推導邏輯 = 找出入墓天干對應的地支(據 LEX_DATA.branches 反查)，
+// 取其六冲地支，再反查回天干 —— 此邏輯與「刑用合(五合)」的推導方式一致(同屬天干地支
+// 生克化解框架)，但非逐字視頻畫面讀出，標記 verified:false 供覆核
+const STEM_TO_BRANCH={'甲':'寅','乙':'卯','丙':'午','丁':'巳','戊':'辰','己':'丑','庚':'申','辛':'酉','壬':'子','癸':'亥'};
+function getCureForRuMu(gua, stem){
+  const branch=STEM_TO_BRANCH[stem];
+  if(!branch)return null;
+  const chongBranch=CHONG_TABLE[branch];
+  const cureStem=chongBranch&&LEX_DATA.branches[chongBranch]?LEX_DATA.branches[chongBranch].sameAs:null;
+  if(!cureStem)return null;
+  return {hai:'墓', gong:gua, hitStem:stem, cureStem, method:'用冲(地支六冲)', xiang:getBuZhenXiang(cureStem), verified:false};
+}
+
+// 針對「迫」(門迫): 用合。來源: 荀爽視頻「遇到門迫，用這些」九宮圖截圖
+// (巽/震→驚開+辰寅, 離→休+丑, 坤/艮→傷杜+戌申, 兌/乾→景+未, 坎→生死+亥巳)
+const MENPO_CURE_TABLE={
+  '巽':{doors:['驚','開'],branches:['辰','寅']},
+  '離':{doors:['休'],branches:['丑']},
+  '坤':{doors:['傷','杜'],branches:['戌','申']},
+  '震':{doors:['驚','開'],branches:['辰','寅']},
+  '兌':{doors:['景'],branches:['未']},
+  '艮':{doors:['傷','杜'],branches:['戌','申']},
+  '坎':{doors:['生','死'],branches:['亥','巳']},
+  '乾':{doors:['景'],branches:['未']},
+};
+function getCureForMenPo(gua){
+  const rule=MENPO_CURE_TABLE[gua];
+  if(!rule)return null;
+  return {hai:'迫', gong:gua, method:'用合(門迫化解表)',
+    doorsText:rule.doors.map(d=>LEX_DATA.doors[d]?LEX_DATA.doors[d].name:d).join('、'),
+    branchesText:rule.branches.join('、'), verified:true};
+}
+
+// 給定一個要「布」的天干, 回傳字/物/意/行四維描述
+function getBuZhenXiang(stem){
+  const d=LEX_DATA.stems[stem];
+  if(!d)return null;
+  const wx=stemWuxing(stem);
+  const yx=WUXING_YI_XING[wx]||{};
+  return {
+    stem, wuxing:wx,
+    zi:`寫「${stem}」字`,
+    wu:`擺放${d.color}${d.material}類物品`,
+    yi:yx.yi||'',
+    xing:yx.xing||'',
+  };
+}
+
+// 針對「刑」: 給出該宮命中天干對應的「用合」化解天干及其字物意行
+function getCureForJiXing(gua, stem){
+  const heStem=HE_TABLE[stem];
+  if(!heStem)return null;
+  return {hai:'刑', gong:gua, hitStem:stem, cureStem:heStem, method:'用合(天干五合)', xiang:getBuZhenXiang(heStem)};
+}
+
+// 針對「庚/白虎」: 無腦用乙化解 (荀爽視頻明確給出的簡化規則, 不分宮位)
+function getCureForGengOrHu(gua, hitLabel){
+  return {hai:hitLabel, gong:gua, cureStem:'乙', method:'無腦法: 用乙', xiang:getBuZhenXiang('乙')};
+}
+
+// 針對「空亡」: 缺啥補啥, 依當事人需求 (求財/求事業/求桃花等) 從意象表選字
+// 來源: 荀爽視頻「意象」示例 (財富=戊, 權威=甲, 表現=丙, 暴力=庚, 突破=辛, 情欲=癸)
+// 注意: 十天干中乙丁己壬四者對應的具體「意象」詞, 視頻例子未覆蓋, 下表暫缺, 標記 needsSource
+const YIXIANG_TABLE={
+  '戊':{need:'財富', verified:true},
+  '甲':{need:'權威', verified:true},
+  '丙':{need:'表現', verified:true},
+  '庚':{need:'暴力/風險', verified:true},
+  '辛':{need:'突破', verified:true},
+  '癸':{need:'情欲', verified:true},
+  '乙':{need:'（視頻例子未覆蓋，暫缺）', verified:false},
+  '丁':{need:'（視頻例子未覆蓋，暫缺）', verified:false},
+  '己':{need:'（視頻例子未覆蓋，暫缺）', verified:false},
+  '壬':{need:'（視頻例子未覆蓋，暫缺）', verified:false},
+};
+// 常見問事需求 → 建議意象天干 (在 YIXIANG_TABLE 已驗證範圍內做正向映射；
+// 求事業/求桃花目前缺乏視頻原文對應天干，暫用最相關且已驗證的天干做保守推薦，需人工覆核)
+const NEED_TO_STEM={
+  '求財':'戊',
+  '求權威地位':'甲',
+  '求表現曝光':'丙',
+  '求情感情欲':'癸',
+  '求突破變革':'辛',
+  // 以下為未在視頻中直接給出對應天干的常見需求，暫standard推導，標記務必人工覆核:
+  '求事業':{stem:'甲', verified:false, note:'借用「權威」天干推導，非視頻原文明確對應'},
+  '求桃花':{stem:'癸', verified:false, note:'借用「情欲」天干推導，非視頻原文明確對應，桃花傳統上更常論六合/太陰，建議另行覆核'},
+};
+function getCureForKongWang(gua, needKey){
+  const target=NEED_TO_STEM[needKey];
+  const stem=typeof target==='string'?target:(target&&target.stem);
+  if(!stem)return null;
+  return {hai:'空', gong:gua, cureStem:stem, method:'缺啥補啥', xiang:getBuZhenXiang(stem),
+    verified: typeof target==='string'?true:!!target.verified, note: typeof target==='object'?target.note:undefined};
+}
+
 /* 吉凶判斷 (簡易版) */
 const JI_DOOR=new Set(['休','生','開']);
 const XIONG_DOOR=new Set(['死','驚','傷']);
@@ -892,9 +1058,10 @@ function calc(){
   if(!dv||!tv){alert('請輸入日期和時間');return;}
   const [y,m,d]=dv.split('-').map(Number);
   const [h,mi]=tv.split(':').map(Number);
+  const needKey=document.getElementById('iNeed').value;
   try{
     const pan=QimenJS.qimenChaibu(Solar,y,m,d,h,mi);
-    renderPan(pan,y,m,d,h,mi);
+    renderPan(pan,y,m,d,h,mi,needKey);
   }catch(e){
     document.getElementById('result').innerHTML=
       `<div class="empty"><div class="big">⚠</div>起局失敗：${e.message}</div>`;
@@ -902,7 +1069,8 @@ function calc(){
 }
 
 /* ── 渲染盤面 ── */
-function renderPan(pan,y,m,d,h,mi){
+function renderPan(pan,y,m,d,h,mi,needKey){
+  needKey=needKey||'求財';
   const sky=pan.天盤||{}, earth=pan.地盤||{};
   const door=pan.門||{}, star=pan.星||{}, god=pan.神||{};
   const zfzs=pan.值符值使||{};
@@ -914,10 +1082,12 @@ function renderPan(pan,y,m,d,h,mi){
   // 全星/門/神的繁體對應 (library輸出已是繁體, 但防萬一過一遍)
   const T2=x=>t2(x||'');
 
-  /* 六害檢測: 擊刑 / 入墓 (固定查表) + 門迫 (動態計算) */
+  /* 六害檢測: 刑/墓/庚 (固定查表或直查) + 虎 (八神查值) + 迫 (動態計算) + 空 (見下方 kongGongMap) */
   const jixingHits=checkJiXing(sky);
   const rumuHits=checkRuMu(sky);
   const menpoHits=checkMenPo(door);
+  const gengHits=checkGeng(sky);
+  const baihuHits=checkBaiHu(god);
 
   /* 值符/值使宮判斷 (中宮值符寄坤) */
   const realZfGong=zfGong==='中'?'坤':zfGong;
@@ -1018,20 +1188,89 @@ function renderPan(pan,y,m,d,h,mi){
     <div class="pan-grid">${gridHTML}</div>
   </div>
 
-  ${(Object.keys(jixingHits).length||Object.keys(rumuHits).length||Object.keys(menpoHits).length)?`<div class="liuhai-card">
-    ${Object.keys(jixingHits).length?`<div class="liuhai-sec">
-      <div class="liuhai-title jx"><span class="dot"></span>擊刑（嚴重度最高，灭象法：可移可扔可送）</div>
-      ${Object.entries(jixingHits).map(([g,st])=>`<div>· ${T2(g)}宮　天干${T2(st)}擊刑</div>`).join('')}
-    </div>`:''}
-    ${Object.keys(rumuHits).length?`<div class="liuhai-sec">
-      <div class="liuhai-title rm"><span class="dot"></span>入墓（次於擊刑，灭象法：只能移，別扔別送）</div>
-      ${Object.entries(rumuHits).map(([g,st])=>`<div>· ${T2(g)}宮　天干${T2(st)}入墓</div>`).join('')}
-    </div>`:''}
-    ${Object.keys(menpoHits).length?`<div class="liuhai-sec">
-      <div class="liuhai-title mp"><span class="dot"></span>門迫（壓力脅迫，門克宮）</div>
-      ${Object.entries(menpoHits).map(([g,dr])=>`<div>· ${T2(g)}宮　${T2(dr)}門迫</div>`).join('')}
-    </div>`:''}
-  </div>`:''}
+  ${(function(){
+    // 空亡命中宮位 (只取有旬空標記的宮, 排除中宮)
+    const kongHitGongs=Object.keys(kongGongMap).filter(g=>g!=='中');
+    const anyHit=Object.keys(jixingHits).length||Object.keys(rumuHits).length||Object.keys(menpoHits).length
+      ||Object.keys(gengHits).length||Object.keys(baihuHits).length||kongHitGongs.length;
+    if(!anyHit)return '';
+
+    const cureLine=(cure)=>{
+      if(!cure)return '';
+      const x=cure.xiang;
+      if(!x)return '';
+      const unverified=cure.verified===false?'<span style="opacity:.6">（推導，未經視頻原文驗證，建議人工覆核）</span>':'';
+      return `<div class="cure-line">→ ${cure.method}：用「${x.stem}」${unverified}<br>
+        <span style="opacity:.85">字：${x.wu?x.wu:''}　字：${x.zi}</span><br>
+        <span style="opacity:.85">意：${x.yi}　行：${x.xing}</span></div>`;
+    };
+
+    let html='<div class="liuhai-card">';
+
+    if(Object.keys(jixingHits).length){
+      html+=`<div class="liuhai-sec">
+        <div class="liuhai-title jx"><span class="dot"></span>刑（嚴重度最高，灭象：${MIEXIANG_RULE['刑'].action}，布阵：用合）</div>
+        ${Object.entries(jixingHits).map(([g,st])=>{
+          const cure=getCureForJiXing(g,st);
+          return `<div>· ${T2(g)}宮　天干${T2(st)}擊刑${cureLine(cure)}</div>`;
+        }).join('')}
+      </div>`;
+    }
+
+    if(Object.keys(rumuHits).length){
+      html+=`<div class="liuhai-sec">
+        <div class="liuhai-title rm"><span class="dot"></span>墓（灭象：${MIEXIANG_RULE['墓'].action}，布阵：用冲）</div>
+        ${Object.entries(rumuHits).map(([g,st])=>{
+          const cure=getCureForRuMu(g,st);
+          return `<div>· ${T2(g)}宮　天干${T2(st)}入墓${cureLine(cure)}</div>`;
+        }).join('')}
+      </div>`;
+    }
+
+    if(Object.keys(gengHits).length){
+      html+=`<div class="liuhai-sec">
+        <div class="liuhai-title jx"><span class="dot"></span>庚（灭象：${MIEXIANG_RULE['庚'].action}，布阵：無腦用乙）</div>
+        ${Object.entries(gengHits).map(([g,st])=>{
+          const cure=getCureForGengOrHu(g,'庚');
+          return `<div>· ${T2(g)}宮　天干庚${cureLine(cure)}</div>`;
+        }).join('')}
+      </div>`;
+    }
+
+    if(Object.keys(baihuHits).length){
+      html+=`<div class="liuhai-sec">
+        <div class="liuhai-title rm"><span class="dot"></span>虎（白虎，布阵：無腦用乙；灭象動作暫沿用「刑」的通用規則，未經視頻明確驗證）</div>
+        ${Object.entries(baihuHits).map(([g,gd])=>{
+          const cure=getCureForGengOrHu(g,'虎');
+          return `<div>· ${T2(g)}宮　白虎${cureLine(cure)}</div>`;
+        }).join('')}
+      </div>`;
+    }
+
+    if(Object.keys(menpoHits).length){
+      html+=`<div class="liuhai-sec">
+        <div class="liuhai-title mp"><span class="dot"></span>迫（門迫，壓力脅迫，門克宮；布阵：用合）</div>
+        ${Object.entries(menpoHits).map(([g,dr])=>{
+          const cure=getCureForMenPo(g);
+          const cureHtml=cure?`<div class="cure-line">→ 用合：擺放「${cure.doorsText}」門象、對應地支「${cure.branchesText}」</div>`:'';
+          return `<div>· ${T2(g)}宮　${T2(dr)}門迫${cureHtml}</div>`;
+        }).join('')}
+      </div>`;
+    }
+
+    if(kongHitGongs.length){
+      html+=`<div class="liuhai-sec">
+        <div class="liuhai-title mp"><span class="dot"></span>空（空亡，嚴重度最低，布阵：缺啥補啥——目前所求「${needKey}」）</div>
+        ${kongHitGongs.map(g=>{
+          const cure=getCureForKongWang(g,needKey);
+          return `<div>· ${T2(g)}宮　空亡（${kongGongMap[g].join('')}空）${cureLine(cure)}</div>`;
+        }).join('')}
+      </div>`;
+    }
+
+    html+='</div>';
+    return html;
+  })()}
 
   <div class="info-card">
     <div class="info-title">吉凶速覽</div>
