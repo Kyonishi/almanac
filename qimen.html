@@ -370,7 +370,7 @@ const CNUMBER = ['一','二','三','四','五','六','七','八','九']; // 1-9 
 const EIGHT_GUA = ['坎','坤','震','巽','中','乾','兌','艮','離']; // index by CNUMBER position (1-9)
 const CLOCKWISE_EIGHTGUA = ['坎','艮','震','巽','離','坤','兌','乾']; // 8 palaces only, clockwise order, no 中
 const DOOR_R = ['休','生','傷','杜','景','死','驚','開'];
-const STAR_R = ['蓬','任','沖','輔','英','芮','柱','心'];
+const STAR_R = ['蓬','任','沖','輔','英','內','柱','心'];
 // 八神只有這 8 個：符/蛇/陰/合/虎/玄/地/天 (螣蛇/值符/太陰/六合/白虎/玄武/九地/九天)。
 // 陽遁的校正已由實測案例(1901-04-13 14:30)驗證：陽遁用「虎玄」而非 kinqimen 預設的「勾雀」。
 // 陰遁原本假設「相反」沿用勾雀，但荀爽老師視頻「八神原宮」參考圖清楚列出就是這固定 8 個，
@@ -561,7 +561,7 @@ function zhishiPai(yinyang, kook) {
 // ── 值符值使 (對應 config.py zhifu_n_zhishi) ──
 const GONG_BY_CNUM = Object.fromEntries(CNUMBER.map((c, i) => [c, EIGHT_GUA[i]]));
 const EG_DOOR_ORDER = ['休','死','傷','杜','中','開','驚','生','景']; // zspai_values 的星序對映門
-const EIGHT_STAR_ORDER = ['蓬','芮','沖','輔','禽','心','柱','任','英']; // zf_values 對映星
+const EIGHT_STAR_ORDER = ['蓬','內','沖','輔','禽','心','柱','任','英']; // zf_values 對映星
 function zhifuNZhishi(yinyang, kook, dayGz, hourGz) {
   const hGanIdx = TIAN_GAN.indexOf(hourGz[0]);
   const hourXun = xunShouOf(hourGz); // chour: 時干支所屬旬首
@@ -609,7 +609,7 @@ function panDoor(yinyang, zfzs) {
 }
 function panStar(yinyang, zfzs) {
   let [startStar, startGong] = zfzs.值符星宮;
-  if (startStar === '芮') startStar = '禽';
+  if (startStar === '內') startStar = '禽';
   const gongOrder = rotateFromGong(startGong, yinyang);
   const starSeq = yinyang === '陽' ? newList(STAR_R, startStar) : newList([...STAR_R].reverse(), startStar);
   const out = {};
@@ -806,7 +806,7 @@ const LEX_DATA = {
       desc:'溫柔浪漫、言行高雅、有修養有學識，對應文化教育領域，利於考試升學。狀態不佳時則顯得迂腐懦弱、缺乏主見、優柔寡斷。'},
     '英':{name:'天英星', wuxing:'火', color:'紅', luck:'中平', keyword:'名氣 · 表現 · 急躁',
       desc:'重視名譽與禮節，擅長交際應酬，與火、媒體、影視等領域相關。狀態不佳時則脾氣急躁、虛榮愛面子、容易動怒。'},
-    '芮':{name:'天芮星', wuxing:'土', color:'黃', luck:'凶', keyword:'疾病 · 學習 · 包容',
+    '內':{name:'天內星', wuxing:'土', color:'黃', luck:'凶', keyword:'疾病 · 學習 · 包容',
       desc:'傳統上的「病星」，奇門占問疾病健康多以此星為主要參考。正面特質是好學、忠厚大度、樂於交友；狀態不佳時則貪婪自私、體質較弱。'},
     '禽':{name:'天禽星', wuxing:'土', color:'黃', luck:'吉', keyword:'誠信 · 穩重 · 居中',
       desc:'具大地中心之土性，忠誠老實、厚德載物，行事循規蹈矩、值得信賴。永遠寄居坤二宮，象徵居中調度、不偏不倚的核心角色。狀態不佳時則顯得死板僵化。'},
@@ -1403,12 +1403,12 @@ function gongHitsProtected(gua, sky, earth, protectedStems){
 const JI_DOOR=new Set(['休','生','開']);
 const XIONG_DOOR=new Set(['死','驚','傷']);
 const JI_STAR=new Set(['天輔','天任','天心','天蓬']);
-const XIONG_STAR=new Set(['天芮','天柱','天英']);
+const XIONG_STAR=new Set(['天內','天柱','天英']);
 const JI_GOD=new Set(['值符','太陰','六合','九天']);
 const XIONG_GOD=new Set(['螣蛇','白虎','玄武','九地','勾陳','朱雀']);
 function luckClass(v){
   if(['休','生','開','天輔','天任','天心','天蓬','值符','太陰','六合','九天'].includes(v))return 'pill-ji';
-  if(['死','驚','傷','天芮','天柱','天英','螣蛇','白虎','玄武','九地','勾陳','朱雀'].includes(v))return 'pill-xiong';
+  if(['死','驚','傷','天內','天柱','天英','螣蛇','白虎','玄武','九地','勾陳','朱雀'].includes(v))return 'pill-xiong';
   return 'pill-neutral';
 }
 
@@ -1558,6 +1558,14 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput){
     <div class="meta-gz">${gz}</div>
     <div class="meta-ju">${juLabel}</div>
     <div class="meta-grid">
+      <div class="meta-item">
+        <div class="meta-k">日干 / 時干</div>
+        <div class="meta-v">${T2(dayStem)||'—'} &nbsp;·&nbsp; ${T2(hourStem)||'—'}</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-k">生年</div>
+        <div class="meta-v">${yearsInput?T2(yearsInput):'—'}</div>
+      </div>
       <div class="meta-item">
         <div class="meta-k">值符星宮</div>
         <div class="meta-v zf">${zfStar}星 · ${zfGongName}</div>
