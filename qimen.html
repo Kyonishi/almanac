@@ -328,6 +328,13 @@ footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spa
       <option value="求突破變革">求突破變革</option>
     </select>
   </div>
+  <div class="input-row">
+    <div class="input-label">局類型</div>
+    <select class="inp" id="iJuType">
+      <option value="事局">事局（問一件事/一件事的走向）</option>
+      <option value="命局">命局（用某個人的出生時刻，分析這個人）</option>
+    </select>
+  </div>
   <button class="btn-ritual" onclick="toggleRitual()" type="button">☯ 起局須知 / 起局儀式</button>
   <div class="ritual-panel" id="ritualPanel" style="display:none"></div>
   <button class="btn-ritual" onclick="toggleHistory()" type="button">🕘 起局歷史記錄</button>
@@ -1047,6 +1054,7 @@ function reloadHistoryRecord(id){
   document.getElementById('iTime').value=rec.timeStr;
   document.getElementById('iNeed').value=rec.needKey||'求財';
   document.getElementById('iYears').value=rec.yearsInput||'';
+  document.getElementById('iJuType').value=rec.juType||'事局';
   document.getElementById('ritualPanel').style.display='none';
   document.getElementById('historyPanel').style.display='none';
   calc();
@@ -1418,6 +1426,7 @@ function setNow(){
   const n=new Date();
   document.getElementById('iDate').value=`${n.getFullYear()}-${pad(n.getMonth()+1)}-${pad(n.getDate())}`;
   document.getElementById('iTime').value=`${pad(n.getHours())}:${pad(n.getMinutes())}`;
+  document.getElementById('iJuType').value='事局';
 }
 function updHeader(){
   const n=new Date();
@@ -1435,9 +1444,10 @@ function calc(){
   const [h,mi]=tv.split(':').map(Number);
   const needKey=document.getElementById('iNeed').value;
   const yearsInput=document.getElementById('iYears').value;
+  const juType=document.getElementById('iJuType').value||'事局';
   try{
     const pan=QimenJS.qimenChaibu(Solar,y,m,d,h,mi);
-    renderPan(pan,y,m,d,h,mi,needKey,yearsInput);
+    renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType);
   }catch(e){
     document.getElementById('result').innerHTML=
       `<div class="empty"><div class="big">⚠</div>起局失敗：${e.message}</div>`;
@@ -1445,8 +1455,9 @@ function calc(){
 }
 
 /* ── 渲染盤面 ── */
-function renderPan(pan,y,m,d,h,mi,needKey,yearsInput){
+function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType){
   needKey=needKey||'求財';
+  juType=juType||'事局';
   const sky=pan.天盤||{}, earth=pan.地盤||{};
   const door=pan.門||{}, star=pan.星||{}, god=pan.神||{};
   const zfzs=pan.值符值使||{};
@@ -1691,8 +1702,8 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput){
       const dr=door[g], st=star[g], gd=god[g];
       const doorInfo=LEX_DATA.doors[dr], starInfo=LEX_DATA.stars[st], godInfo=LEX_DATA.gods[gd];
       const parts=[dr?`${T2(dr)}門`:null, st?`${T2(st)}星`:null, gd?`${T2(gd)}神`:null].filter(Boolean).join('、');
-      const frameWord=label==='日'?'本質／內心':'表象／樣子';
-      let html=`<div>${label}干「${T2(stem)}」落在<b>${T2(g)}宮</b>——這宮是${parts}，這件事的${frameWord}就看這三個組合起來：</div>`;
+      const frameWord=juType==='命局'?(label==='日'?'內心':'對外樣子'):(label==='日'?'本質':'表象');
+      let html=`<div>${label}干「${T2(stem)}」落在<b>${T2(g)}宮</b>——這宮是${parts}，${juType==='命局'?'這個人的':'這件事的'}${frameWord}就看這三個組合起來：</div>`;
       if(doorInfo)html+=`<div class="ana-step">門象「${T2(dr)}門」（${T2(doorInfo.keyword||'')}）：${T2(doorInfo.desc||'')}</div>`;
       if(starInfo)html+=`<div class="ana-step">星象「${T2(st)}星」（${T2(starInfo.keyword||'')}）：${T2(starInfo.desc||'')}</div>`;
       if(godInfo)html+=`<div class="ana-step">神象「${T2(gd)}神」（${T2(godInfo.keyword||'')}）：${T2(godInfo.desc||'')}</div>`;
@@ -1702,11 +1713,13 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput){
     let openingHtml='';
     if(dayStem&&hourStem){
       const dStem=LEX_DATA.stems[dayStem], hStem=LEX_DATA.stems[hourStem];
+      const juTypeNote=juType==='命局'
+        ?'這局是<b>命局</b>——用某個人的出生時刻起局，來分析這個人本身。日干是這個人的<b>內心</b>，時干是他對外展現的<b>樣子</b>。'
+        :'這局是<b>事局</b>——問的是一件事、一件事的走向。日干是這件事的<b>本質</b>，時干是它目前呈現出來的<b>表象</b>。';
       openingHtml=`<div class="ana-block">
         <div class="ana-h">第一步・先看這局是為誰起的</div>
         <div>這次問的是「<b>${T2(needKey)}</b>」。日干「${T2(dayStem)}」（${dStem?dStem.keyword:''}），時干「${T2(hourStem)}」（${hStem?hStem.keyword:''}）——
-        <br>如果把這局當「事」看：日干是這件事的<b>本質</b>，時干是它目前呈現出來的<b>表象</b>；
-        <br>如果把這局當「人」看（問的是某個人）：日干是這個人的<b>內心</b>，時干是他對外展現的<b>樣子</b>。</div>
+        <br>${juTypeNote}</div>
         <div style="margin-top:6px">${stemLocateLine('日',dayStem)}${stemLocateLine('時',hourStem)}</div>
       </div>`;
     }
@@ -1887,6 +1900,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput){
     timeStr: `${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}`,
     needKey,
     yearsInput: yearsInput||'',
+    juType,
     juLabel,
     gz,
     hitsSummary: hitLabels.length?`六害命中：${hitLabels.join('、')}`:'六害：無命中',
