@@ -1672,6 +1672,27 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput){
     const groupList=[...groupsMap.values()].sort((a,b)=>a.severity-b.severity);
 
     // 事局/命局 雙重解讀 (日干/時干)——第一步，先搞清楚這局在保護誰、話語權在哪
+    // 具體定位：荀爽老師視頻裡的用法不是抽象講日干時干的意思，而是真的拿這兩個字去
+    // 天盤干裡找它落在哪一宮，再把那一宮完整的門/星/神讀出來(喬布斯/海德格爾/拉康三個案例逐字核對過)。
+    const locateStemGong=(stem)=>{
+      if(!stem)return null;
+      for(const g of Object.keys(sky)){ if(sky[g]===stem)return g; }
+      return null;
+    };
+    const stemLocateLine=(label,stem)=>{
+      if(!stem)return '';
+      const g=locateStemGong(stem);
+      if(!g){
+        return `${label}干「${T2(stem)}」在天盤上沒有直接找到對應宮位（如果是「甲」，因為甲永遠藏在值符背後、不直接現於天盤，這是正常的，看值符落宮即可）。`;
+      }
+      if(g==='中'){
+        return `${label}干「${T2(stem)}」落在<b>中宮</b>——中宮本身不單獨排門/星/神(禽星寄坤)，可以直接參考坤宮。`;
+      }
+      const dr=door[g], st=star[g], gd=god[g];
+      const parts=[dr?`${T2(dr)}門`:null, st?`${T2(st)}星`:null, gd?`${T2(gd)}神`:null].filter(Boolean).join('、');
+      return `${label}干「${T2(stem)}」落在<b>${T2(g)}宮</b>——這宮是${parts}，${label==='日'?'這件事的本質(或這個人的內心)':'這件事的表象(或這個人對外的樣子)'}就看這個組合。`;
+    };
+
     let openingHtml='';
     if(dayStem&&hourStem){
       const dStem=LEX_DATA.stems[dayStem], hStem=LEX_DATA.stems[hourStem];
@@ -1680,6 +1701,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput){
         <div>這次問的是「<b>${T2(needKey)}</b>」。日干「${T2(dayStem)}」（${dStem?dStem.keyword:''}），時干「${T2(hourStem)}」（${hStem?hStem.keyword:''}）——
         <br>如果把這局當「事」看：日干是這件事的<b>本質</b>，時干是它目前呈現出來的<b>表象</b>；
         <br>如果把這局當「人」看（問的是某個人）：日干是這個人的<b>內心</b>，時干是他對外展現的<b>樣子</b>。</div>
+        <div style="margin-top:6px">${stemLocateLine('日',dayStem)}<br>${stemLocateLine('時',hourStem)}</div>
       </div>`;
     }
     if(realZfGong||realZsGong){
