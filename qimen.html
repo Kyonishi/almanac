@@ -1309,10 +1309,13 @@ function getCureForMenPo(gua){
   if(!rule)return null;
   return {hai:'迫', gong:gua, method:'用合(門迫化解表)',
     doorsText:rule.doors.map(d=>LEX_DATA.doors[d]?LEX_DATA.doors[d].name:d).join('、'),
-    branchesText:rule.branches.join('、'), verified:true};
+    branchesText:rule.branches.join('、'),
+    branchXiangs:rule.branches.map(b=>getBranchXiang(b)).filter(Boolean),
+    verified:true};
 }
 
-// 給定一個要「布」的天干, 回傳字/物/意/行四維描述
+// 給定一個要「布」的天干, 回傳字/物/意/行四維描述。
+// 天干的物件要放「高處」——荀爽老師原話：同樣顏色，天干(如丙)放高，地支(如午)放低，兩者不是同一件事。
 function getBuZhenXiang(stem){
   const d=LEX_DATA.stems[stem];
   if(!d)return null;
@@ -1324,6 +1327,20 @@ function getBuZhenXiang(stem){
     wu:`擺放${d.color}${d.material}類物品`,
     yi:yx.yi||'',
     xing:yx.xing||'',
+    placement:'高處',
+  };
+}
+
+// 給定一個要「布」的地支, 回傳生肖形象描述。地支的物件要放「低處」，且地支特有生肖動物形象可用
+// (天干沒有生肖可用，只有顏色材質)——荀爽老師原話逐字轉錄。
+function getBranchXiang(branch){
+  const d=LEX_DATA.branches[branch];
+  if(!d)return null;
+  const stemLike=LEX_DATA.stems[d.sameAs];
+  return {
+    branch, zodiac:d.zodiac,
+    wu:stemLike?`擺放${stemLike.color}${stemLike.material}類物品，或直接放「${d.zodiac}」生肖擺件/圖像`:`放「${d.zodiac}」生肖擺件/圖像`,
+    placement:'低處',
   };
 }
 
@@ -1665,8 +1682,15 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType){
       let buLine='';
       if(item.cureDoor){
         const c=item.cureDoor;
-        buLine=c?`<div class="ana-step">布阵：擺放「${c.doorsText}」門象、對應地支「${c.branchesText}」化解。</div>`
-                :'<div class="ana-step">布阵：（暫缺，需人工覆核）</div>';
+        if(c){
+          const branchDetail=(c.branchXiangs&&c.branchXiangs.length)
+            ?c.branchXiangs.map(bx=>`「${bx.branch}」（${bx.zodiac}）：${bx.wu}，放${bx.placement}`).join('；')
+            :'';
+          buLine=`<div class="ana-step">布阵：擺放「${c.doorsText}」門象，對應地支「${c.branchesText}」化解。</div>`
+            +(branchDetail?`<div class="ana-step">地支形象：${branchDetail}</div>`:'');
+        }else{
+          buLine='<div class="ana-step">布阵：（暫缺，需人工覆核）</div>';
+        }
       }else{
         const c=item.cure;
         if(c&&c.place){
@@ -1675,7 +1699,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType){
         if(c&&c.xiang){
           const x=c.xiang;
           const cvUnverified=c.verified===false?'（此為推導，未經視頻原文逐字驗證，僅供參考）':'';
-          buLine+=`<div class="ana-step">${c.place?'（進階，非必要）':'布阵：'}如果想搭配具體天干取象，可以用「${T2(x.stem)}」——${x.wu}${cvUnverified}</div>`;
+          buLine+=`<div class="ana-step">${c.place?'（進階，非必要）':'布阵：'}如果想搭配具體天干取象，可以用「${T2(x.stem)}」——${x.wu}，放${x.placement}${cvUnverified}</div>`;
         }
         if(!buLine){
           buLine='<div class="ana-step">布阵：（暫缺，需人工覆核）</div>';
@@ -1803,7 +1827,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType){
       const x=cure.xiang;
       if(!x)return placeLine;
       const unverified=cure.verified===false?'<span style="opacity:.6">（推導，未經視頻原文驗證，僅供參考）</span>':'';
-      return placeLine+`<div class="cure-line">→ ${cure.place?'（進階）':''}${cure.method}：用「${x.stem}」${unverified}<br>
+      return placeLine+`<div class="cure-line">→ ${cure.place?'（進階）':''}${cure.method}：用「${x.stem}」，放${x.placement||'高處'}${unverified}<br>
         <span style="opacity:.85">字：${x.wu?x.wu:''}　字：${x.zi}</span><br>
         <span style="opacity:.85">意：${x.yi}　行：${x.xing}</span></div>`;
     };
@@ -1870,7 +1894,11 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType){
         ${Object.entries(menpoHits).map(([g,dr])=>{
           const isHit=gongHitsProtected(g,sky,earth,protectedStems)||dr===zfzs.值使門宮?.[0];
           const cure=getCureForMenPo(g);
-          const cureHtml=cure?`<div class="cure-line">→ 用合：擺放「${cure.doorsText}」門象、對應地支「${cure.branchesText}」</div>`:'';
+          const branchDetail=(cure&&cure.branchXiangs&&cure.branchXiangs.length)
+            ?cure.branchXiangs.map(bx=>`「${bx.branch}」(${bx.zodiac})：${bx.wu}，放${bx.placement}`).join('；')
+            :'';
+          const cureHtml=cure?`<div class="cure-line">→ 用合：擺放「${cure.doorsText}」門象、對應地支「${cure.branchesText}」<br>
+            <span style="opacity:.85">地支形象：${branchDetail}</span></div>`:'';
           return `<div${rowClass(isHit)}>· ${T2(g)}宮　${T2(dr)}門迫 ${hlTag(isHit)}${cureHtml}</div>`;
         }).join('')}
       </div>`;
