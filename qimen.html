@@ -120,49 +120,55 @@ header{
 }
 .cell{
   border-right:1px solid var(--brd);border-bottom:1px solid var(--brd);
-  padding:8px 6px;min-height:128px;position:relative;
-  display:flex;flex-direction:column;align-items:stretch;
+  padding:10px 6px 22px;min-height:138px;position:relative;
+  display:flex;flex-direction:column;align-items:stretch;justify-content:center;
+  gap:2px;
   background:var(--card);
 }
 .cell.center-cell{background:#FDFAF2}
 .cell.is-zf{background:#EEF7EE}  /* 值符所在宮 */
 .cell.is-zs{background:#FEF3F3}  /* 值使所在宮 */
-/* 宮名：荀爽老師排盤裡宮名是小字放在格子角落，不是標題 */
+/* 宮名：荀爽老師排盤裡宮名是小字放在格子角落，不是標題，用絕對定位釘在右下角，
+   這樣主要內容(干/門/神/星)可以在格子正中間垂直置中，不受宮名影響。
+   顏色規則：有空亡才變藍色(跟 lh-kong 同色)，沒有就是預設(白/淡)色 —— 嚴格對齊六害配色表，不摻雜取象顏色 */
 .cell-gua{
-  font-size:9px;color:var(--sub);font-weight:600;letter-spacing:.5px;
-  margin-top:auto;align-self:flex-end;padding-top:4px;
+  position:absolute;right:6px;bottom:4px;
+  font-size:9px;color:var(--ink);opacity:.55;font-weight:600;letter-spacing:.5px;
 }
+.cell-gua.kongwang{color:#2E6FD9;opacity:1;font-weight:700}
 /* 第一行：天干(左) + 神(右)，同一行並排 —— 對齊荀爽老師「干←乙 符」的排法 */
-.c-line{display:flex;align-items:baseline;justify-content:center;gap:7px;min-height:20px}
-/* 天干 (天盤) */
+.c-line{display:flex;align-items:baseline;justify-content:center;gap:8px;min-height:22px}
+/* 天干 (天盤)：預設白色/淡色，只有命中六害才變色——嚴格對齊荀爽老師配色表:
+   擊刑=紅 / 入墓=藍 / 庚=金黃 / 其餘一律預設色，不再套用材質取象顏色 */
 .c-sky{
-  font-size:19px;font-weight:900;color:var(--red);line-height:1;
+  font-size:22px;font-weight:900;color:var(--ink);line-height:1;
 }
-.c-sky.dim{color:var(--sub);font-weight:400;font-size:15px}
+.c-sky.dim{color:var(--ink);opacity:.4;font-weight:400;font-size:16px}
+.c-sky.jixing{color:#C0392B}
+.c-sky.rumu{color:#4FC3F7}
+.c-sky.geng-stem{color:#D4AF37}
 /* 地干 (地盤) */
 .c-earth{
-  font-size:13px;font-weight:700;color:var(--ink);opacity:.75;line-height:1;
+  font-size:14px;font-weight:700;color:var(--ink);opacity:.75;line-height:1;
 }
-/* 神/星值：緊跟在天干/地干右邊，同行顯示 */
+/* 神值：緊跟在天干右邊，同行顯示。預設白色/淡色，只有白虎才變金黃 */
 .c-god-val,.c-star-val{
-  font-size:12px;font-weight:700;color:var(--ink);opacity:.85;
+  font-size:13px;font-weight:700;color:var(--ink);opacity:.85;
   display:inline-flex;align-items:center;gap:3px;line-height:1;
 }
-/* 第二行：門，獨立居中一行 —— 對齊荀爽老師把門放在天干/地干中間單獨一行的排法 */
+.c-god-val.baihu{color:#D4AF37;opacity:1;font-weight:800}
+/* 第二行：門，獨立居中一行 —— 對齊荀爽老師把門放在天干/地干中間單獨一行的排法。
+   預設白色/淡色，只有門迫才變綠 */
 .c-door-line{display:flex;justify-content:center;margin:3px 0}
 .c-door-val{
-  font-size:13px;font-weight:800;color:var(--ink);
+  font-size:15px;font-weight:800;color:var(--ink);
   display:inline-flex;align-items:center;gap:3px;line-height:1;
 }
-/* 門/星/神取象顏色點：反映 LEX_DATA 裡荀爽老師視頻的顏色材質對照表 */
-.c-dot{
-  width:7px;height:7px;border-radius:50%;flex-shrink:0;
-  border:1px solid rgba(0,0,0,.18);box-shadow:0 0 0 .5px rgba(255,255,255,.4) inset;
-}
-/* 空亡標記 */
+.c-door-val.menpo{color:#4A9B4A}
+/* 空亡標記 (跟 cell-gua.kongwang 同色系, 都是藍) */
 .c-kong{
   position:absolute;top:4px;right:4px;
-  font-size:8px;color:var(--red);background:#FEF0F0;
+  font-size:8px;color:#2E6FD9;background:#EAF1FC;
   border-radius:3px;padding:1px 3px;font-weight:700
 }
 /* 值符/值使標籤 */
@@ -173,16 +179,13 @@ header{
 .c-special.zf-tag{background:var(--grn);color:#fff}
 .c-special.zs-tag{background:var(--red);color:#fff}
 
-/* 擊刑 (紅色 ✕, 六仪擊刑固定查表命中) */
+/* 擊刑/入墓 顏色已經由 .c-sky.jixing / .c-sky.rumu 直接改字色表達，這裡只加小記號輔助辨識 */
 .c-sky.jixing::after{
-  content:'✕';font-size:9px;color:var(--red);margin-left:2px;vertical-align:super
+  content:'✕';font-size:9px;color:#C0392B;margin-left:2px;vertical-align:super
 }
-/* 入墓 (藍色 ▽, 三奇入墓固定查表命中) */
 .c-sky.rumu::after{
-  content:'▽';font-size:8px;color:#1565C0;margin-left:2px;vertical-align:super
+  content:'▽';font-size:8px;color:#4FC3F7;margin-left:2px;vertical-align:super
 }
-/* 門迫 (橙色底線, 門克宮動態計算命中) */
-.c-door-val.menpo{box-shadow:0 0 0 1.5px #E67E22 inset;border-radius:4px;padding:0 3px}
 
 /* INFO CARD: 節氣/旬空/長生 */
 .info-card{background:var(--card);border-radius:12px;padding:14px 16px;
@@ -1490,7 +1493,9 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput){
     const isJx=!!jixingHits[gua];
     const isRm=!!rumuHits[gua];
     const isMp=!!menpoHits[gua];
+    const isHu=!!baihuHits[gua];
     const kongLabels=kongGongMap[gua]||[];
+    const isKw=kongLabels.length>0;
 
     let cls='cell';
     if(isCenter)cls+=' center-cell';
@@ -1498,26 +1503,23 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput){
     if(isZs&&!isCenter&&!isZf)cls+=' is-zs';
 
     const guaName=GUA_NAME[gua]||gua;
+    // 天干顏色 class：嚴格對齊六害配色——擊刑紅／入墓藍／庚金黃，優先度 刑>墓>庚，其餘不上色(預設)
+    const skyCls=isJx?' jixing':(isRm?' rumu':(s==='庚'?' geng-stem':''));
 
     return `<div class="${cls}">
       ${kongLabels.length?`<div class="c-kong">空${kongLabels.join('')}</div>`:''}
-      ${(()=>{
-        const doorHex=lexColor('doors',dr), starHex=lexColor('stars',st), godHex=lexColor('gods',gd);
-        const dot=hex=>hex?`<span class="c-dot" style="background:${hex}"></span>`:'';
-        return `
       <div class="c-line c-line-top">
-        ${s?`<span class="c-sky term${isJx?' jixing':''}${isRm?' rumu':''}" onclick="openSheet('stem','${s}')">${T2(s)}</span>`:'<span class="c-sky dim">—</span>'}
-        ${!isCenter&&gd?`<span class="c-god-val term" onclick="openSheet('god','${gd}')">${dot(godHex)}${T2(gd)}</span>`:''}
+        ${s?`<span class="c-sky term${skyCls}" onclick="openSheet('stem','${s}')">${T2(s)}</span>`:'<span class="c-sky dim">—</span>'}
+        ${!isCenter&&gd?`<span class="c-god-val term${isHu?' baihu':''}" onclick="openSheet('god','${gd}')">${T2(gd)}</span>`:''}
       </div>
-      ${!isCenter&&dr?`<div class="c-door-line"><span class="c-door-val term${isMp?' menpo':''}" onclick="openSheet('door','${dr}')">${dot(doorHex)}${T2(dr)}</span></div>`:''}
+      ${!isCenter&&dr?`<div class="c-door-line"><span class="c-door-val term${isMp?' menpo':''}" onclick="openSheet('door','${dr}')">${T2(dr)}</span></div>`:''}
       <div class="c-line c-line-bottom">
         ${e?`<span class="c-earth term" onclick="openSheet('stem','${e}')">${T2(e)}</span>`:''}
-        ${!isCenter&&st?`<span class="c-star-val term" onclick="openSheet('star','${st}')">${dot(starHex)}${T2(st)}</span>`:''}
-      </div>`;
-      })()}
+        ${!isCenter&&st?`<span class="c-star-val term" onclick="openSheet('star','${st}')">${T2(st)}</span>`:''}
+      </div>
       ${isZf?'<div class="c-special zf-tag">值符</div>':''}
       ${isZs&&!isZf?'<div class="c-special zs-tag">值使</div>':''}
-      <div class="cell-gua">${guaName}</div>
+      <div class="cell-gua${isKw?' kongwang':''}">${guaName}</div>
     </div>`;
   }
 
