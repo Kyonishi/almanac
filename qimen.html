@@ -1580,6 +1580,15 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput){
        直接沿用荀爽老師視頻「六害」截圖裡的原詞；事局/命局雙重解讀、值符值使的話語權/用武之地說法，
        也都是視頻截圖逐字轉錄，不是自己編的新規則。 */
     const LIUHAI_MEANING={刑:'争執損耗',墓:'沉溺迷失',庚:'凶禍阻隔',虎:'快速危險',迫:'壓力脅迫',空:'虛假不實'};
+    /* 刑/墓/庚 的軍事隱喻 —— 來源: 荀爽老師視頻「主帥/三奇/六儀」截圖逐字轉錄:
+       甲=主帥(指揮中樞，護主帥) / 乙丙丁=三奇(致勝奇謀，以奇勝) / 戊己庚辛壬癸=六儀(大規模正面主力，以正合)
+       刑打六儀(正面主力被絞殺殆盡、崩潰)，墓困三奇(奇兵落入陷阱、發揮不出來)，庚點主帥本身(主帥被針對)。
+       三者攻擊的層級不同，這也是「刑墓庚」疊加特別可怕的原因。 */
+    const LIUHAI_DEEPER={
+      刑:'刑打的是「六儀」（正面主力）——正面主力被絞殺殆盡，全面崩潰',
+      墓:'墓困的是「三奇」（奇兵奇謀）——奇兵落入對方陷阱，發揮不出來',
+      庚:'庚點的是「主帥」本身（甲）——你自己被瞄準、被克制',
+    };
 
     // 逐條六害，按「先刑墓庚，再虎迫空」的順序合併成一個清單
     const hitList=[];
@@ -1632,11 +1641,13 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput){
     // 需要注意的地方
     let attentionHtml='';
     if(hitOnly.length){
+      const tripleHit=['刑','墓','庚'].every(t=>hitOnly.some(x=>x.type===t));
       attentionHtml=`<div class="ana-block">
         <div class="ana-h">需要注意的地方（按嚴重度排序，只列命中本次號令的）</div>
+        ${tripleHit?`<div class="ana-item"><b>刑、墓、庚同時命中</b>——正面主力（六儀）、奇兵奇謀（三奇）、主帥本身（甲）三個層級同時被打，是最重的疊加情況，建議優先全部處理完再看局勢。</div>`:''}
         ${hitOnly.map(item=>`<div class="ana-item">
           <span class="lh-word lh-${{刑:'xing',墓:'mu',庚:'geng',虎:'hu',迫:'po',空:'kong'}[item.type]}">${item.type}</span>
-          ${item.label}——${LIUHAI_MEANING[item.type]}。${cureBrief(item)}
+          ${item.label}——${LIUHAI_MEANING[item.type]}${LIUHAI_DEEPER[item.type]?`（${LIUHAI_DEEPER[item.type]}）`:''}。${cureBrief(item)}
         </div>`).join('')}
       </div>`;
     }else if(hitList.length){
