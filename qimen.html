@@ -142,7 +142,7 @@ header{
   font-size:9px;color:var(--ink);opacity:.4;font-weight:600;letter-spacing:1px;
 }
 /* 第一行：天干(左) + 神(右)，同一行並排 —— 對齊荀爽老師「干←乙 符」的排法 */
-.c-line{display:flex;align-items:baseline;justify-content:center;gap:8px;min-height:22px}
+.c-line{display:flex;align-items:baseline;justify-content:center;gap:6px;min-height:22px}
 /* 天干 (天盤)：預設白色/淡色，只有命中六害才變色——嚴格對齊荀爽老師配色表:
    擊刑=紅 / 入墓=藍 / 庚=金黃 / 其餘一律預設色，不再套用材質取象顏色 */
 .c-sky{
@@ -156,17 +156,18 @@ header{
 .c-earth{
   font-size:14px;font-weight:700;color:var(--ink);opacity:.75;line-height:1;
 }
-/* 神值：緊跟在天干右邊，同行顯示。預設白色/淡色，只有白虎才變金黃 */
+/* 神值：緊跟在天干右邊，同行顯示。預設白色/淡色，只有白虎才變金黃。
+   顯示完整名字(如玄武/九天)，字數變多了，字距收緊一點比較整齊 */
 .c-god-val,.c-star-val{
-  font-size:13px;font-weight:700;color:var(--ink);opacity:.85;
-  display:inline-flex;align-items:center;gap:3px;line-height:1;
+  font-size:12px;font-weight:700;color:var(--ink);opacity:.85;letter-spacing:.5px;
+  display:inline-flex;align-items:center;gap:3px;line-height:1.3;
 }
 .c-god-val.baihu{color:#D4AF37;opacity:1;font-weight:800}
 /* 第二行：門，獨立居中一行 —— 對齊荀爽老師把門放在天干/地干中間單獨一行的排法。
-   預設白色/淡色，只有門迫才變綠 */
+   預設白色/淡色，只有門迫才變綠。顯示「X門」完整名字 */
 .c-door-line{display:flex;justify-content:center;margin:3px 0}
 .c-door-val{
-  font-size:15px;font-weight:800;color:var(--ink);
+  font-size:14px;font-weight:800;color:var(--ink);letter-spacing:.5px;
   display:inline-flex;align-items:center;gap:3px;line-height:1;
 }
 .c-door-val.menpo{color:#4A9B4A}
@@ -1529,18 +1530,23 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType){
     const guaDir=GUA_DIR[gua]||'';
     // 天干顏色 class：嚴格對齊六害配色——擊刑紅／入墓藍／庚金黃，優先度 刑>墓>庚，其餘不上色(預設)
     const skyCls=isJx?' jixing':(isRm?' rumu':(s==='庚'?' geng-stem':''));
+    // 門/星/神顯示用稍完整的名字（門: X門；星: 天X，省略「星」字；神: 完整名如玄武/九天），
+    // 宮跟干維持單字不變。從 LEX_DATA 的 .name 取，不再硬拼免得跟之前一樣拼錯字。
+    const doorDisp=dr?(LEX_DATA.doors[dr]?LEX_DATA.doors[dr].name:dr):'';
+    const starDisp=st?(LEX_DATA.stars[st]?LEX_DATA.stars[st].name.replace(/星$/,''):st):'';
+    const godDisp=gd?(LEX_DATA.gods[gd]?LEX_DATA.gods[gd].name:gd):'';
 
     return `<div class="${cls}">
       ${guaDir?`<div class="cell-dir">${guaDir}</div>`:''}
       ${kongLabels.length?`<div class="c-kong">空${kongLabels.join('')}</div>`:''}
       <div class="c-line c-line-top">
         ${s?`<span class="c-sky term${skyCls}" onclick="openSheet('stem','${s}')">${T2(s)}</span>`:'<span class="c-sky dim">—</span>'}
-        ${!isCenter&&gd?`<span class="c-god-val term${isHu?' baihu':''}" onclick="openSheet('god','${gd}')">${T2(gd)}</span>`:''}
+        ${!isCenter&&gd?`<span class="c-god-val term${isHu?' baihu':''}" onclick="openSheet('god','${gd}')">${T2(godDisp)}</span>`:''}
       </div>
-      ${!isCenter&&dr?`<div class="c-door-line"><span class="c-door-val term${isMp?' menpo':''}" onclick="openSheet('door','${dr}')">${T2(dr)}</span></div>`:''}
+      ${!isCenter&&dr?`<div class="c-door-line"><span class="c-door-val term${isMp?' menpo':''}" onclick="openSheet('door','${dr}')">${T2(doorDisp)}</span></div>`:''}
       <div class="c-line c-line-bottom">
         ${e?`<span class="c-earth term" onclick="openSheet('stem','${e}')">${T2(e)}</span>`:''}
-        ${!isCenter&&st?`<span class="c-star-val term" onclick="openSheet('star','${st}')">${T2(st)}</span>`:''}
+        ${!isCenter&&st?`<span class="c-star-val term" onclick="openSheet('star','${st}')">${T2(starDisp)}</span>`:''}
       </div>
       ${isZf?'<div class="c-special zf-tag">值符</div>':''}
       ${isZs&&!isZf?'<div class="c-special zs-tag">值使</div>':''}
@@ -1701,12 +1707,15 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType){
       }
       const dr=door[g], st=star[g], gd=god[g];
       const doorInfo=LEX_DATA.doors[dr], starInfo=LEX_DATA.stars[st], godInfo=LEX_DATA.gods[gd];
-      const parts=[dr?`${T2(dr)}門`:null, st?`${T2(st)}星`:null, gd?`${T2(gd)}神`:null].filter(Boolean).join('、');
+      const doorName=doorInfo?doorInfo.name:(dr?`${dr}門`:null);
+      const starName=starInfo?starInfo.name:(st?`${st}星`:null);
+      const godName=godInfo?godInfo.name:gd;
+      const parts=[doorName,starName,godName].filter(Boolean).map(T2).join('、');
       const frameWord=juType==='命局'?(label==='日'?'內心':'對外樣子'):(label==='日'?'本質':'表象');
       let html=`<div>${label}干「${T2(stem)}」落在<b>${T2(g)}宮</b>——這宮是${parts}，${juType==='命局'?'這個人的':'這件事的'}${frameWord}就看這三個組合起來：</div>`;
-      if(doorInfo)html+=`<div class="ana-step">門象「${T2(dr)}門」（${T2(doorInfo.keyword||'')}）：${T2(doorInfo.desc||'')}</div>`;
-      if(starInfo)html+=`<div class="ana-step">星象「${T2(st)}星」（${T2(starInfo.keyword||'')}）：${T2(starInfo.desc||'')}</div>`;
-      if(godInfo)html+=`<div class="ana-step">神象「${T2(gd)}神」（${T2(godInfo.keyword||'')}）：${T2(godInfo.desc||'')}</div>`;
+      if(doorInfo)html+=`<div class="ana-step">門象「${T2(doorName)}」（${T2(doorInfo.keyword||'')}）：${T2(doorInfo.desc||'')}</div>`;
+      if(starInfo)html+=`<div class="ana-step">星象「${T2(starName)}」（${T2(starInfo.keyword||'')}）：${T2(starInfo.desc||'')}</div>`;
+      if(godInfo)html+=`<div class="ana-step">神象「${T2(godName)}」（${T2(godInfo.keyword||'')}）：${T2(godInfo.desc||'')}</div>`;
       return html;
     };
 
