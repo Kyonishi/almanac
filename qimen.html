@@ -199,6 +199,14 @@ header{
 .pill-xiong{background:#FEF0F0;color:var(--red)}
 .pill-neutral{background:#F5F5F0;color:var(--sub)}
 
+/* 本局解讀（白話摘要卡，在六害明細卡之上） */
+.analysis-card{background:#F7F9FC;border:1px solid #D8E0EC;border-radius:10px;
+  padding:12px 14px;margin-bottom:10px;font-size:12.5px;color:#233;line-height:1.75}
+.ana-block{margin-bottom:10px}
+.ana-block:last-child{margin-bottom:0}
+.ana-h{font-weight:700;color:#1A3A6B;margin-bottom:3px;font-size:11px;letter-spacing:1px}
+.ana-item{margin-bottom:5px;padding-left:2px}
+
 /* 六害說明卡 */
 .liuhai-card{background:#FEF9F9;border:1px solid #F5D5D5;border-radius:10px;
   padding:12px 14px;margin-bottom:10px;font-size:12px;color:#5C1010;line-height:1.7}
@@ -206,7 +214,7 @@ header{
 .liuhai-sec:last-child{margin-bottom:0}
 .liuhai-title{font-weight:700;margin-bottom:4px;letter-spacing:1px;display:flex;align-items:center;gap:5px}
 .liuhai-title .dot{width:6px;height:6px;border-radius:50%;display:inline-block}
-/* 六害配色 據荀爽視頻「六害」對照表逐字轉錄: 刑=紅 墓=淺藍 庚=金黃 迫=金黃 虎=金黃 空=藍
+/* 六害配色 據荀爽視頻「六害」對照表逐字轉錄: 刑=紅 墓=淺藍 庚=金黃 迫=綠 虎=金黃 空=藍紫
    (其餘說明文字不額外上色, 沿用預設文字色) */
 .lh-word{font-weight:700}
 .lh-xing{color:#C0392B} /* 刑：紅 */
@@ -1463,6 +1471,14 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput){
   }
   markKong(kong.日空,'日');
   markKong(kong.時空,'時');
+  // 空亡命中宮位 (只取有旬空標記的宮, 排除中宮) —— 提到外層讓摘要卡和明細卡共用
+  const kongHitGongs=Object.keys(kongGongMap).filter(g=>g!=='中');
+
+  /* 日干/時干拆解 (供「事局/命局」雙重解讀用):
+     來源：荀爽老師視頻截圖——同一組日干時干可以同時看「事局」(日干=此事實質，時干=此事表象)
+     跟「命局」(日干=此人內心，時干=此人外在)，兩種解讀並存，不是起局時的另一個選項。 */
+  const gzMatch=(pan.干支||'').match(/^(.)(.)年(.)(.)月(.)(.)日(.)(.)時$/);
+  const dayStem=gzMatch?gzMatch[5]:null, hourStem=gzMatch?gzMatch[7]:null;
 
   /* 九宮格格子 */
   function renderCell(gua){
@@ -1557,8 +1573,94 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput){
   </div>
 
   ${(function(){
-    // 空亡命中宮位 (只取有旬空標記的宮, 排除中宮)
-    const kongHitGongs=Object.keys(kongGongMap).filter(g=>g!=='中');
+    /* ══ 本局解讀：把上面已經算好的號令/六害/灭象布阵資料，整合成白話的一段分析 ══
+       這裡不新增任何判斷方法論——文字用詞(争執損耗/沉溺迷失/凶禍阻隔/快速危險/壓力脅迫/虛假不實)
+       直接沿用荀爽老師視頻「六害」截圖裡的原詞；事局/命局雙重解讀、值符值使的話語權/用武之地說法，
+       也都是視頻截圖逐字轉錄，不是自己編的新規則。 */
+    const LIUHAI_MEANING={刑:'争執損耗',墓:'沉溺迷失',庚:'凶禍阻隔',虎:'快速危險',迫:'壓力脅迫',空:'虛假不實'};
+
+    // 逐條六害，按「先刑墓庚，再虎迫空」的順序合併成一個清單
+    const hitList=[];
+    Object.entries(jixingHits).forEach(([g,st])=>hitList.push({type:'刑',severity:1,gong:g,
+      isHit:protectedStems.has(st), label:`${T2(g)}宮天干${T2(st)}擊刑`, cure:getCureForJiXing(g,st)}));
+    Object.entries(rumuHits).forEach(([g,st])=>hitList.push({type:'墓',severity:2,gong:g,
+      isHit:protectedStems.has(st), label:`${T2(g)}宮天干${T2(st)}入墓`, cure:getCureForRuMu(g,st)}));
+    Object.entries(gengHits).forEach(([g])=>hitList.push({type:'庚',severity:3,gong:g,
+      isHit:protectedStems.has('庚'), label:`${T2(g)}宮天干庚`, cure:getCureForGengOrHu(g,'庚')}));
+    Object.entries(baihuHits).forEach(([g])=>hitList.push({type:'虎',severity:4,gong:g,
+      isHit:gongHitsProtected(g,sky,earth,protectedStems), label:`${T2(g)}宮白虎`, cure:getCureForGengOrHu(g,'虎')}));
+    Object.entries(menpoHits).forEach(([g,dr])=>hitList.push({type:'迫',severity:5,gong:g,
+      isHit:gongHitsProtected(g,sky,earth,protectedStems)||dr===zfzs.值使門宮?.[0],
+      label:`${T2(g)}宮${T2(dr)}門迫`, cureDoor:getCureForMenPo(g)}));
+    kongHitGongs.forEach(g=>hitList.push({type:'空',severity:6,gong:g,isHit:true,
+      label:`${T2(g)}宮空亡（${kongGongMap[g].join('')}空）`, cure:getCureForKongWang(g,needKey)}));
+    hitList.sort((a,b)=>a.severity-b.severity);
+    const hitOnly=hitList.filter(x=>x.isHit);
+
+    const cureBrief=(item)=>{
+      if(item.cureDoor){
+        const c=item.cureDoor;
+        return c?`先灭象，再用合：擺放「${c.doorsText}」門象、對應地支「${c.branchesText}」布阵化解。`:'（化解方式暫缺，需人工覆核）';
+      }
+      const c=item.cure;
+      if(!c||!c.xiang)return '（化解方式暫缺，需人工覆核）';
+      const x=c.xiang;
+      const unverified=c.verified===false?'（此為推導，未經視頻原文逐字驗證，建議人工覆核）':'';
+      return `先灭象，再用「${T2(x.stem)}」布阵：${x.wu}，或寫「${T2(x.stem)}」字，取意「${x.yi}」、行「${x.xing}」${unverified}。`;
+    };
+
+    // 事局/命局 雙重解讀 (日干/時干)
+    let openingHtml='';
+    if(dayStem&&hourStem){
+      const dStem=LEX_DATA.stems[dayStem], hStem=LEX_DATA.stems[hourStem];
+      openingHtml=`<div class="ana-block">
+        <div class="ana-h">這局怎麼看</div>
+        <div>所求：<b>${T2(needKey)}</b>。日干「${T2(dayStem)}」（${dStem?dStem.keyword:''}），時干「${T2(hourStem)}」（${hStem?hStem.keyword:''}）——
+        <br>把這局當「事」看：日干代表這件事的<b>本質</b>，時干代表這件事目前呈現出來的<b>表象</b>；
+        <br>把這局當「人」看（如果問的是某個人）：日干代表這個人的<b>內心</b>，時干代表這個人對外展現的<b>樣子</b>。</div>
+      </div>`;
+    }
+    if(realZfGong||realZsGong){
+      openingHtml+=`<div class="ana-block">
+        <div>值符落於<b>${T2(realZfGong)}宮</b>——這局的話語權/主導力量在這裡；
+        值使落於<b>${T2(realZsGong)}宮</b>——真正能使得上力、能行動見效的位置在這裡。</div>
+      </div>`;
+    }
+
+    // 需要注意的地方
+    let attentionHtml='';
+    if(hitOnly.length){
+      attentionHtml=`<div class="ana-block">
+        <div class="ana-h">需要注意的地方（按嚴重度排序，只列命中本次號令的）</div>
+        ${hitOnly.map(item=>`<div class="ana-item">
+          <span class="lh-word lh-${{刑:'xing',墓:'mu',庚:'geng',虎:'hu',迫:'po',空:'kong'}[item.type]}">${item.type}</span>
+          ${item.label}——${LIUHAI_MEANING[item.type]}。${cureBrief(item)}
+        </div>`).join('')}
+      </div>`;
+    }else if(hitList.length){
+      attentionHtml=`<div class="ana-block"><div>本局有六害，但都沒有命中本次號令保護的天干/宮位，屬於盤面背景，不是真正衝著這次問事來的，可以先不用特別處理。</div></div>`;
+    }else{
+      attentionHtml=`<div class="ana-block"><div>本局沒有檢測到刑墓庚虎迫空六害，盤面比較乾淨。</div></div>`;
+    }
+
+    // 整體判斷 (基於已驗證的嚴重度排序做的合成描述，非新方法論)
+    const hasSevere=hitOnly.some(x=>x.severity<=3);
+    let verdict;
+    if(hitOnly.length===0) verdict='整體比較順，沒有命中號令的凶象，可以按原計劃推進。';
+    else if(hasSevere) verdict='有明顯阻力（命中了刑/墓/庚其中之一），建議先把上面列的灭象/布阵做完，再看局勢有沒有轉順。';
+    else verdict='有一些干擾（虎/迫/空層級），問題不算嚴重，但處理掉會更順。';
+
+    return `<div class="analysis-card">
+      ${openingHtml}
+      ${attentionHtml}
+      <div class="ana-block"><div class="ana-h">整體判斷</div><div>${verdict}</div></div>
+      <div class="ana-block"><div class="ana-h">下一步</div>
+        <div>灭象、布阵一律「重天干、可忽略地干」，每個宮只看上面的天干；布阵時把化解用的天干/地支形象，按對你最有利的方式布入對應宮位（荀爽老師說的「利益最大原則」）。</div>
+      </div>
+    </div>`;
+  })()}
+
+  ${(function(){
     const anyHit=Object.keys(jixingHits).length||Object.keys(rumuHits).length||Object.keys(menpoHits).length
       ||Object.keys(gengHits).length||Object.keys(baihuHits).length||kongHitGongs.length;
     if(!anyHit)return '';
