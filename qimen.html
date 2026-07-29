@@ -136,6 +136,11 @@ header{
   font-size:9px;color:var(--ink);opacity:.55;font-weight:600;letter-spacing:.5px;
 }
 .cell-gua.kongwang{color:#2E6FD9;opacity:1;font-weight:700}
+/* 方位：對照荀爽老師視頻九宮外圍的「東南/南/西南...」標法，釘在格子左上角(跟宮名右下角相對) */
+.cell-dir{
+  position:absolute;left:6px;top:4px;
+  font-size:9px;color:var(--ink);opacity:.4;font-weight:600;letter-spacing:1px;
+}
 /* 第一行：天干(左) + 神(右)，同一行並排 —— 對齊荀爽老師「干←乙 符」的排法 */
 .c-line{display:flex;align-items:baseline;justify-content:center;gap:8px;min-height:22px}
 /* 天干 (天盤)：預設白色/淡色，只有命中六害才變色——嚴格對齊荀爽老師配色表:
@@ -208,7 +213,8 @@ header{
 .ana-block{margin-bottom:10px}
 .ana-block:last-child{margin-bottom:0}
 .ana-h{font-weight:700;color:#1A3A6B;margin-bottom:3px;font-size:11px;letter-spacing:1px}
-.ana-item{margin-bottom:5px;padding-left:2px}
+.ana-item{margin-bottom:8px;padding-left:2px}
+.ana-step{padding-left:16px;opacity:.85;font-size:12px;margin-top:2px}
 
 /* 六害說明卡 */
 .liuhai-card{background:#FEF9F9;border:1px solid #F5D5D5;border-radius:10px;
@@ -1144,6 +1150,9 @@ const GRID_ORDER=['巽','離','坤','震','中','兌','艮','坎','乾'];
 const GUA_NAME={'坎':'坎一水','坤':'坤二土','震':'震三木','巽':'巽四木',
   '中':'中五土','乾':'乾六金','兌':'兌七金','艮':'艮八土','離':'離九火'};
 
+// 後天八卦方位 (固定對照, 業界通用慣例): 離=南 坎=北 震=東 兌=西, 四角宮巽/坤/艮/乾對應東南/西南/東北/西北
+const GUA_DIR={'離':'南','坎':'北','震':'東','兌':'西','巽':'東南','坤':'西南','艮':'東北','乾':'西北'};
+
 // 後天八卦配支 (固定對照, 十二地支分配到八宮, 四角宮各佔兩支)
 // 用於把「日空/時空」的地支標到正確宮位上 — 此對照表是業界通用慣例,
 // 並非 kinqimen 函式庫本身輸出(該庫只回傳地支字串, 不含宮位對應), 故未經交叉驗證,
@@ -1503,10 +1512,12 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput){
     if(isZs&&!isCenter&&!isZf)cls+=' is-zs';
 
     const guaName=GUA_NAME[gua]||gua;
+    const guaDir=GUA_DIR[gua]||'';
     // 天干顏色 class：嚴格對齊六害配色——擊刑紅／入墓藍／庚金黃，優先度 刑>墓>庚，其餘不上色(預設)
     const skyCls=isJx?' jixing':(isRm?' rumu':(s==='庚'?' geng-stem':''));
 
     return `<div class="${cls}">
+      ${guaDir?`<div class="cell-dir">${guaDir}</div>`:''}
       ${kongLabels.length?`<div class="c-kong">空${kongLabels.join('')}</div>`:''}
       <div class="c-line c-line-top">
         ${s?`<span class="c-sky term${skyCls}" onclick="openSheet('stem','${s}')">${T2(s)}</span>`:'<span class="c-sky dim">—</span>'}
@@ -1578,17 +1589,19 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput){
     /* ══ 本局解讀：把上面已經算好的號令/六害/灭象布阵資料，整合成白話的一段分析 ══
        這裡不新增任何判斷方法論——文字用詞(争執損耗/沉溺迷失/凶禍阻隔/快速危險/壓力脅迫/虛假不實)
        直接沿用荀爽老師視頻「六害」截圖裡的原詞；事局/命局雙重解讀、值符值使的話語權/用武之地說法，
-       也都是視頻截圖逐字轉錄，不是自己編的新規則。 */
+       也都是視頻截圖逐字轉錄；灭象動作(可移可扔可送/只能移別扔別送等)直接沿用 MIEXIANG_RULE，
+       不是自己編的新規則。這一版把同一類化解方式相同的命中合併成一條，避免重複的布阵說明洗版；
+       灭象跟布阵拆成兩行分開講清楚；整體用「一步步」的口吻寫，像人在旁邊講解，不是條列報告。 */
     const LIUHAI_MEANING={刑:'争執損耗',墓:'沉溺迷失',庚:'凶禍阻隔',虎:'快速危險',迫:'壓力脅迫',空:'虛假不實'};
     /* 刑/墓/庚 的軍事隱喻 —— 來源: 荀爽老師視頻「主帥/三奇/六儀」截圖逐字轉錄:
        甲=主帥(指揮中樞，護主帥) / 乙丙丁=三奇(致勝奇謀，以奇勝) / 戊己庚辛壬癸=六儀(大規模正面主力，以正合)
-       刑打六儀(正面主力被絞殺殆盡、崩潰)，墓困三奇(奇兵落入陷阱、發揮不出來)，庚點主帥本身(主帥被針對)。
-       三者攻擊的層級不同，這也是「刑墓庚」疊加特別可怕的原因。 */
+       刑打六儀(正面主力被絞殺殆盡、崩潰)，墓困三奇(奇兵落入陷阱、發揮不出來)，庚點主帥本身(主帥被針對)。 */
     const LIUHAI_DEEPER={
       刑:'刑打的是「六儀」（正面主力）——正面主力被絞殺殆盡，全面崩潰',
       墓:'墓困的是「三奇」（奇兵奇謀）——奇兵落入對方陷阱，發揮不出來',
       庚:'庚點的是「主帥」本身（甲）——你自己被瞄準、被克制',
     };
+    const GROUP_SUFFIX={刑:'皆擊刑',墓:'皆入墓',庚:'皆天干庚',虎:'皆白虎',迫:'皆門迫',空:'皆空亡'};
 
     // 逐條六害，按「先刑墓庚，再虎迫空」的順序合併成一個清單
     const hitList=[];
@@ -1608,55 +1621,88 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput){
     hitList.sort((a,b)=>a.severity-b.severity);
     const hitOnly=hitList.filter(x=>x.isHit);
 
-    const cureBrief=(item)=>{
+    // 灭象/布阵 兩步驟拆開講，灭象動作沿用 MIEXIANG_RULE (未驗證的部份誠實標註)
+    const stepsHtml=(item)=>{
+      const rule=MIEXIANG_RULE[item.type];
+      const mxUnverified=(rule&&rule.verified===false&&!/^（/.test(rule.action))?'（暫缺視頻原文明確說明，建議人工覆核）':'';
+      const mxLine=rule?`<div class="ana-step">灭象：${rule.action}${mxUnverified}</div>`:'';
+      let buLine;
       if(item.cureDoor){
         const c=item.cureDoor;
-        return c?`先灭象，再用合：擺放「${c.doorsText}」門象、對應地支「${c.branchesText}」布阵化解。`:'（化解方式暫缺，需人工覆核）';
+        buLine=c?`<div class="ana-step">布阵：擺放「${c.doorsText}」門象、對應地支「${c.branchesText}」化解。</div>`
+                :'<div class="ana-step">布阵：（暫缺，需人工覆核）</div>';
+      }else{
+        const c=item.cure;
+        if(c&&c.xiang){
+          const x=c.xiang;
+          const cvUnverified=c.verified===false?'（此為推導，未經視頻原文逐字驗證，建議人工覆核）':'';
+          buLine=`<div class="ana-step">布阵：用「${T2(x.stem)}」——${x.wu}，或寫「${T2(x.stem)}」字，取意「${x.yi}」、行「${x.xing}」${cvUnverified}</div>`;
+        }else{
+          buLine='<div class="ana-step">布阵：（暫缺，需人工覆核）</div>';
+        }
+      }
+      return mxLine+buLine;
+    };
+    // 化解方式相同的命中(常見於同一次布阵用同一個天干/同一組門象)合併成一條，避免重複洗版
+    const groupKey=(item)=>{
+      if(item.cureDoor){
+        const c=item.cureDoor;
+        return c?`door|${item.type}|${c.doorsText}|${c.branchesText}`:`door|${item.type}|none|${item.gong}`;
       }
       const c=item.cure;
-      if(!c||!c.xiang)return '（化解方式暫缺，需人工覆核）';
-      const x=c.xiang;
-      const unverified=c.verified===false?'（此為推導，未經視頻原文逐字驗證，建議人工覆核）':'';
-      return `先灭象，再用「${T2(x.stem)}」布阵：${x.wu}，或寫「${T2(x.stem)}」字，取意「${x.yi}」、行「${x.xing}」${unverified}。`;
+      return c&&c.xiang?`stem|${item.type}|${c.xiang.stem}`:`stem|${item.type}|none|${item.gong}`;
     };
+    const groupsMap=new Map();
+    hitOnly.forEach(item=>{
+      const k=groupKey(item);
+      if(!groupsMap.has(k))groupsMap.set(k,{type:item.type,severity:item.severity,items:[]});
+      groupsMap.get(k).items.push(item);
+    });
+    const groupList=[...groupsMap.values()].sort((a,b)=>a.severity-b.severity);
 
-    // 事局/命局 雙重解讀 (日干/時干)
+    // 事局/命局 雙重解讀 (日干/時干)——第一步，先搞清楚這局在保護誰、話語權在哪
     let openingHtml='';
     if(dayStem&&hourStem){
       const dStem=LEX_DATA.stems[dayStem], hStem=LEX_DATA.stems[hourStem];
       openingHtml=`<div class="ana-block">
-        <div class="ana-h">這局怎麼看</div>
-        <div>所求：<b>${T2(needKey)}</b>。日干「${T2(dayStem)}」（${dStem?dStem.keyword:''}），時干「${T2(hourStem)}」（${hStem?hStem.keyword:''}）——
-        <br>把這局當「事」看：日干代表這件事的<b>本質</b>，時干代表這件事目前呈現出來的<b>表象</b>；
-        <br>把這局當「人」看（如果問的是某個人）：日干代表這個人的<b>內心</b>，時干代表這個人對外展現的<b>樣子</b>。</div>
+        <div class="ana-h">第一步・先看這局是為誰起的</div>
+        <div>這次問的是「<b>${T2(needKey)}</b>」。日干「${T2(dayStem)}」（${dStem?dStem.keyword:''}），時干「${T2(hourStem)}」（${hStem?hStem.keyword:''}）——
+        <br>如果把這局當「事」看：日干是這件事的<b>本質</b>，時干是它目前呈現出來的<b>表象</b>；
+        <br>如果把這局當「人」看（問的是某個人）：日干是這個人的<b>內心</b>，時干是他對外展現的<b>樣子</b>。</div>
       </div>`;
     }
     if(realZfGong||realZsGong){
       openingHtml+=`<div class="ana-block">
-        <div>值符落於<b>${T2(realZfGong)}宮</b>——這局的話語權/主導力量在這裡；
-        值使落於<b>${T2(realZsGong)}宮</b>——真正能使得上力、能行動見效的位置在這裡。</div>
+        <div>再看誰在主導、誰能出力：值符落在<b>${T2(realZfGong)}宮</b>，這局的話語權/主導力量在這裡；
+        值使落在<b>${T2(realZsGong)}宮</b>，真正能使得上力、行動見效的位置在這裡。</div>
       </div>`;
     }
 
-    // 需要注意的地方
+    // 第二步：有沒有踩雷
     let attentionHtml='';
     if(hitOnly.length){
       const tripleHit=['刑','墓','庚'].every(t=>hitOnly.some(x=>x.type===t));
       attentionHtml=`<div class="ana-block">
-        <div class="ana-h">需要注意的地方（按嚴重度排序，只列命中本次號令的）</div>
+        <div class="ana-h">第二步・有沒有踩到雷（只列命中本次號令的，按嚴重度由重到輕）</div>
         ${tripleHit?`<div class="ana-item"><b>刑、墓、庚同時命中</b>——正面主力（六儀）、奇兵奇謀（三奇）、主帥本身（甲）三個層級同時被打，是最重的疊加情況，建議優先全部處理完再看局勢。</div>`:''}
-        ${hitOnly.map(item=>`<div class="ana-item">
-          <span class="lh-word lh-${{刑:'xing',墓:'mu',庚:'geng',虎:'hu',迫:'po',空:'kong'}[item.type]}">${item.type}</span>
-          ${item.label}——${LIUHAI_MEANING[item.type]}${LIUHAI_DEEPER[item.type]?`（${LIUHAI_DEEPER[item.type]}）`:''}。${cureBrief(item)}
-        </div>`).join('')}
+        ${groupList.map(grp=>{
+          const first=grp.items[0];
+          const gongList=grp.items.map(it=>T2(it.gong)).join('、');
+          const headLine=grp.items.length>1?`${gongList}${grp.items.length}宮${GROUP_SUFFIX[grp.type]}`:first.label;
+          return `<div class="ana-item">
+            <span class="lh-word lh-${{刑:'xing',墓:'mu',庚:'geng',虎:'hu',迫:'po',空:'kong'}[grp.type]}">${grp.type}</span>
+            ${headLine}——${LIUHAI_MEANING[grp.type]}${LIUHAI_DEEPER[grp.type]?`（${LIUHAI_DEEPER[grp.type]}）`:''}
+            ${stepsHtml(first)}
+          </div>`;
+        }).join('')}
       </div>`;
     }else if(hitList.length){
-      attentionHtml=`<div class="ana-block"><div>本局有六害，但都沒有命中本次號令保護的天干/宮位，屬於盤面背景，不是真正衝著這次問事來的，可以先不用特別處理。</div></div>`;
+      attentionHtml=`<div class="ana-block"><div class="ana-h">第二步・有沒有踩到雷</div><div>本局有六害，但都沒有命中本次號令保護的天干/宮位，屬於盤面背景，不是真正衝著這次問事來的，可以先不用特別處理。</div></div>`;
     }else{
-      attentionHtml=`<div class="ana-block"><div>本局沒有檢測到刑墓庚虎迫空六害，盤面比較乾淨。</div></div>`;
+      attentionHtml=`<div class="ana-block"><div class="ana-h">第二步・有沒有踩到雷</div><div>本局沒有檢測到刑墓庚虎迫空六害，盤面比較乾淨。</div></div>`;
     }
 
-    // 整體判斷 (基於已驗證的嚴重度排序做的合成描述，非新方法論)
+    // 第三步：整體判斷 (基於已驗證的嚴重度排序做的合成描述，非新方法論)
     const hasSevere=hitOnly.some(x=>x.severity<=3);
     let verdict;
     if(hitOnly.length===0) verdict='整體比較順，沒有命中號令的凶象，可以按原計劃推進。';
@@ -1666,8 +1712,8 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput){
     return `<div class="analysis-card">
       ${openingHtml}
       ${attentionHtml}
-      <div class="ana-block"><div class="ana-h">整體判斷</div><div>${verdict}</div></div>
-      <div class="ana-block"><div class="ana-h">下一步</div>
+      <div class="ana-block"><div class="ana-h">第三步・整體怎麼樣</div><div>${verdict}</div></div>
+      <div class="ana-block"><div class="ana-h">第四步・排雷時要注意</div>
         <div>灭象、布阵一律「重天干、可忽略地干」，每個宮只看上面的天干；布阵時把化解用的天干/地支形象，按對你最有利的方式布入對應宮位（荀爽老師說的「利益最大原則」）。</div>
       </div>
     </div>`;
