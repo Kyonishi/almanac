@@ -72,5 +72,17 @@ function check(label, actual, expected) {
   check('排局', pan.排局, '陽遁七局下元');
 }
 
+// ── 案例三: 2024-08-01 12:00 (陰遁期間，鎖定「勾陳/朱雀已修正移除」— 2026-07-29 依荀爽視頻
+//    「八神原宮」參考圖修正：八神固定是符/蛇/陰/合/虎/玄/地/天這8個，陰陽遁不分，不會出現勾/雀) ──
+{
+  const pan = QimenJS.qimenChaibu(Solar, 2024, 8, 1, 12, 0);
+  console.log('\n── 案例三: 2024-08-01 12:00 (陰遁) ──');
+  check('排局屬於陰遁', pan.排局.includes('陰遁'), true);
+  const godValues = Object.values(pan.神);
+  const usesHuXuan = godValues.includes('虎') && godValues.includes('玄');
+  const usesGouQue = godValues.includes('勾') || godValues.includes('雀');
+  check('陰遁也使用虎玄而非勾雀', { 虎玄: usesHuXuan, 勾雀: usesGouQue }, { 虎玄: true, 勾雀: false });
+}
+
 console.log(`\n══ 結果: ${pass} 通過, ${fail} 失敗 ══`);
 process.exit(fail > 0 ? 1 : 0);
