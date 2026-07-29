@@ -1683,14 +1683,20 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput){
       if(!stem)return '';
       const g=locateStemGong(stem);
       if(!g){
-        return `${label}干「${T2(stem)}」在天盤上沒有直接找到對應宮位（如果是「甲」，因為甲永遠藏在值符背後、不直接現於天盤，這是正常的，看值符落宮即可）。`;
+        return `<div>${label}干「${T2(stem)}」在天盤上沒有直接找到對應宮位（如果是「甲」，因為甲永遠藏在值符背後、不直接現於天盤，這是正常的，看值符落宮即可）。</div>`;
       }
       if(g==='中'){
-        return `${label}干「${T2(stem)}」落在<b>中宮</b>——中宮本身不單獨排門/星/神(禽星寄坤)，可以直接參考坤宮。`;
+        return `<div>${label}干「${T2(stem)}」落在<b>中宮</b>——中宮本身不單獨排門/星/神(禽星寄坤)，可以直接參考坤宮。</div>`;
       }
       const dr=door[g], st=star[g], gd=god[g];
+      const doorInfo=LEX_DATA.doors[dr], starInfo=LEX_DATA.stars[st], godInfo=LEX_DATA.gods[gd];
       const parts=[dr?`${T2(dr)}門`:null, st?`${T2(st)}星`:null, gd?`${T2(gd)}神`:null].filter(Boolean).join('、');
-      return `${label}干「${T2(stem)}」落在<b>${T2(g)}宮</b>——這宮是${parts}，${label==='日'?'這件事的本質(或這個人的內心)':'這件事的表象(或這個人對外的樣子)'}就看這個組合。`;
+      const frameWord=label==='日'?'本質／內心':'表象／樣子';
+      let html=`<div>${label}干「${T2(stem)}」落在<b>${T2(g)}宮</b>——這宮是${parts}，這件事的${frameWord}就看這三個組合起來：</div>`;
+      if(doorInfo)html+=`<div class="ana-step">門象「${T2(dr)}門」（${T2(doorInfo.keyword||'')}）：${T2(doorInfo.desc||'')}</div>`;
+      if(starInfo)html+=`<div class="ana-step">星象「${T2(st)}星」（${T2(starInfo.keyword||'')}）：${T2(starInfo.desc||'')}</div>`;
+      if(godInfo)html+=`<div class="ana-step">神象「${T2(gd)}神」（${T2(godInfo.keyword||'')}）：${T2(godInfo.desc||'')}</div>`;
+      return html;
     };
 
     let openingHtml='';
@@ -1701,7 +1707,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput){
         <div>這次問的是「<b>${T2(needKey)}</b>」。日干「${T2(dayStem)}」（${dStem?dStem.keyword:''}），時干「${T2(hourStem)}」（${hStem?hStem.keyword:''}）——
         <br>如果把這局當「事」看：日干是這件事的<b>本質</b>，時干是它目前呈現出來的<b>表象</b>；
         <br>如果把這局當「人」看（問的是某個人）：日干是這個人的<b>內心</b>，時干是他對外展現的<b>樣子</b>。</div>
-        <div style="margin-top:6px">${stemLocateLine('日',dayStem)}<br>${stemLocateLine('時',hourStem)}</div>
+        <div style="margin-top:6px">${stemLocateLine('日',dayStem)}${stemLocateLine('時',hourStem)}</div>
       </div>`;
     }
     if(realZfGong||realZsGong){
