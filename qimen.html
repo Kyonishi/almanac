@@ -1277,13 +1277,19 @@ function stemWuxing(stem){
 // 取其六冲地支，再反查回天干 —— 此邏輯與「刑用合(五合)」的推導方式一致(同屬天干地支
 // 生克化解框架)，但非逐字視頻畫面讀出，標記 verified:false 供覆核
 const STEM_TO_BRANCH={'甲':'寅','乙':'卯','丙':'午','丁':'巳','戊':'辰','己':'丑','庚':'申','辛':'酉','壬':'子','癸':'亥'};
+// 灭象後的「布阵方位」無腦法 —— 來源: 荀爽老師視頻「六儀擊刑/三奇入墓」方位對照九宮圖 + 「無腦法」截圖逐字轉錄:
+// 圖中列出每個天干各自「絕對不能放」的方位(乙丙→不能放西北, 丁→不能放東北, 戊→不能放正東,
+// 庚丁→不能放東北, 己甲→不能放西南, 壬癸→不能放東南, 辛→不能放正南)，唯獨正西、正北兩個方位，
+// 對照圖裡完全沒有任何天干的禁區落在這兩處。所以「無腦法」給的標準答案就是：
+// 灭象後，不用一個個記天干的禁區，統一把要布的天干放到正西或正北，兩個方位都可以。
+const WUNAOFA_DEST='正西或正北';
+
 function getCureForRuMu(gua, stem){
   const branch=STEM_TO_BRANCH[stem];
-  if(!branch)return null;
-  const chongBranch=CHONG_TABLE[branch];
+  const chongBranch=branch?CHONG_TABLE[branch]:null;
   const cureStem=chongBranch&&LEX_DATA.branches[chongBranch]?LEX_DATA.branches[chongBranch].sameAs:null;
-  if(!cureStem)return null;
-  return {hai:'墓', gong:gua, hitStem:stem, cureStem, method:'用冲(地支六冲)', xiang:getBuZhenXiang(cureStem), verified:false};
+  return {hai:'墓', gong:gua, hitStem:stem, cureStem, method:'用冲(地支六冲，推導未驗證)',
+    xiang:cureStem?getBuZhenXiang(cureStem):null, verified:false, place:WUNAOFA_DEST, placeVerified:true};
 }
 
 // 針對「迫」(門迫): 用合。來源: 荀爽視頻「遇到門迫，用這些」九宮圖截圖
@@ -1324,8 +1330,8 @@ function getBuZhenXiang(stem){
 // 針對「刑」: 給出該宮命中天干對應的「用合」化解天干及其字物意行
 function getCureForJiXing(gua, stem){
   const heStem=HE_TABLE[stem];
-  if(!heStem)return null;
-  return {hai:'刑', gong:gua, hitStem:stem, cureStem:heStem, method:'用合(天干五合)', xiang:getBuZhenXiang(heStem)};
+  return {hai:'刑', gong:gua, hitStem:stem, cureStem:heStem, method:'用合(天干五合)',
+    xiang:heStem?getBuZhenXiang(heStem):null, place:WUNAOFA_DEST, placeVerified:true};
 }
 
 // 針對「庚/白虎」: 無腦用乙化解 (荀爽視頻明確給出的簡化規則, 不分宮位)
@@ -1403,9 +1409,11 @@ function buildProtectedStems(ganzhiStr, yearsInput, needKey, zhifuStem){
   return set;
 }
 // 判斷某宮是否「命中號令」: 該宮的天盤干或地盤干落在保護天干集合內
+// 只看天干(天盤)是否命中號令；地干(地盤)依荀爽老師原話「不參與，只是修飾」，故不納入判斷。
+// earth 參數保留是為了不用改所有呼叫端的簽名，但函式本體不再讀取它。
 function gongHitsProtected(gua, sky, earth, protectedStems){
   if(!protectedStems||protectedStems.size===0)return false;
-  return protectedStems.has(sky[gua])||protectedStems.has(earth[gua]);
+  return protectedStems.has(sky[gua]);
 }
 
 /* 吉凶判斷 (簡易版) */
@@ -1654,18 +1662,22 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType){
       const rule=MIEXIANG_RULE[item.type];
       const mxUnverified=(rule&&rule.verified===false&&!/^（/.test(rule.action))?'（暫缺視頻原文明確說明，建議人工覆核）':'';
       const mxLine=rule?`<div class="ana-step">灭象：${rule.action}${mxUnverified}</div>`:'';
-      let buLine;
+      let buLine='';
       if(item.cureDoor){
         const c=item.cureDoor;
         buLine=c?`<div class="ana-step">布阵：擺放「${c.doorsText}」門象、對應地支「${c.branchesText}」化解。</div>`
                 :'<div class="ana-step">布阵：（暫缺，需人工覆核）</div>';
       }else{
         const c=item.cure;
+        if(c&&c.place){
+          buLine+=`<div class="ana-step">布阵（無腦法）：灭象後，把要布的天干放到<b>${c.place}</b>方位，兩個方位都可以，不用另外挑特定天干。</div>`;
+        }
         if(c&&c.xiang){
           const x=c.xiang;
-          const cvUnverified=c.verified===false?'（此為推導，未經視頻原文逐字驗證，建議人工覆核）':'';
-          buLine=`<div class="ana-step">布阵：用「${T2(x.stem)}」——${x.wu}，或寫「${T2(x.stem)}」字，取意「${x.yi}」、行「${x.xing}」${cvUnverified}</div>`;
-        }else{
+          const cvUnverified=c.verified===false?'（此為推導，未經視頻原文逐字驗證，僅供參考）':'';
+          buLine+=`<div class="ana-step">${c.place?'（進階，非必要）':'布阵：'}如果想搭配具體天干取象，可以用「${T2(x.stem)}」——${x.wu}${cvUnverified}</div>`;
+        }
+        if(!buLine){
           buLine='<div class="ana-step">布阵：（暫缺，需人工覆核）</div>';
         }
       }
@@ -1787,10 +1799,11 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType){
 
     const cureLine=(cure)=>{
       if(!cure)return '';
+      const placeLine=cure.place?`<div class="cure-line">→ 無腦法：灭象後放到<b>${cure.place}</b>方位，兩個方位都可以</div>`:'';
       const x=cure.xiang;
-      if(!x)return '';
-      const unverified=cure.verified===false?'<span style="opacity:.6">（推導，未經視頻原文驗證，建議人工覆核）</span>':'';
-      return `<div class="cure-line">→ ${cure.method}：用「${x.stem}」${unverified}<br>
+      if(!x)return placeLine;
+      const unverified=cure.verified===false?'<span style="opacity:.6">（推導，未經視頻原文驗證，僅供參考）</span>':'';
+      return placeLine+`<div class="cure-line">→ ${cure.place?'（進階）':''}${cure.method}：用「${x.stem}」${unverified}<br>
         <span style="opacity:.85">字：${x.wu?x.wu:''}　字：${x.zi}</span><br>
         <span style="opacity:.85">意：${x.yi}　行：${x.xing}</span></div>`;
     };
