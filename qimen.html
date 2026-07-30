@@ -1387,7 +1387,10 @@ function getCureForKongWang(gua, needKey){
   const target=NEED_TO_STEM[needKey];
   const stem=typeof target==='string'?target:(target&&target.stem);
   if(!stem)return null;
+  // 方位=這個空亡宮本身對應的現實方位 (荀爽老師舉例「艮宮空亡、戊是錢，就在東北補放存錢罐」，
+  // 東北是艮宮自己的方位，不是「戊」固定對應東北——已向用戶確認過，不是每個天干各自綁定的方位)
   return {hai:'空', gong:gua, cureStem:stem, method:'缺啥補啥', xiang:getBuZhenXiang(stem),
+    place:GUA_DIR[gua], placeVerified:true,
     verified: typeof target==='string'?true:!!target.verified, note: typeof target==='object'?target.note:undefined};
 }
 
@@ -1694,12 +1697,17 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType){
       }else{
         const c=item.cure;
         if(c&&c.place){
-          buLine+=`<div class="ana-step">布阵（無腦法）：灭象後，把要布的天干放到<b>${c.place}</b>方位，兩個方位都可以，不用另外挑特定天干。</div>`;
+          if(item.type==='空'){
+            buLine+=`<div class="ana-step">布阵：這個空亡宮自己對應的現實方位是<b>${c.place}</b>，缺啥補啥就去這個方位補放。</div>`;
+          }else{
+            buLine+=`<div class="ana-step">布阵（無腦法）：灭象後，把要布的天干放到<b>${c.place}</b>方位，兩個方位都可以，不用另外挑特定天干。</div>`;
+          }
         }
         if(c&&c.xiang){
           const x=c.xiang;
           const cvUnverified=c.verified===false?'（此為推導，未經視頻原文逐字驗證，僅供參考）':'';
-          buLine+=`<div class="ana-step">${c.place?'（進階，非必要）':'布阵：'}如果想搭配具體天干取象，可以用「${T2(x.stem)}」——${x.wu}，放${x.placement}${cvUnverified}</div>`;
+          const prefix=item.type==='空'?'補放：':(c.place?'（進階，非必要）如果想搭配具體天干取象，可以用':'布阵：如果想搭配具體天干取象，可以用');
+          buLine+=`<div class="ana-step">${prefix}「${T2(x.stem)}」——${x.wu}，放${x.placement}${cvUnverified}</div>`;
         }
         if(!buLine){
           buLine='<div class="ana-step">布阵：（暫缺，需人工覆核）</div>';
@@ -1714,7 +1722,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType){
         return c?`door|${item.type}|${c.doorsText}|${c.branchesText}`:`door|${item.type}|none|${item.gong}`;
       }
       const c=item.cure;
-      return c&&c.xiang?`stem|${item.type}|${c.xiang.stem}`:`stem|${item.type}|none|${item.gong}`;
+      return c&&c.xiang?`stem|${item.type}|${c.xiang.stem}|${c.place||''}`:`stem|${item.type}|none|${item.gong}`;
     };
     const groupsMap=new Map();
     hitOnly.forEach(item=>{
@@ -1779,10 +1787,35 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType){
     let attentionHtml='';
     if(hitOnly.length){
       const tripleHit=['刑','墓','庚'].every(t=>hitOnly.some(x=>x.type===t));
+      const kongGroups=groupList.filter(g=>g.type==='空');
+      const otherGroups=groupList.filter(g=>g.type!=='空');
+      // 空亡的方位跟著宮走、每個宮不一樣，不能合併方位，但補放的天干/字物意行是同一套(同個所求)，
+      // 所以拆開處理：方位逐宮列出，補放說明只講一次，比逐宮重複整段乾淨。
+      let kongHtml='';
+      if(kongGroups.length){
+        const allItems=kongGroups.flatMap(g=>g.items);
+        const gongDirList=allItems.map(it=>`${T2(it.gong)}宮(${GUA_DIR[it.gong]||''})`).join('、');
+        const first=allItems[0];
+        const rule=MIEXIANG_RULE['空'];
+        const c=first.cure;
+        let bu='';
+        if(c&&c.xiang){
+          const x=c.xiang;
+          const cvUnverified=c.verified===false?'（此為推導，未經視頻原文逐字驗證，僅供參考）':'';
+          bu=`<div class="ana-step">補放：「${T2(x.stem)}」——${x.wu}，放${x.placement}${cvUnverified}</div>`;
+        }
+        kongHtml=`<div class="ana-item">
+          <span class="lh-word lh-kong">空</span>
+          ${gongDirList}皆空亡——${LIUHAI_MEANING['空']}
+          <div class="ana-step">灭象：${rule?rule.action:''}</div>
+          <div class="ana-step">布阵：每個空亡宮各自去自己對應的方位（如上列）補放，方位跟著宮走、不能合併成一個。</div>
+          ${bu}
+        </div>`;
+      }
       attentionHtml=`<div class="ana-block">
         <div class="ana-h">第二步・有沒有踩到雷（只列命中本次號令的，按嚴重度由重到輕）</div>
         ${tripleHit?`<div class="ana-item"><b>刑、墓、庚同時命中</b>——正面主力（六儀）、奇兵奇謀（三奇）、主帥本身（甲）三個層級同時被打，是最重的疊加情況，建議優先全部處理完再看局勢。</div>`:''}
-        ${groupList.map(grp=>{
+        ${otherGroups.map(grp=>{
           const first=grp.items[0];
           const gongList=grp.items.map(it=>T2(it.gong)).join('、');
           const headLine=grp.items.length>1?`${gongList}${grp.items.length}宮${GROUP_SUFFIX[grp.type]}`:first.label;
@@ -1792,6 +1825,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType){
             ${stepsHtml(first)}
           </div>`;
         }).join('')}
+        ${kongHtml}
       </div>`;
     }else if(hitList.length){
       attentionHtml=`<div class="ana-block"><div class="ana-h">第二步・有沒有踩到雷</div><div>本局有六害，但都沒有命中本次號令保護的天干/宮位，屬於盤面背景，不是真正衝著這次問事來的，可以先不用特別處理。</div></div>`;
@@ -1823,11 +1857,16 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType){
 
     const cureLine=(cure)=>{
       if(!cure)return '';
-      const placeLine=cure.place?`<div class="cure-line">→ 無腦法：灭象後放到<b>${cure.place}</b>方位，兩個方位都可以</div>`:'';
+      const isKong=cure.hai==='空';
+      const placeLine=cure.place
+        ?(isKong
+          ?`<div class="cure-line">→ 這個空亡宮自己對應的現實方位是<b>${cure.place}</b>，缺啥補啥就去這個方位補放</div>`
+          :`<div class="cure-line">→ 無腦法：灭象後放到<b>${cure.place}</b>方位，兩個方位都可以</div>`)
+        :'';
       const x=cure.xiang;
       if(!x)return placeLine;
       const unverified=cure.verified===false?'<span style="opacity:.6">（推導，未經視頻原文驗證，僅供參考）</span>':'';
-      return placeLine+`<div class="cure-line">→ ${cure.place?'（進階）':''}${cure.method}：用「${x.stem}」，放${x.placement||'高處'}${unverified}<br>
+      return placeLine+`<div class="cure-line">→ ${cure.place&&!isKong?'（進階）':''}${cure.method}：用「${x.stem}」，放${x.placement||'高處'}${unverified}<br>
         <span style="opacity:.85">字：${x.wu?x.wu:''}　字：${x.zi}</span><br>
         <span style="opacity:.85">意：${x.yi}　行：${x.xing}</span></div>`;
     };
