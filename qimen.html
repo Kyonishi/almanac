@@ -1394,6 +1394,105 @@ function getCureForKongWang(gua, needKey){
     verified: typeof target==='string'?true:!!target.verified, note: typeof target==='object'?target.note:undefined};
 }
 
+// ══════════════════ 財富七要 / 事業七要 ══════════════════
+// 來源: 荀爽老師視頻「財富七要」「事業七要」+ 海明威(1899-07-21 08:30)、
+// 拉康(1901-04-13 14:30) 兩則案例分析截圖逐字轉錄 (2026-07-31 收集)
+
+const WEALTH_SEVEN={
+  '戊':{name:'戊', role:'本錢', keyword:'最根本的錢、最穩定的錢',
+    desc:'存款、工資、不動產、生意本金。中國家庭90%財富是戊(歐美不是)。普通人戊出問題=降薪/裁員/失業/工資拖欠/房產貶值；商人戊=本金現金流，中小老闆尤其重要，大老闆因有人脈與金融工具不太受影響；戊出問題=虧錢，虧的是本金。戊所在宮不能發生刑墓庚虎迫空。', verified:true},
+  '生門':{name:'生門', role:'利潤', keyword:'有生息的錢、在增長的錢',
+    desc:'利息、利潤、回報、交易、市場，不斷擴張增殖的錢。普通人感受不深；工農製造/生意人很重要，生門遇六害=生產環節或營收出問題；商超零售尤其看生門。', verified:true},
+  '六合':{name:'六合', role:'合作/金融', keyword:'投融資的錢、合作來的錢',
+    desc:'金融、大錢、合夥人、甲方乙方；也主上下游供應鏈、項目分包、中介；六合的錢都不是小錢。六合出問題=合夥生意遇困難，對有錢人可能是人脈網/融資渠道出問題。', verified:true},
+  '行業':{name:'行業', role:'渠道', keyword:'賺錢渠道、行業性質', desc:'按 INDUSTRY_MAP 正確取象。', verified:true},
+  '時干':{name:'時干', role:'機會', keyword:'機會前景、市場預期',
+    desc:'客戶、需求、平台、員工。「能不能恰到好處地對接市場需求」。同行同崗，別人有機會你沒有=時干不對；也代表平台/有沒有人支持你、給你機會。', verified:true},
+  '干財':{name:'干財', role:'控制', keyword:'能控制的資源 = 日干所克 + 生年所克',
+    desc:'自己和此事所能調動的資源上限。普通人只需保持干財不受傷害、保持住控制力。', verified:true, dynamic:true},
+  '月令':{name:'月令', role:'天時', keyword:'環境天時、財富量級',
+    desc:'起局時月支的五行，很難完全扭轉。決定求財的難度/代價性價比(1換4 還是 1換3000)。此性價比邏輯僅用於求財/財富，其他事情(如有特定使命)不一定按此邏輯選擇。', verified:true, dynamic:true},
+};
+
+const CAREER_SEVEN={
+  '開門':{name:'開門', role:'單位', keyword:'工作單位、所在團體',
+    desc:'單位情況對你的影響。出問題=單位的問題不是你的問題，是沒待對地方；單位難好轉不如跳槽；人際關係複雜的單位也會表現為開門擊刑；開門遇六害=工作環境基本都不好。', verified:true},
+  '景門':{name:'景門', role:'考核', keyword:'業績展示、個人形象',
+    desc:'面試、考核、成果。核心：做出的成績能否被領導看到。出問題=再有成績也不會被人看到。', verified:true},
+  '玄武':{name:'玄武', role:'小人', keyword:'暗中算計、陰險小人',
+    desc:'不一定是同事/競爭對手，也可能是老闆/領導，包括合同陷阱等。遇空亡/入墓要萬分小心。特殊規律：若本人自己主動占據玄武對應的領域(如心理學/哲學等「說不清道不明」的行業)，玄武就從「外部小人」轉化為「本人自身」，不再構成威脅(拉康案例驗證)。', verified:true},
+  '庚虎':{name:'庚虎', role:'困難', keyword:'庚+白虎；困難壓力、強大敵人',
+    desc:'壓力、競爭對手、敵人、困難任務。庚虎不需要六害本身就代表壓力，會影響本宮和對宮；若庚虎再疊加擊刑/門迫，難度更高。', verified:true},
+  '行業':{name:'行業', role:'適合行業', keyword:'行業情況、崗位適配', desc:'邏輯與財富七要「行業」相同，按 INDUSTRY_MAP 正確取象。', verified:true},
+  '符使':{name:'符使', role:'上級', keyword:'值符=直屬上級，值使=二把手',
+    desc:'值符不是權力最大的人，但對你影響最深，是直接派任務的人。值符遇六害=直屬上級不行，要麼心術有問題要麼有偏見。', verified:true},
+  '諸干':{name:'諸干', role:'角色', keyword:'年干=大老闆/Boss，月干=同事，時干=下屬',
+    desc:'哪個干出問題，就是哪一類人在阻礙你。', verified:true},
+};
+
+// 行業舉例/取象總表 (財富七要+事業七要共用；兩批截圖 + 拉康案例合併整理)
+const INDUSTRY_MAP={
+  '演藝(靠臉靠秀/主播/電競/唱跳)':{stems:['景','天英','丙']},
+  '西醫':{stems:['天心']},
+  '中醫':{stems:['乙']},
+  '西醫+外科':{stems:['天心','辛']},
+  '中醫+內科':{stems:['乙','天內']},
+  '經商做生意':{stems:['生']},
+  '合夥/中介':{stems:['六合']},
+  '低級公務員':{stems:['休']},
+  '高級公務員/官員':{stems:['值符']},
+  '教培(中小學)':{stems:['天輔'], note:'大學老師不固定，具體看'},
+  '庸俗低級玄學/忽悠':{stems:['玄武'], note:'僅指庸俗低級一類；與下條同一符號但檔次不同'},
+  '哲學研究/心理諮詢等嚴肅玄學':{stems:['玄武'], note:'與「忽悠」同一符號但檔次不同，需視局中吉凶組合判斷；拉康案例即此類'},
+  '武職':{stems:['庚','虎','天沖']},
+  '監督機構/律師/法院':{stems:['天柱']},
+  '養老/喪葬':{stems:['死']},
+  '高精尖技術/芯片/程序員':{stems:['杜']},
+  '苦力/工農/雜活(含前台行政等)':{stems:['天任']},
+  '心理諮詢':{stems:['休']},
+  '內科醫':{stems:['天內']},
+  '新聞行業':{stems:['驚','馬','蛇'], note:'海明威案例：記者取象'},
+  '軍人/武職(海明威案例)':{stems:['庚']},
+};
+
+// 月令五種關係 (僅適用求財/財富場景)
+const MONTH_RELATION_TABLE=[
+  {rel:'月令生A', effect:'擴張+量大', rank:1},
+  {rel:'月令同A', effect:'穩健+量大', rank:2},
+  {rel:'A克月令', effect:'努力+量小', rank:3},
+  {rel:'A生月令', effect:'損耗+量小', rank:4},
+  {rel:'月令克A', effect:'大虧+量小', rank:5},
+];
+const SHENG_TABLE={'木':'火','火':'土','土':'金','金':'水','水':'木'};
+const KE_TABLE_WUXING={'木':'土','土':'水','水':'火','火':'金','金':'木'};
+function monthRelation(monthWx, targetWx){
+  if(monthWx===targetWx) return MONTH_RELATION_TABLE[1];
+  if(SHENG_TABLE[monthWx]===targetWx) return MONTH_RELATION_TABLE[0];
+  if(KE_TABLE_WUXING[monthWx]===targetWx) return MONTH_RELATION_TABLE[4];
+  if(SHENG_TABLE[targetWx]===monthWx) return MONTH_RELATION_TABLE[3];
+  if(KE_TABLE_WUXING[targetWx]===monthWx) return MONTH_RELATION_TABLE[2];
+  return null;
+}
+
+// 干財: 日干財 = 日干所克的兩個天干; 生年財 = 生年干所克的兩個天干
+function getGanCai(dayStem, yearStem){
+  function keTargets(stem){
+    const target=KE_TABLE_WUXING[stemWuxing(stem)];
+    return Object.keys(STEM_TO_BRANCH).filter(s=>stemWuxing(s)===target);
+  }
+  return {日干財:keTargets(dayStem), 生年財:keTargets(yearStem), verified:true};
+}
+
+// 天干缺席時的補位查找: 目標天干未上盤時改找其五合對象；
+// 特殊: 甲從不上盤(隱於六儀之下)，若甲缺席不找己，改找值符 (海明威案例講解)
+function findStemOrHe(stem, panHasStemFn){
+  if(panHasStemFn(stem)) return {found:stem, viaHe:false};
+  if(stem==='甲') return {found:'值符', viaHe:true, special:true};
+  const he=HE_TABLE[stem];
+  if(he && panHasStemFn(he)) return {found:he, viaHe:true};
+  return {found:null, viaHe:false};
+}
+
 // ══════════════════ 號令: 日時/生年/意象/符使 四要素 ══════════════════
 // 來源: 荀爽視頻「保護各干」截圖逐字轉錄
 // 生年天干對照表 (西元年尾數 → 天干): 0庚 1辛 2壬 3癸 4甲 5乙 6丙 7丁 8戊 9己
