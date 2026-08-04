@@ -204,6 +204,7 @@ header{
 .info-v .pill{
   display:inline-block;padding:1px 7px;border-radius:8px;font-size:11px;margin-right:4px
 }
+.pill{display:inline-block;padding:1px 7px;border-radius:8px;font-size:11px;margin-right:4px}
 .pill-ji{background:#E8F5E9;color:var(--grn)}
 .pill-xiong{background:#FEF0F0;color:var(--red)}
 .pill-neutral{background:#F5F5F0;color:var(--sub)}
@@ -321,6 +322,8 @@ footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spa
     <div class="input-label">所求</div>
     <select class="inp" id="iNeed">
       <option value="求財">求財</option>
+      <option value="財富七要">財富七要（完整報告）</option>
+      <option value="事業七要">事業七要（完整報告）</option>
       <option value="求事業">求事業（推導，未經視頻原文驗證）</option>
       <option value="求權威地位">求權威地位</option>
       <option value="求表現曝光">求表現曝光</option>
@@ -328,6 +331,11 @@ footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spa
       <option value="求桃花">求桃花（推導，未經視頻原文驗證）</option>
       <option value="求突破變革">求突破變革</option>
     </select>
+  </div>
+  <div class="input-row">
+    <div class="input-label">行業</div>
+    <input class="inp" type="text" id="iIndustry" list="industryList" placeholder="選填，僅財富/事業七要報告用到">
+    <datalist id="industryList"></datalist>
   </div>
   <div class="input-row">
     <div class="input-label">局類型</div>
@@ -1742,6 +1750,64 @@ const JI_STAR=new Set(['天輔','天任','天心','天蓬']);
 const XIONG_STAR=new Set(['天內','天柱','天英']);
 const JI_GOD=new Set(['值符','太陰','六合','九天']);
 const XIONG_GOD=new Set(['螣蛇','白虎','玄武','九地','勾陳','朱雀']);
+// ── 財富七要 / 事業七要 報告渲染 (沿用 ana-block/ana-h/ana-item 既有樣式) ──
+function renderWealthCareerReport(pan, mode, industry){
+  const T2=x=>t2(x||'');
+  const zfzs=pan.值符值使;
+  const isWealth=mode==='財富七要';
+  const {items, crossHits}=isWealth
+    ? analyzeWealthSeven(pan, {industry, targetWuxing:null})
+    : analyzeCareerSeven(pan, zfzs, {industry});
+
+  const itemsHtml=items.map(it=>{
+    if(it.note && !it.rows)return `<div class="ana-item"><b>${T2(it.name)}</b>（${T2(it.role||'')}）——${T2(it.note)}</div>`;
+    if(it.key==='月令'){
+      if(it.relation){
+        return `<div class="ana-item"><b>月令</b>（${T2(it.role)}）——月支五行「${it.monthWuxing}」，${it.relation.rel}：${it.relation.effect}</div>`;
+      }
+      return `<div class="ana-item"><b>月令</b>（${T2(it.role)}）——${T2(it.note||'')}</div>`;
+    }
+    const badgeTxt = it.bad===null?'未定位':(it.bad?'⚠ 有六害':'✓ 乾淨');
+    const badgeCls = it.bad===null?'pill-neutral':(it.bad?'pill-xiong':'pill-ji');
+    const rowsHtml=(it.rows||[]).map(r=>{
+      const gongTxt=r.gong?`${T2(r.gong)}宮`:'（未定位）';
+      const stemTxt=r.stem?`「${T2(r.stem)}」`:(r.role?`${T2(r.role)}${r.stem?'「'+T2(r.stem)+'」':''}`:'');
+      const harmTxt=r.harms&&r.harms.length?`命中：${r.harms.join('、')}`:'乾淨';
+      return `<div class="ana-step">${stemTxt}${gongTxt}——${harmTxt}</div>`;
+    }).join('');
+    return `<div class="ana-item">
+      <span class="pill ${badgeCls}">${badgeTxt}</span>
+      <b>${T2(it.name)}</b>（${T2(it.role||'')}）${it.keyword?'——'+T2(it.keyword):''}
+      ${rowsHtml}
+      ${it.desc?`<div class="ana-step" style="opacity:.75">${T2(it.desc)}</div>`:''}
+    </div>`;
+  }).join('');
+
+  // 交叉關係去重 (a-b 和 b-a 只顯示一次)
+  const seen=new Set();
+  const crossRows=crossHits.filter(h=>{
+    const k=[h.a,h.b,h.gongA,h.gongB].sort().join('|');
+    if(seen.has(k))return false; seen.add(k); return true;
+  }).map(h=>`<div class="ana-step">「${T2(h.aName)}」(${T2(h.gongA)}宮) 與「${T2(h.bName)}」(${T2(h.gongB)}宮)——${h.relation}</div>`).join('');
+
+  const badCount=items.filter(it=>it.bad===true).length;
+  let verdict;
+  if(badCount===0) verdict='七要基本乾淨，沒有明顯阻力。';
+  else if(badCount<=2) verdict=`七要中有 ${badCount} 項命中六害，問題不算全面，針對命中的項目排雷即可。`;
+  else verdict=`七要中有 ${badCount} 項命中六害，阻力比較全面，建議按嚴重度優先處理，或考慮這條路本身是否適合走。`;
+
+  return `<div class="analysis-card">
+    <div class="ana-block"><div class="ana-h">${T2(mode)}・逐項檢視</div>${itemsHtml}</div>
+    ${crossRows?`<div class="ana-block"><div class="ana-h">要素之間的關聯（同宮/對宮，推導未經逐字驗證）</div>${crossRows}</div>`:''}
+    <div class="ana-block"><div class="ana-h">整體怎麼樣</div><div>${verdict}</div></div>
+    <div class="ana-block"><div class="ana-h">基礎原則提醒</div>
+      <div>① 符號有雙面性——本人主動占據某領域(如玄武對應的心理學/哲學)，該符號可能從「外部威脅」轉化為「本人自身」，不能無腦判凶。<br>
+      ② 命裡最容易的路 ≠ 本人真正想走的路，讀局時把「最佳路徑」和「當事人實際選擇」分開呈現。<br>
+      ③ 月令五種關係的「性價比」邏輯只用於求財/財富，其他人生課題不一定按性價比走。</div>
+    </div>
+  </div>`;
+}
+
 function luckClass(v){
   if(['休','生','開','天輔','天任','天心','天蓬','值符','太陰','六合','九天'].includes(v))return 'pill-ji';
   if(['死','驚','傷','天內','天柱','天英','螣蛇','白虎','玄武','九地','勾陳','朱雀'].includes(v))return 'pill-xiong';
@@ -1773,9 +1839,10 @@ function calc(){
   const needKey=document.getElementById('iNeed').value;
   const yearsInput=document.getElementById('iYears').value;
   const juType=document.getElementById('iJuType').value||'事局';
+  const industry=(document.getElementById('iIndustry')||{}).value||'';
   try{
     const pan=QimenJS.qimenChaibu(Solar,y,m,d,h,mi);
-    renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType);
+    renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry);
   }catch(e){
     document.getElementById('result').innerHTML=
       `<div class="empty"><div class="big">⚠</div>起局失敗：${e.message}</div>`;
@@ -1783,7 +1850,7 @@ function calc(){
 }
 
 /* ── 渲染盤面 ── */
-function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType){
+function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry){
   needKey=needKey||'求財';
   juType=juType||'事局';
   const sky=pan.天盤||{}, earth=pan.地盤||{};
@@ -2256,6 +2323,8 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType){
     return html;
   })()}
 
+  ${(needKey==='財富七要'||needKey==='事業七要') ? renderWealthCareerReport(pan, needKey, industry) : ''}
+
   <div class="info-card">
     <div class="info-title">吉凶速覽</div>
     ${GRID_ORDER.filter(g=>g!=='中').map(g=>{
@@ -2300,6 +2369,8 @@ const init=()=>{
   if(typeof Solar==='undefined'||typeof QimenJS==='undefined'){setTimeout(init,50);return;}
   initT2();
   setNow();
+  const dl=document.getElementById('industryList');
+  if(dl)dl.innerHTML=Object.keys(INDUSTRY_MAP).map(k=>`<option value="${k}"></option>`).join('');
 };
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}else{init();}
 </script>
