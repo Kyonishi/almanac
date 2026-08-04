@@ -1493,6 +1493,206 @@ function findStemOrHe(stem, panHasStemFn){
   return {found:null, viaHe:false};
 }
 
+// ══════════════════ 財富七要 / 事業七要: 讀局引擎 ══════════════════
+// 來源: 綜合前述資料表 + 海明威(1899-07-21 08:30)、拉康(1901-04-13 14:30) 兩案例
+// 逐宮分析截圖的解讀流程逆推整理，非視頻逐字給出的成文演算法，標記 verified:false 供覆核。
+// 基礎原則(貫穿整個解讀，寫在這裡提醒自己):
+//   1. 符號有雙面性 —— 例如玄武，若本人主動占據該符號對應的領域(如拉康搞心理學/哲學)，
+//      玄武就從「外部小人」轉化為「本人自身」，不再構成威脅；不能無腦判凶。
+//   2. 命裡最容易的路 ≠ 本人真正想走的路(拉康案例：月令生助西醫/內科最好賺，但他選擇了
+//      "泄耗"路徑心理學/哲學)——讀局時"最佳路徑"和"當事人實際选择"要分開呈現，不要替對方做選擇。
+//   3. 這套"性價比"邏輯(月令五種關係)僅用於求財/財富，其他人生課題不一定按性價比走。
+
+const OPPOSITE_GUA={'坎':'離','離':'坎','艮':'坤','坤':'艮','震':'兌','兌':'震','巽':'乾','乾':'巽'};
+const BRANCH_WUXING={'寅':'木','卯':'木','巳':'火','午':'火','申':'金','酉':'金','亥':'水','子':'水',
+  '辰':'土','戌':'土','丑':'土','未':'土'};
+
+// 拆解 pan.干支 (格式"甲辰年丙寅月壬戌日己酉時") 為年/月/日/時各自的干支
+function parseGanzhi(ganzhiStr){
+  const m=ganzhiStr.match(/^(..)年(..)月(..)日(..)時$/);
+  if(!m)return null;
+  const [,y,mo,d,h]=m;
+  return {年干:y[0],年支:y[1], 月干:mo[0],月支:mo[1], 日干:d[0],日支:d[1], 時干:h[0],時支:h[1]};
+}
+
+function getKongGongs(pan){
+  const set=new Set();
+  const src=[pan.旬空&&pan.旬空.日空, pan.旬空&&pan.旬空.時空];
+  for(const zhiStr of src){
+    if(!zhiStr)continue;
+    for(const zhi of zhiStr){ const g=ZHI_TO_GONG[zhi]; if(g)set.add(g); }
+  }
+  return set;
+}
+
+function locateStem(skyMap, stem){ return Object.keys(skyMap).filter(g=>g!=='中'&&skyMap[g]===stem); }
+function locateDoor(doorMap, name){ return Object.keys(doorMap).filter(g=>g!=='中'&&doorMap[g]===name); }
+function locateStar(starMap, name){
+  const n=name.startsWith('天')?name.slice(1):name;
+  return Object.keys(starMap).filter(g=>g!=='中'&&starMap[g]===n);
+}
+function locateGod(godMap, name){
+  const alias={'六合':'合','玄武':'玄','白虎':'虎','螣蛇':'蛇','太陰':'陰','九地':'地','九天':'天','值符':'符'};
+  const target=alias[name]||name;
+  return Object.keys(godMap).filter(g=>g!=='中'&&godMap[g]===target);
+}
+// 中宮天干 (如"戊"落中宮) 目前引擎的六害檢測函式都跳過中宮 (checkJiXing/checkRuMu/checkGeng 等)，
+// 中五寄宮的規則(寄艮/寄坤/寄巽等，各派不同)尚未經荀爽老師視頻確認，標記 verified:false，
+// 暫不臆測寄宮，僅回報"在中宮"供人工判斷。
+function locateStemIncludingCenter(skyMap, stem){
+  const outer=locateStem(skyMap, stem);
+  if(skyMap['中']===stem)return {outer, inCenter:true, verified:false,
+    note:'落中宮，六害檢測跳過中宮，中五寄宮規則未經確認，需人工判斷'};
+  return {outer, inCenter:false};
+}
+
+// 給定一個符號 token (天干/門名/星名(可帶"天"前綴)/神名(含六合/玄武/白虎等別名))，
+// 在盤中定位所在宮。回傳陣列(可能為空，如"馬"驛馬星本引擎未實現，無法定位)。
+function locateSymbol(token, pan, zfzs){
+  if('甲乙丙丁戊己庚辛壬癸'.includes(token))return locateStem(pan.天盤, token);
+  if('休生傷杜景死驚開'.includes(token))return locateDoor(pan.門, token);
+  if(['符','蛇','陰','合','虎','玄','地','天','六合','玄武','白虎','螣蛇','太陰','九地','九天'].includes(token))
+    return locateGod(pan.神, token);
+  if(token==='值符')return zfzs&&zfzs.值符星宮 ? [zfzs.值符星宮[1]==='中'?'坤':zfzs.值符星宮[1]] : [];
+  if(token==='值使')return zfzs&&zfzs.值使門宮 ? [zfzs.值使門宮[1]==='中'?'坤':zfzs.值使門宮[1]] : [];
+  const starName=token.startsWith('天')?token.slice(1):token;
+  if('蓬任沖輔英內柱心'.includes(starName))return locateStar(pan.星, starName);
+  return []; // 例如"馬"(驛馬)本引擎未實現對應計算，暫回空陣列
+}
+
+// ── 宮位關係交叉檢測 (同宮/對宮，只用後天八卦方位，不涉及地支相沖) ──
+// 來源: 海明威/拉康案例分析截圖裡「開門，遇玄」「玄武，耗開門」「庚虎，沖生年值符」
+// 「值使遇虎，沖開門」等說法逆推——這些都是「某要素所在宮」與「另一要素所在宮」
+// 同宮或對宮的關係判斷，不是六害表裡的固定查表項，標記 verified:false 供覆核。
+function gongRelation(gongA, gongB){
+  if(!gongA||!gongB)return null;
+  if(gongA===gongB)return '同宮';
+  if(OPPOSITE_GUA[gongA]===gongB)return '對宮(沖)';
+  return null;
+}
+// 對一組已定位好宮位的「要素清單」做兩兩交叉比對，回傳命中的關係清單
+// items: [{key, name, guas:[宮,...]}, ...]
+function crossCheckGongRelations(items){
+  const hits=[];
+  for(let i=0;i<items.length;i++){
+    for(let j=0;j<items.length;j++){
+      if(i===j)continue;
+      const a=items[i], b=items[j];
+      for(const ga of (a.guas||[])){
+        for(const gb of (b.guas||[])){
+          const rel=gongRelation(ga,gb);
+          if(rel)hits.push({a:a.key, b:b.key, aName:a.name, bName:b.name, gongA:ga, gongB:gb, relation:rel, verified:false});
+        }
+      }
+    }
+  }
+  return hits;
+}
+
+function harmsAtGong(gua, pan){
+  // 給定一個宮位，回傳命中的六害清單 (刑/墓/迫/庚/虎/空)
+  const harms=[];
+  if(checkJiXing(pan.天盤)[gua])harms.push('刑');
+  if(checkRuMu(pan.天盤)[gua])harms.push('墓');
+  if(checkMenPo(pan.門)[gua])harms.push('迫');
+  if(checkGeng(pan.天盤)[gua])harms.push('庚');
+  if(checkBaiHu(pan.神)[gua])harms.push('虎');
+  if(getKongGongs(pan).has(gua))harms.push('空');
+  return harms;
+}
+
+// ── 財富七要 讀局 ──
+// opts.industry: 可選，對照 INDUSTRY_MAP 的行業名稱字串，用於「行業」一項
+function analyzeWealthSeven(pan, opts={}){
+  const gz=parseGanzhi(pan.干支);
+  const results=[];
+  function addLocated(key, guas, meta={}){
+    const rows=guas.map(g=>({gong:g, harms:harmsAtGong(g,pan)}));
+    results.push({key, ...WEALTH_SEVEN[key], rows, guas, bad:rows.some(r=>r.harms.length>0), ...meta});
+  }
+
+  addLocated('戊', locateStem(pan.天盤,'戊'), {centerInfo:locateStemIncludingCenter(pan.天盤,'戊')});
+  addLocated('生門', locateDoor(pan.門,'生'));
+  addLocated('六合', locateGod(pan.神,'六合'));
+  addLocated('時干', locateStem(pan.天盤, gz.時干));
+
+  if(opts.industry && INDUSTRY_MAP[opts.industry]){
+    const stems=INDUSTRY_MAP[opts.industry].stems;
+    const guas=[...new Set(stems.flatMap(s=>locateSymbol(s,pan)))];
+    addLocated('行業', guas, {industry:opts.industry, symbols:stems});
+  } else {
+    results.push({key:'行業', ...WEALTH_SEVEN['行業'], rows:[], guas:[], bad:null, note:'未提供 opts.industry，無法定位'});
+  }
+
+  const ganCai=getGanCai(gz.日干, gz.年干);
+  const ganCaiStems=[...ganCai.日干財, ...ganCai.生年財];
+  const ganCaiRows=ganCaiStems.flatMap(s=>locateStem(pan.天盤,s).map(g=>({gong:g, stem:s, harms:harmsAtGong(g,pan)})));
+  results.push({key:'干財', ...WEALTH_SEVEN['干財'], rows:ganCaiRows, guas:ganCaiRows.map(r=>r.gong),
+    bad:ganCaiRows.some(r=>r.harms.length>0), detail:ganCai});
+
+  if(opts.targetWuxing){
+    const monthWx=BRANCH_WUXING[gz.月支];
+    results.push({key:'月令', ...WEALTH_SEVEN['月令'], monthWuxing:monthWx,
+      relation:monthRelation(monthWx, opts.targetWuxing)});
+  } else {
+    results.push({key:'月令', ...WEALTH_SEVEN['月令'], note:'未提供 opts.targetWuxing(欲比較的五行)，僅供參考月支'});
+  }
+
+  const crossHits=crossCheckGongRelations(results.filter(r=>r.guas&&r.guas.length));
+  return {items:results, crossHits};
+}
+
+// ── 事業七要 讀局 ──
+function analyzeCareerSeven(pan, zfzs, opts={}){
+  const gz=parseGanzhi(pan.干支);
+  const results=[];
+  function addLocated(key, guas, meta={}){
+    const rows=guas.map(g=>({gong:g, harms:harmsAtGong(g,pan)}));
+    results.push({key, ...CAREER_SEVEN[key], rows, guas, bad:rows.some(r=>r.harms.length>0), ...meta});
+  }
+
+  addLocated('開門', locateDoor(pan.門,'開'));
+  addLocated('景門', locateDoor(pan.門,'景'));
+  addLocated('玄武', locateGod(pan.神,'玄武'), {
+    note:'若本人自身從事玄武對應領域(如心理學/哲學)，玄武代表本人而非外部小人，需人工二次確認'});
+
+  const gengGuas=locateStem(pan.天盤,'庚'), huGuas=locateGod(pan.神,'白虎');
+  const gengHuGuas=[...new Set([...gengGuas,...huGuas])];
+  const affected=[...new Set(gengHuGuas.flatMap(g=>[g, OPPOSITE_GUA[g]].filter(Boolean)))];
+  results.push({key:'庚虎', ...CAREER_SEVEN['庚虎'],
+    rows:gengHuGuas.map(g=>({gong:g, harms:harmsAtGong(g,pan)})), guas:gengHuGuas,
+    affectedGongs:affected, bad:gengHuGuas.length>0});
+
+  if(opts.industry && INDUSTRY_MAP[opts.industry]){
+    const stems=INDUSTRY_MAP[opts.industry].stems;
+    const guas=[...new Set(stems.flatMap(s=>locateSymbol(s,pan)))];
+    addLocated('行業', guas, {industry:opts.industry, symbols:stems});
+  } else {
+    results.push({key:'行業', ...CAREER_SEVEN['行業'], rows:[], guas:[], bad:null, note:'未提供 opts.industry，無法定位'});
+  }
+
+  if(zfzs){
+    const zf=(zfzs.值符星宮&&zfzs.值符星宮[1]==='中')?'坤':(zfzs.值符星宮&&zfzs.值符星宮[1]);
+    const zs=(zfzs.值使門宮&&zfzs.值使門宮[1]==='中')?'坤':(zfzs.值使門宮&&zfzs.值使門宮[1]);
+    results.push({key:'符使', ...CAREER_SEVEN['符使'],
+      rows:[{role:'值符(直屬上級)',gong:zf,harms:harmsAtGong(zf,pan)},
+            {role:'值使(二把手)',gong:zs,harms:harmsAtGong(zs,pan)}],
+      guas:[zf,zs].filter(Boolean),
+      bad:harmsAtGong(zf,pan).length>0});
+  }
+
+  const ganRows=[
+    {role:'年干(大老闆/Boss)', stem:gz.年干, gong:locateStem(pan.天盤,gz.年干)[0]},
+    {role:'月干(同事)', stem:gz.月干, gong:locateStem(pan.天盤,gz.月干)[0]},
+    {role:'時干(下屬)', stem:gz.時干, gong:locateStem(pan.天盤,gz.時干)[0]},
+  ].map(r=>({...r, harms:r.gong?harmsAtGong(r.gong,pan):[]}));
+  results.push({key:'諸干', ...CAREER_SEVEN['諸干'], rows:ganRows, guas:ganRows.map(r=>r.gong).filter(Boolean),
+    bad:ganRows.some(r=>r.harms.length>0)});
+
+  const crossHits=crossCheckGongRelations(results.filter(r=>r.guas&&r.guas.length));
+  return {items:results, crossHits};
+}
+
 // ══════════════════ 號令: 日時/生年/意象/符使 四要素 ══════════════════
 // 來源: 荀爽視頻「保護各干」截圖逐字轉錄
 // 生年天干對照表 (西元年尾數 → 天干): 0庚 1辛 2壬 3癸 4甲 5乙 6丙 7丁 8戊 9己
