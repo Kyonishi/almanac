@@ -333,9 +333,16 @@ footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spa
     </select>
   </div>
   <div class="input-row">
-    <div class="input-label">行業</div>
-    <input class="inp" type="text" id="iIndustry" list="industryList" placeholder="選填，僅財富/事業七要報告用到">
-    <datalist id="industryList"></datalist>
+    <div class="input-label">大行業</div>
+    <select class="inp" id="iIndustryBig">
+      <option value="">（不選，僅財富/事業七要報告用到）</option>
+    </select>
+  </div>
+  <div class="input-row">
+    <div class="input-label">小行業</div>
+    <select class="inp" id="iIndustrySmall">
+      <option value="">（先選大行業）</option>
+    </select>
   </div>
   <div class="input-row">
     <div class="input-label">局類型</div>
@@ -1463,7 +1470,124 @@ const INDUSTRY_MAP={
   '軍人/武職(海明威案例)':{stems:['庚']},
 };
 
-// 月令五種關係 (僅適用求財/財富場景)
+// ══ 行業大類/小類 taxonomy (以下全部為推導延伸，非荀爽老師視頻原文，verified:false) ══
+// 大類骨架參考國標《國民經濟行業分類》GB/T 4754-2017 的門類劃分(20門類)，只挑與個人職業
+// 取象相關、常見的部分；小類則按上面 INDUSTRY_MAP 已驗證條目的符號邏輯做同類延伸推導：
+// 五行/門星神取象規律例如「杜=精密技術」「天任=苦力雜活」「六合=中介大錢」等，套用到
+// 同性質的新行業上。凡是延伸出的條目一律 verified:false，供覆核，不代表視頻明確給出。
+const INDUSTRY_TAXONOMY={
+  '農林牧漁業':{ subs:{
+    '種植業/林業':{stems:['乙','天任']},
+    '畜牧業':{stems:['天任']},
+    '漁業/水產':{stems:['天蓬','天任']},
+  }},
+  '採礦業':{ subs:{
+    '礦產開採':{stems:['天任','庚']},
+  }},
+  '製造業':{ subs:{
+    '機械/金屬加工':{stems:['庚','杜']},
+    '電子/精密設備製造':{stems:['杜']},
+    '紡織/服裝':{stems:['乙']},
+    '食品加工':{stems:['生']},
+    '化工':{stems:['辛']},
+  }},
+  '電力/熱力/燃氣及水生產供應業':{ subs:{
+    '能源/公用事業':{stems:['丙','符']},
+  }},
+  '建築業':{ subs:{
+    '土建/工程施工':{stems:['天任','庚']},
+    '建築設計':{stems:['天英','杜']},
+  }},
+  '批發和零售業':{ subs:{
+    '零售/門店':{stems:['生','景']},
+    '批發/貿易':{stems:['生','六合']},
+    '電商':{stems:['生','景']},
+  }},
+  '交通運輸/倉儲和郵政業':{ subs:{
+    '物流/快遞/倉儲':{stems:['天蓬','天任']},
+    '客運/駕駛':{stems:['天蓬']},
+  }},
+  '住宿和餐飲業':{ subs:{
+    '餐飲':{stems:['生','休']},
+    '酒店/住宿':{stems:['休','生']},
+  }},
+  '信息傳輸/軟件和信息技術服務業':{ subs:{
+    '程序員/軟件開發':{stems:['杜']},
+    '芯片/硬件研發':{stems:['杜']},
+    '互聯網運營/流量':{stems:['景','杜']},
+    '遊戲行業':{stems:['天英','景']},
+  }},
+  '金融業':{ subs:{
+    '銀行/信貸':{stems:['六合']},
+    '證券/投資/基金':{stems:['六合','生']},
+    '保險':{stems:['六合','休']},
+  }},
+  '房地產業':{ subs:{
+    '開發/銷售':{stems:['六合','生']},
+    '中介/經紀':{stems:['六合']},
+  }},
+  '租賃和商務服務業':{ subs:{
+    '中介/居間服務':{stems:['六合']},
+    '諮詢/顧問':{stems:['天輔','六合']},
+    '獵頭/人力資源':{stems:['六合','天輔']},
+  }},
+  '科學研究和技術服務業':{ subs:{
+    '科研/研發':{stems:['杜','天心']},
+    '設計/工程諮詢':{stems:['天英','杜']},
+  }},
+  '水利/環境和公共設施管理業':{ subs:{
+    '公共設施管理':{stems:['符','天蓬']},
+  }},
+  '居民服務/修理和其他服務業':{ subs:{
+    '家政/生活服務':{stems:['休','天任']},
+    '維修':{stems:['天任','杜']},
+    '美容美發':{stems:['景','天英']},
+  }},
+  '教育':{ subs:{
+    'K12/中小學教培':{stems:['天輔']},
+    '職業培訓':{stems:['天輔']},
+    '高等教育/學術':{stems:['天輔','符']},
+  }},
+  '衛生和社會工作':{ subs:{
+    '西醫':{stems:['天心']},
+    '西醫+外科':{stems:['天心','辛']},
+    '中醫':{stems:['乙']},
+    '中醫+內科':{stems:['乙','天內']},
+    '心理諮詢/精神健康':{stems:['休','玄武']},
+    '社會工作/福利':{stems:['休']},
+    '養老/喪葬':{stems:['死']},
+  }},
+  '文化/體育和娛樂業':{ subs:{
+    '演藝(靠臉靠秀/主播/電競/唱跳)':{stems:['景','天英','丙']},
+    '新聞媒體':{stems:['驚','馬','蛇']},
+    '出版/文創':{stems:['天輔','天英']},
+    '體育競技(對抗性)':{stems:['庚','虎','天沖']},
+    '哲學研究等嚴肅玄學':{stems:['玄武']},
+    '庸俗低級玄學/忽悠':{stems:['玄武']},
+  }},
+  '公共管理/社會保障和社會組織':{ subs:{
+    '低級公務員':{stems:['休']},
+    '高級公務員/官員':{stems:['值符']},
+    '監督機構/律師/法院':{stems:['天柱']},
+    '軍人/武職':{stems:['庚','虎','天沖']},
+  }},
+};
+// 統一查詢：先查扁平的 INDUSTRY_MAP(已驗證/含案例專用條目)，找不到再查
+// INDUSTRY_TAXONOMY 的「大類::小類」組合鍵，兩者都沒有則回傳 null
+function getIndustryStems(key){
+  if(!key)return null;
+  if(INDUSTRY_MAP[key])return INDUSTRY_MAP[key];
+  const idx=key.indexOf('::');
+  if(idx>=0){
+    const big=key.slice(0,idx), small=key.slice(idx+2);
+    const sub=INDUSTRY_TAXONOMY[big]&&INDUSTRY_TAXONOMY[big].subs[small];
+    if(sub)return sub;
+  }
+  for(const big in INDUSTRY_TAXONOMY){
+    if(INDUSTRY_TAXONOMY[big].subs[key])return INDUSTRY_TAXONOMY[big].subs[key];
+  }
+  return null;
+}
 const MONTH_RELATION_TABLE=[
   {rel:'月令生A', effect:'擴張+量大', rank:1},
   {rel:'月令同A', effect:'穩健+量大', rank:2},
@@ -1624,8 +1748,9 @@ function analyzeWealthSeven(pan, opts={}){
   addLocated('六合', locateGod(pan.神,'六合'));
   addLocated('時干', locateStem(pan.天盤, gz.時干));
 
-  if(opts.industry && INDUSTRY_MAP[opts.industry]){
-    const stems=INDUSTRY_MAP[opts.industry].stems;
+  const industryEntry=getIndustryStems(opts.industry);
+  if(opts.industry && industryEntry){
+    const stems=industryEntry.stems;
     const guas=[...new Set(stems.flatMap(s=>locateSymbol(s,pan)))];
     addLocated('行業', guas, {industry:opts.industry, symbols:stems});
   } else {
@@ -1638,12 +1763,18 @@ function analyzeWealthSeven(pan, opts={}){
   results.push({key:'干財', ...WEALTH_SEVEN['干財'], rows:ganCaiRows, guas:ganCaiRows.map(r=>r.gong),
     bad:ganCaiRows.some(r=>r.harms.length>0), detail:ganCai});
 
-  if(opts.targetWuxing){
+  // 月令: 就是這次「起局」當下月支的五行(月支已從 pan.干支 動態解析，不是固定值，
+  // 每次起局的月份都不一樣，季節氣候也不一樣)。荀爽老師只給了「月令五種關係」這張表，
+  // 沒有規定月令固定要跟誰比——用戶已確認：不能預設比較對象，要按當次具體問的是什麼
+  // 來定，所以這裡不再自動代入「戊」，只有呼叫方明確傳入 opts.targetWuxing 時才算關係，
+  // 否則只回報這次起局的月令本身(季節氣候背景)，供人工判斷要跟哪個五行比。
+  {
     const monthWx=BRANCH_WUXING[gz.月支];
     results.push({key:'月令', ...WEALTH_SEVEN['月令'], monthWuxing:monthWx,
-      relation:monthRelation(monthWx, opts.targetWuxing)});
-  } else {
-    results.push({key:'月令', ...WEALTH_SEVEN['月令'], note:'未提供 opts.targetWuxing(欲比較的五行)，僅供參考月支'});
+      targetWuxing: opts.targetWuxing || null,
+      relation: opts.targetWuxing ? monthRelation(monthWx, opts.targetWuxing) : null,
+      note: opts.targetWuxing ? undefined :
+        `本次起局月支「${gz.月支}」，月令五行為「${monthWx}」——這是這次問事當下的季節氣候背景。要判斷「月令五種關係」，需指定要拿誰來比(比如求財就比戊，求某個具體十神/宮位就比那個對象的五行)，不能固定套用同一個目標。`});
   }
 
   const crossHits=crossCheckGongRelations(results.filter(r=>r.guas&&r.guas.length));
@@ -1671,8 +1802,9 @@ function analyzeCareerSeven(pan, zfzs, opts={}){
     rows:gengHuGuas.map(g=>({gong:g, harms:harmsAtGong(g,pan)})), guas:gengHuGuas,
     affectedGongs:affected, bad:gengHuGuas.length>0});
 
-  if(opts.industry && INDUSTRY_MAP[opts.industry]){
-    const stems=INDUSTRY_MAP[opts.industry].stems;
+  const industryEntry=getIndustryStems(opts.industry);
+  if(opts.industry && industryEntry){
+    const stems=industryEntry.stems;
     const guas=[...new Set(stems.flatMap(s=>locateSymbol(s,pan)))];
     addLocated('行業', guas, {industry:opts.industry, symbols:stems});
   } else {
@@ -1763,7 +1895,7 @@ function renderWealthCareerReport(pan, mode, industry){
     if(it.note && !it.rows)return `<div class="ana-item"><b>${T2(it.name)}</b>（${T2(it.role||'')}）——${T2(it.note)}</div>`;
     if(it.key==='月令'){
       if(it.relation){
-        return `<div class="ana-item"><b>月令</b>（${T2(it.role)}）——月支五行「${it.monthWuxing}」，${it.relation.rel}：${it.relation.effect}</div>`;
+        return `<div class="ana-item"><b>月令</b>（${T2(it.role)}）——月支五行「${it.monthWuxing}」對「${it.targetWuxing}」，${it.relation.rel}：${it.relation.effect}${it.note?`<div class="ana-step" style="opacity:.75">${T2(it.note)}</div>`:''}</div>`;
       }
       return `<div class="ana-item"><b>月令</b>（${T2(it.role)}）——${T2(it.note||'')}</div>`;
     }
@@ -1778,6 +1910,7 @@ function renderWealthCareerReport(pan, mode, industry){
     return `<div class="ana-item">
       <span class="pill ${badgeCls}">${badgeTxt}</span>
       <b>${T2(it.name)}</b>（${T2(it.role||'')}）${it.keyword?'——'+T2(it.keyword):''}
+      ${it.key==='行業'&&it.industry?`<div class="ana-step">已選行業：${T2(it.industry.replace('::',' > '))}</div>`:''}
       ${rowsHtml}
       ${it.desc?`<div class="ana-step" style="opacity:.75">${T2(it.desc)}</div>`:''}
     </div>`;
@@ -1839,7 +1972,7 @@ function calc(){
   const needKey=document.getElementById('iNeed').value;
   const yearsInput=document.getElementById('iYears').value;
   const juType=document.getElementById('iJuType').value||'事局';
-  const industry=(document.getElementById('iIndustry')||{}).value||'';
+  const industry=(document.getElementById('iIndustrySmall')||{}).value||'';
   try{
     const pan=QimenJS.qimenChaibu(Solar,y,m,d,h,mi);
     renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry);
@@ -2369,9 +2502,28 @@ const init=()=>{
   if(typeof Solar==='undefined'||typeof QimenJS==='undefined'){setTimeout(init,50);return;}
   initT2();
   setNow();
-  const dl=document.getElementById('industryList');
-  if(dl)dl.innerHTML=Object.keys(INDUSTRY_MAP).map(k=>`<option value="${k}"></option>`).join('');
+  const bigSel=document.getElementById('iIndustryBig');
+  if(bigSel){
+    let opts='<option value="">（不選，僅財富/事業七要報告用到）</option>';
+    opts+='<option value="__FLAT__">常見行業(視頻/案例已驗證)</option>';
+    opts+=Object.keys(INDUSTRY_TAXONOMY).map(k=>`<option value="${k}">${k}</option>`).join('');
+    bigSel.innerHTML=opts;
+    bigSel.addEventListener('change', updateSmallIndustryOptions);
+  }
+  updateSmallIndustryOptions();
 };
+function updateSmallIndustryOptions(){
+  const bigSel=document.getElementById('iIndustryBig'), smallSel=document.getElementById('iIndustrySmall');
+  if(!bigSel||!smallSel)return;
+  const big=bigSel.value;
+  if(!big){ smallSel.innerHTML='<option value="">（先選大行業）</option>'; return; }
+  if(big==='__FLAT__'){
+    smallSel.innerHTML=Object.keys(INDUSTRY_MAP).map(k=>`<option value="${k}">${k}</option>`).join('');
+    return;
+  }
+  const subs=(INDUSTRY_TAXONOMY[big]&&INDUSTRY_TAXONOMY[big].subs)||{};
+  smallSel.innerHTML=Object.keys(subs).map(k=>`<option value="${big}::${k}">${k}</option>`).join('');
+}
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}else{init();}
 </script>
 
