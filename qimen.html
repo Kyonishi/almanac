@@ -1721,6 +1721,24 @@ function crossCheckGongRelations(items){
   return hits;
 }
 
+// 給定一個宮位，回傳該宮命中的六害各自的化解建議 (直接沿用既有灭象+布阵解法引擎，
+// 財富七要/事業七要跟其他任何"所求"一樣，六害是同一套六害，解法也是同一套解法，
+// 不另外發明新邏輯——只有「空」在舊系統裡是綁定 needKey 的"缺啥補啥"，這裡沒有單一
+// needKey 對象，簡化為只給方位，不強行湊一個目標天干)
+function getCuresAtGong(gua, pan){
+  const cures=[];
+  const jixingHits=checkJiXing(pan.天盤), rumuHits=checkRuMu(pan.天盤), menpoHits=checkMenPo(pan.門),
+        gengHits=checkGeng(pan.天盤), baihuHits=checkBaiHu(pan.神);
+  if(jixingHits[gua])cures.push(getCureForJiXing(gua, jixingHits[gua]));
+  if(rumuHits[gua])cures.push(getCureForRuMu(gua, rumuHits[gua]));
+  if(menpoHits[gua])cures.push(getCureForMenPo(gua));
+  if(gengHits[gua])cures.push(getCureForGengOrHu(gua,'庚'));
+  if(baihuHits[gua])cures.push(getCureForGengOrHu(gua,'虎'));
+  if(getKongGongs(pan).has(gua))cures.push({hai:'空', gong:gua, method:'缺啥補啥',
+    place:GUA_DIR[gua], placeVerified:true, note:'具體要補的天干/意象需視當次所求對象而定'});
+  return cures.filter(Boolean);
+}
+
 function harmsAtGong(gua, pan){
   // 給定一個宮位，回傳命中的六害清單 (刑/墓/迫/庚/虎/空)
   const harms=[];
@@ -1905,7 +1923,14 @@ function renderWealthCareerReport(pan, mode, industry){
       const gongTxt=r.gong?`${T2(r.gong)}宮`:'（未定位）';
       const stemTxt=r.stem?`「${T2(r.stem)}」`:(r.role?`${T2(r.role)}${r.stem?'「'+T2(r.stem)+'」':''}`:'');
       const harmTxt=r.harms&&r.harms.length?`命中：${r.harms.join('、')}`:'乾淨';
-      return `<div class="ana-step">${stemTxt}${gongTxt}——${harmTxt}</div>`;
+      const curesHtml=(r.gong&&r.harms&&r.harms.length)
+        ? getCuresAtGong(r.gong,pan).map(c=>{
+            const xiangTxt=c.xiang?.wu ? `，${T2(c.xiang.wu)}` : '';
+            const placeTxt=c.place?`，放於${T2(c.place)}方位`:'';
+            return `<div class="ana-step" style="opacity:.8">　→ ${T2(c.hai)}：${T2(c.method||'')}${c.cureStem?'（用'+T2(c.cureStem)+'）':''}${xiangTxt}${placeTxt}${c.note?'　'+T2(c.note):''}</div>`;
+          }).join('')
+        : '';
+      return `<div class="ana-step">${stemTxt}${gongTxt}——${harmTxt}</div>${curesHtml}`;
     }).join('');
     return `<div class="ana-item">
       <span class="pill ${badgeCls}">${badgeTxt}</span>
