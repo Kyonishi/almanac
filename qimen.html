@@ -632,7 +632,13 @@ function panDoor(yinyang, zfzs) {
 }
 function panStar(yinyang, zfzs) {
   let [startStar, startGong] = zfzs.值符星宮;
-  if (startStar === '內') startStar = '禽';
+  // 修正: 原碼寫成 if(startStar==='內')startStar='禽'，方向反了。
+  // STAR_R(8星輪轉序列)本來就包含「內」，不包含「禽」(禽星寄坤/中，不參與8宮輪轉)。
+  // 值符星宮[0] 只有在直接等於「禽」時(EIGHT_STAR_ORDER 第5位)，才需要換成「內」去查
+  // STAR_R 做輪轉；原本寫反的判斷式會把正常合法的「內」誤轉成 STAR_R 查不到的「禽」，
+  // newList 找不到就回傳 null，導致 starSeq 為 null、下面 forEach 內 starSeq[i] 直接崩潰。
+  // (2026-08-10 實測: 局五/陰遁/戊戌時 觸發此崩潰，修正後驗證通過)
+  if (startStar === '禽') startStar = '內';
   const gongOrder = rotateFromGong(startGong, yinyang);
   const starSeq = yinyang === '陽' ? newList(STAR_R, startStar) : newList([...STAR_R].reverse(), startStar);
   const out = {};
