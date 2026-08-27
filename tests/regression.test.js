@@ -1,35 +1,22 @@
 // ══════════════════════════════════════════════════════════════════════
 // 回歸測試: 用兩個已經對照荀爽老師真實案例驗證過的排盤結果，鎖定引擎行為。
-// 以後每次改動 qimen.html 裡的排盤演算法 (panSky/panDoor/panStar/panGod 等)，
+// 以後每次改動 qimen-engine.js 裡的排盤演算法 (panSky/panDoor/panStar/panGod 等)，
 // 都應該先跑一次這個腳本，確保沒有把已驗證正確的東西改壞。
 //
 // 用法:
 //   npm install lunar-javascript --save-dev   (只需裝一次)
 //   node tests/regression.test.js
 //
-// 這個腳本直接從 qimen.html 裡「即時擷取」引擎那段 <script>，而不是維護一份
-// 獨立複製的 engine.js —— 這樣測試永遠對照的是目前這份 qimen.html 的真實行為，
-// 不會有兩份程式碼漸漸不同步的風險。
+// 2026-08-27: qimen.html 原本的內嵌 <script> 已拆分成 qimen-engine.js / qimen-lexicon.js /
+// qimen-rules.js / qimen-ui.js 四個外部檔案 (純搬移，行為不變)，這裡改成直接 require
+// qimen-engine.js 本體，不用再從 qimen.html 正則擷取——引擎本來就是獨立檔案了。
 // ══════════════════════════════════════════════════════════════════════
 
-const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 const { Solar } = require('lunar-javascript');
 
-const HTML_PATH = path.join(__dirname, '..', 'qimen.html');
-const html = fs.readFileSync(HTML_PATH, 'utf-8');
-const scriptBlocks = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
-if (scriptBlocks.length < 1) {
-  console.error('✕ 找不到 qimen.html 裡的 <script> 區塊，測試無法執行');
-  process.exit(1);
-}
-
-// 第一個 inline <script> 是純算法引擎 (qimenChaibu)，寫進暫存檔用 require() 載入
-const TMP_ENGINE = path.join(__dirname, '.__engine_tmp.js');
-fs.writeFileSync(TMP_ENGINE, scriptBlocks[0]);
-const QimenJS = require(TMP_ENGINE);
-fs.unlinkSync(TMP_ENGINE);
+const QimenJS = require(path.join(__dirname, '..', 'qimen-engine.js'));
 
 let pass = 0, fail = 0;
 function check(label, actual, expected) {
