@@ -314,6 +314,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry){
   const gengHits=checkGeng(sky);
   const baihuHits=checkBaiHu(god);
   const gejuHits=checkMainstreamGeju(sky, earth);
+  const sanzhaWujiaHits=checkSanzhaWujia(sky, door, god);
 
   /* 號令: 日時/生年/意象/符使 四要素合併的保護天干集合 */
   const zhifuStem=zfzs.值符天干?zfzs.值符天干[1]:null;
@@ -540,17 +541,25 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry){
 
   <div class="section-label">解讀一・主流格局判斷（跨門派共識，與下面荀爽老師體系是兩套不同來源）</div>
   ${gejuHits.length ? `<div class="geju-card">
-    <div class="geju-title">命中的格局</div>
+    <div class="geju-title">命中的吉凶格局</div>
     ${gejuHits.map(h=>`<div class="geju-item">
       <span class="pill ${h.luck==='吉'?'pill-ji':'pill-xiong'}">${T2(h.luck)}格</span>
       <b>${T2(h.gong)}宮　${T2(h.name)}</b>　（天盤${T2(h.sky)}／地盤${T2(h.earth)}）<br>
       ${T2(h.desc)}${h.caveat?`<br><span style="opacity:.7">※ ${T2(h.caveat)}</span>`:''}
     </div>`).join('')}
   </div>` : `<div class="geju-card" style="opacity:.65">
-    <div class="geju-title">命中的格局</div>
-    <div>本局未命中青龍返首／飛鳥跌穴／白虎猖狂／朱雀投江／螣蛇夭矯這 5 個跨門派高共識格局。
-    （大格／小格等格局因各家對觸發條件說法分歧較大，暫未收錄，避免誤判）</div>
+    <div class="geju-title">命中的吉凶格局</div>
+    <div>本局未命中青龍返首／飛鳥跌穴／白虎猖狂／朱雀投江／螣蛇夭矯／大格／小格這 7 個跨門派高共識格局。</div>
   </div>`}
+  ${sanzhaWujiaHits.length ? `<div class="geju-card">
+    <div class="geju-title">命中的三詐五假（謀略/隱蔽性質，不是單純吉凶判斷）</div>
+    <div style="font-size:11px;opacity:.6;margin-bottom:6px">三詐五假判斷的是「這件事適不適合暗中謀劃、隱藏真實意圖」，古代常用在用兵/求謀/緝捕等場合，跟上面的吉凶格局是不同維度的判斷，不要混著看。</div>
+    ${sanzhaWujiaHits.map(h=>`<div class="geju-item">
+      <span class="pill pill-neutral">${T2(h.type)}格</span>
+      <b>${T2(h.gong)}宮　${T2(h.name)}</b>　（${T2(h.door)}門／天盤${T2(h.stem)}）<br>
+      ${T2(h.desc)}
+    </div>`).join('')}
+  </div>` : ''}
 
   <div class="section-label">解讀二・荀爽老師體系（六害：刑墓庚虎迫空 ＋ 灭象布阵化解）</div>
   ${(function(){

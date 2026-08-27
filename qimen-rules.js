@@ -111,9 +111,10 @@ function checkBaiHu(godMap){
 // 來源: 2026-08-27 綜合多個獨立線上命理資料源交叉核對一致(天盤干/地盤干 同宮組合查表)，
 // 屬於奇門遁甲較廣泛流傳的古典格局判斷法，用戶明確要求：跟荀爽老師的六害判斷分開展示，
 // 不要混在一起，讓兩套體系對同一張盤各自給出解讀，方便使用者自己比較判斷。
-// 只收錄多方資料交叉核對後說法一致、沒有明顯分歧的 5 個格局；「大格/小格」等格局因各家對
-// 觸發條件(是否需搭配特定支沖)說法不一致，暫不收錄，避免誤判——這點跟本專案一貫「沒驗證清楚
-// 寧可先不做」的原則一致。
+// 只收錄多方資料交叉核對後說法一致、沒有明顯分歧的格局；「大格/小格」原本因觸發條件說法
+// 不一致而未收錄，2026-08-27 進一步查證後確認：多方資料一致認為觸發條件就是「天盤庚加臨
+// 地盤癸/壬」本身(跟其餘格局同一種同宮組合查法)，「寅申相沖」只是用來解釋庚(申)剋制的
+// 五行/地支背景，不是額外要另外滿足的條件，因此本次補上。
 const MAINSTREAM_GEJU = [
   {key:'qinglong_fanshou', name:'青龍返首', sky:'戊', earth:'丙', luck:'吉',
     desc:'值符(甲)代表戊臨地盤丙，青龍(木)生助丙火，木火相生，為大吉大利之象，宜任職、訴訟、搬遷、求財。',
@@ -126,6 +127,10 @@ const MAINSTREAM_GEJU = [
     desc:'丁為南方朱雀(陰火)，癸為江河(陰水)，朱雀墜入江河，百事皆凶，文書/口舌消散，音信沉沒，多驚恐怪異之事。'},
   {key:'tengshe_yaojiao', name:'螣蛇夭矯', sky:'癸', earth:'丁', luck:'凶',
     desc:'癸為北方玄武(陰水)，丁屬陰火，如螣蛇墜入火中被灼燒而屈伸掙扎，百事不利，虛驚不寧，多文書官司。'},
+  {key:'dage', name:'大格', sky:'庚', earth:'癸', luck:'凶',
+    desc:'庚為阻隔剛強之金，加臨癸水，五行相剋(申庚遇寅申沖背景)，主道路受阻、車禍意外、行人不至、官司糾紛，凡事皆凶，甚至可能一生漂泊不定。'},
+  {key:'xiaoge', name:'小格', sky:'庚', earth:'壬', luck:'凶',
+    desc:'庚為阻隔剛強之金，加臨壬水，庚金阻擋壬水流動，主遠行迷路、音信難通，也稱「移蕩格」，代表變動不安、暫時清貧，但同時也主流動變化。'},
 ];
 function checkMainstreamGeju(sky, earth){
   const hits=[];
@@ -134,6 +139,50 @@ function checkMainstreamGeju(sky, earth){
     const s=sky[gua], e=earth[gua];
     for(const g of MAINSTREAM_GEJU){
       if(s===g.sky && e===g.earth) hits.push({...g, gong:gua});
+    }
+  }
+  return hits;
+}
+
+// ══════════════════ 三詐五假 (謀略/隱蔽性質的格局，跟上面吉凶格是不同性質的判斷) ══════════════════
+// 來源: 2026-08-27 綜合多個獨立線上命理資料源交叉核對一致。三詐五假不是單純判斷吉凶，
+// 而是判斷「這件事適不適合暗中謀劃、隱藏真實意圖」——古代常用在用兵、求謀、緝捕等場合。
+// 三詐：三吉門(開/休/生)加三奇(乙/丙/丁)，同宮再乘特定八神；五假：特定門加特定干乘特定八神。
+// 「人假」因各資料源對其天干/門的具體組合說法混亂(疑似輾轉抄錄失真)，暫不收錄，避免誤判。
+const GOD_FULL_TO_SHORT={'值符':'符','螣蛇':'蛇','太陰':'陰','六合':'合','白虎':'虎','玄武':'玄','九地':'地','九天':'天'};
+const SANZHA_DEFS=[
+  {key:'zhenzha', name:'真詐', god:'太陰',
+    desc:'吉門加三奇乘太陰，宜暗中謀劃、隱瞞真實意圖來達成目的，事情背後有周密的策劃。'},
+  {key:'chongzha', name:'重詐', god:'九地',
+    desc:'吉門加三奇乘九地，宜深藏不露、步步為營地推進計劃，行事隱蔽而扎實。'},
+  {key:'xiuzha', name:'休詐', god:'六合',
+    desc:'吉門加三奇乘六合，宜透過人脈/中介來暗中促成，藉合作關係達成隱藏的目的。'},
+];
+const WUJIA_DEFS=[
+  {key:'tianjia', name:'天假', door:'景', gods:['九天'],
+    desc:'景門加三奇(乙/丙/丁)乘九天，宜陳事、上書獻策、干求顯揚之事，適合把事情公開擴大化。'},
+  {key:'dijia', name:'地假', door:'杜', gods:['九地','太陰','六合'],
+    desc:'杜門加丁/己/癸乘九地、太陰或六合，宜潛伏、逃亡躲災、暗中謀劃私事。'},
+  {key:'shenjia_wujia', name:'神假(物假)', door:'傷', gods:['九地','六合'],
+    desc:'傷門加丁/己/癸乘九地或六合，宜埋藏、伏擊、索取、交易等需要隱蔽進行的事。'},
+];
+function checkSanzhaWujia(sky, door, god){
+  const hits=[];
+  const JI_MEN=['開','休','生'], SANQI=['乙','丙','丁'], WUJIA_STEMS=['丁','己','癸'];
+  for(const gua of Object.keys(sky)){
+    if(gua==='中')continue;
+    const s=sky[gua], d=door[gua], g=god[gua];
+    if(JI_MEN.includes(d) && SANQI.includes(s)){
+      SANZHA_DEFS.forEach(z=>{ if(g===GOD_FULL_TO_SHORT[z.god]) hits.push({...z, type:'詐', gong:gua, door:d, stem:s}); });
+    }
+    if(d==='景' && SANQI.includes(s) && g===GOD_FULL_TO_SHORT['九天']){
+      hits.push({...WUJIA_DEFS[0], type:'假', gong:gua, door:d, stem:s});
+    }
+    if(d==='杜' && WUJIA_STEMS.includes(s) && WUJIA_DEFS[1].gods.some(x=>g===GOD_FULL_TO_SHORT[x])){
+      hits.push({...WUJIA_DEFS[1], type:'假', gong:gua, door:d, stem:s});
+    }
+    if(d==='傷' && WUJIA_STEMS.includes(s) && WUJIA_DEFS[2].gods.some(x=>g===GOD_FULL_TO_SHORT[x])){
+      hits.push({...WUJIA_DEFS[2], type:'假', gong:gua, door:d, stem:s});
     }
   }
   return hits;
