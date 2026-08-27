@@ -218,6 +218,14 @@ header{
 .ana-item{margin-bottom:8px;padding-left:2px}
 .ana-step{padding-left:16px;opacity:.85;font-size:12px;margin-top:2px}
 
+/* 主流格局卡 (跨門派共識, 與六害說明卡是分開的兩套來源, 用另一個色系跟兩者都區分開) */
+.geju-card{background:#F5F3FA;border:1px solid #DCD3EE;border-radius:10px;
+  padding:12px 14px;margin-bottom:10px;font-size:12.5px;color:#332B4A;line-height:1.75}
+.geju-title{font-weight:700;color:#5B3FA0;margin-bottom:8px;font-size:11px;letter-spacing:1px}
+.geju-item{margin-bottom:8px}
+.geju-item:last-child{margin-bottom:0}
+.section-label{font-size:10px;color:var(--sub);letter-spacing:1.5px;margin:2px 2px 6px;font-weight:600}
+
 /* 六害說明卡 */
 .liuhai-card{background:#FEF9F9;border:1px solid #F5D5D5;border-radius:10px;
   padding:12px 14px;margin-bottom:10px;font-size:12px;color:#5C1010;line-height:1.7}
@@ -1209,9 +1217,11 @@ function checkJiXing(skyMap){
 }
 
 // ══ 三奇入墓 (固定查表, 與時間無關) ══
-// 來源: 多方獨立命理資料交叉核對 (五行長生十二宮"墓庫"理論), 僅適用於乙丙丁三奇
-// (六儀本身傳統上不另計入墓, 此處採較窄的古典範圍, 不做擴充推測)
-const RUMU_TABLE={'乙':'乾','丙':'乾','丁':'艮'};
+// 來源: 《遁甲演義》原文口訣「六乙日奇降二宮，六丙月奇降六宮，六丁星奇降八宮，是為三奇入墓」，
+// 即 乙→坤(二宮)／丙→乾(六宮)／丁→艮(八宮)，2026-08-27 透過多個獨立線上命理資料源交叉核對一致。
+// (原本 乙 誤寫成'乾'，與丙重複、和坤宮完全對不上，已修正為'坤'；丙/丁 兩項原本就正確。
+// 六儀本身傳統上不另計入墓, 此處僅適用於乙丙丁三奇, 採較窄的古典範圍, 不做擴充推測)
+const RUMU_TABLE={'乙':'坤','丙':'乾','丁':'艮'};
 function checkRuMu(skyMap){
   const hits={};
   for(const [gua,stem] of Object.entries(skyMap)){
@@ -1260,6 +1270,38 @@ function checkBaiHu(godMap){
 
 // ══ 空亡 (地支旬空對應宮位, 沿用既有 kongGongMap 邏輯, 此處另建查詢函式供解法引擎調用) ══
 // 由 renderPan 內既有 markKong/kongGongMap 產生, 此函式僅為統一介面, 邏輯不變
+
+// ══════════════════ 主流格局判斷 (跨門派共識, 與荀爽老師"六害"體系是兩套獨立來源) ══════════════════
+// 來源: 2026-08-27 綜合多個獨立線上命理資料源交叉核對一致(天盤干/地盤干 同宮組合查表)，
+// 屬於奇門遁甲較廣泛流傳的古典格局判斷法，用戶明確要求：跟荀爽老師的六害判斷分開展示，
+// 不要混在一起，讓兩套體系對同一張盤各自給出解讀，方便使用者自己比較判斷。
+// 只收錄多方資料交叉核對後說法一致、沒有明顯分歧的 5 個格局；「大格/小格」等格局因各家對
+// 觸發條件(是否需搭配特定支沖)說法不一致，暫不收錄，避免誤判——這點跟本專案一貫「沒驗證清楚
+// 寧可先不做」的原則一致。
+const MAINSTREAM_GEJU = [
+  {key:'qinglong_fanshou', name:'青龍返首', sky:'戊', earth:'丙', luck:'吉',
+    desc:'值符(甲)代表戊臨地盤丙，青龍(木)生助丙火，木火相生，為大吉大利之象，宜任職、訴訟、搬遷、求財。',
+    caveat:'若此宮同時遇門迫、入墓、擊刑，吉會轉為凶，需先看這宮有沒有命中六害。'},
+  {key:'feiniao_dieuxue', name:'飛鳥跌穴', sky:'丙', earth:'戊', luck:'吉',
+    desc:'丙如飛鳥、戊如巢穴，飛鳥落入自己的巢穴，諸事順遂，事半功倍。'},
+  {key:'baihu_changkuang', name:'白虎猖狂', sky:'辛', earth:'乙', luck:'凶',
+    desc:'辛金剋乙木，白虎(辛)在天上橫行、青龍(乙)反被壓制在地下，主客兩傷，行事多驚恐，遠行有災禍，婚姻/修造大凶。'},
+  {key:'zhuque_toujiang', name:'朱雀投江', sky:'丁', earth:'癸', luck:'凶',
+    desc:'丁為南方朱雀(陰火)，癸為江河(陰水)，朱雀墜入江河，百事皆凶，文書/口舌消散，音信沉沒，多驚恐怪異之事。'},
+  {key:'tengshe_yaojiao', name:'螣蛇夭矯', sky:'癸', earth:'丁', luck:'凶',
+    desc:'癸為北方玄武(陰水)，丁屬陰火，如螣蛇墜入火中被灼燒而屈伸掙扎，百事不利，虛驚不寧，多文書官司。'},
+];
+function checkMainstreamGeju(sky, earth){
+  const hits=[];
+  for(const gua of Object.keys(sky)){
+    if(gua==='中')continue;
+    const s=sky[gua], e=earth[gua];
+    for(const g of MAINSTREAM_GEJU){
+      if(s===g.sky && e===g.earth) hits.push({...g, gong:gua});
+    }
+  }
+  return hits;
+}
 
 // ══════════════════ 解法引擎: 灭象 + 布阵 ══════════════════
 // 來源: 荀爽視頻「布干支大阵 镇压六害」「先灭象后布阵」完整流程截圖交叉核對
@@ -2034,6 +2076,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry){
   const menpoHits=checkMenPo(door);
   const gengHits=checkGeng(sky);
   const baihuHits=checkBaiHu(god);
+  const gejuHits=checkMainstreamGeju(sky, earth);
 
   /* 號令: 日時/生年/意象/符使 四要素合併的保護天干集合 */
   const zhifuStem=zfzs.值符天干?zfzs.值符天干[1]:null;
@@ -2171,6 +2214,21 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry){
     <div class="pan-grid">${gridHTML}</div>
   </div>
 
+  <div class="section-label">解讀一・主流格局判斷（跨門派共識，與下面荀爽老師體系是兩套不同來源）</div>
+  ${gejuHits.length ? `<div class="geju-card">
+    <div class="geju-title">命中的格局</div>
+    ${gejuHits.map(h=>`<div class="geju-item">
+      <span class="pill ${h.luck==='吉'?'pill-ji':'pill-xiong'}">${T2(h.luck)}格</span>
+      <b>${T2(h.gong)}宮　${T2(h.name)}</b>　（天盤${T2(h.sky)}／地盤${T2(h.earth)}）<br>
+      ${T2(h.desc)}${h.caveat?`<br><span style="opacity:.7">※ ${T2(h.caveat)}</span>`:''}
+    </div>`).join('')}
+  </div>` : `<div class="geju-card" style="opacity:.65">
+    <div class="geju-title">命中的格局</div>
+    <div>本局未命中青龍返首／飛鳥跌穴／白虎猖狂／朱雀投江／螣蛇夭矯這 5 個跨門派高共識格局。
+    （大格／小格等格局因各家對觸發條件說法分歧較大，暫未收錄，避免誤判）</div>
+  </div>`}
+
+  <div class="section-label">解讀二・荀爽老師體系（六害：刑墓庚虎迫空 ＋ 灭象布阵化解）</div>
   ${(function(){
     /* ══ 本局解讀：把上面已經算好的號令/六害/灭象布阵資料，整合成白話的一段分析 ══
        這裡不新增任何判斷方法論——文字用詞(争執損耗/沉溺迷失/凶禍阻隔/快速危險/壓力脅迫/虛假不實)
