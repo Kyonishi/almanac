@@ -336,7 +336,7 @@ footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spa
       <option value="求權威地位">求權威地位</option>
       <option value="求表現曝光">求表現曝光</option>
       <option value="求情感情欲">求情感情欲</option>
-      <option value="求桃花">求桃花（推導，未經視頻原文驗證）</option>
+      <option value="求桃花">求桃花（定位讀法已查證六合/休門；空亡化解暫沿用癸，未完全驗證）</option>
       <option value="求突破變革">求突破變革</option>
     </select>
   </div>
@@ -1938,6 +1938,78 @@ function analyzeCareerSeven(pan, zfzs, opts={}){
   return {items:results, crossHits};
 }
 
+// ══════════════════ 簡明定位讀法：權威／表現／情感／突破／桃花 ══════════════════
+// 跟「財富七要／事業七要」不同：這五個所求目前沒有荀爽老師逐字給出的完整多要素教材，
+// 所以這裡刻意不叫「N要」（避免暗示跟財富/事業同等級的來源）。做法是：只挑選每個所求下
+// 有清楚跨資料源共識支持的 2-3 個核心符號，定位它們落在哪一宮、有沒有六害，來源逐條標注：
+// - 甲=權威、丙=表現、癸=情欲、辛=突破：荀爽老師視頻「意象」明確給出 (YIXIANG_TABLE, verified)
+// - 開門=官方/掌權/開創、九天=高位名聲、景門=宣傳曝光、六合=姻緣情緣核心、太陰=隱秘曖昧、
+//   休門=曖昧相遇：2026-08-27 綜合多個獨立線上命理資料源交叉核對一致，屬八門/八神基礎象意，
+//   非單一教材獨有
+// 「求桃花」原本借用「情欲(癸)」湊數且標記未驗證，這裡改用查證過、更貼切的六合+休門
+// (催桃花的核心用神本來就是六合，而不是情欲)，NEED_TO_STEM 裡「空亡缺啥補啥」用的癸仍保留
+// 不動——那是另一套「灭象布阵」子系統，跟這裡的「定位讀法」是兩回事，不互相依賴。
+const SIMPLE_LOCATE_DEFS = {
+  '求權威地位': [
+    {token:'值符', name:'甲（值符落宮）', role:'本人的權威/地位本身',
+      desc:'甲不上盤、永遠藏在值符背後，看值符落宮的門/星/神，就是看這個人真正的權威/地位狀態。',
+      note:'甲＝領導、頭領、權威人物，十天干意象裡跨資料源一致的共識內容。'},
+    {token:'開',name:'開門', role:'掌權掌控之門',
+      desc:'開門對應官方機構、公職、掌權掌控的位置；開門遇六害＝在掌權這件事上不順、卡關。',
+      note:'開門＝官方/公職/掌權，多個獨立命理資料一致，屬八門基礎象意。'},
+    {token:'九天',name:'九天', role:'高位/名聲/雄心',
+      desc:'九天是八神裡最主吉的一個，代表高位、聲望、遠大志向；九天遇六害＝野心/名聲這條路上有阻礙。',
+      note:'九天＝高位/名聲/雄心壯志，多個獨立命理資料一致，屬八神基礎象意。'},
+  ],
+  '求表現曝光': [
+    {token:'丙',name:'丙', role:'表演慾、舞台魅力本身',
+      desc:'丙如太陽般由中心向外放射能量，對應表演慾、舞台魅力、領袖光環。',
+      note:'荀爽老師視頻「意象」明確給出：丙＝表現。', verified:true},
+    {token:'景',name:'景門', role:'宣傳/曝光/形象展示',
+      desc:'景門主宣傳、渠道、個人形象展示；景門遇六害＝做出來的東西被看到的機會受阻。',
+      note:'景門＝宣傳曝光/表演展示，多個獨立命理資料一致（居離宮屬火，光明絢爛之意）。'},
+  ],
+  '求情感情欲': [
+    {token:'癸',name:'癸', role:'欲望/沉溺本身',
+      desc:'癸是天干序位最末，象徵深陷其中難以自拔的狀態，性格陰柔多情、容易沉迷上癮。',
+      note:'荀爽老師視頻「意象」明確給出：癸＝情欲。', verified:true},
+    {token:'六合',name:'六合', role:'情感關係本身',
+      desc:'六合代表婚姻/情緣/正緣的關係總星，六合遇六害＝這段關係本身在承壓。',
+      note:'六合＝婚姻情緣總星，多個獨立命理資料一致。'},
+    {token:'太陰',name:'太陰', role:'隱秘/不可告人的一面',
+      desc:'太陰性格陰匿暗昧、善謀劃、宜靜不宜動；旺相為喜慶姻緣，休囚則主曖昧不明、私下往來。',
+      note:'太陰旺衰兩義（喜慶婚姻 vs 曖昧私通）跨資料源一致，屬八神基礎象意。'},
+  ],
+  '求突破變革': [
+    {token:'辛',name:'辛', role:'改革/突破本身',
+      desc:'辛敢於挑戰舊有秩序、追求創新變革，性格內斂但態度堅決，認準問題便直插要害。',
+      note:'荀爽老師視頻「意象」明確給出：辛＝突破。', verified:true},
+    {token:'開',name:'開門', role:'打開新局面',
+      desc:'開門主開創、打開新局面；開門遇六害＝想開創新局但卡關、開不了局。',
+      note:'開門＝開創新局，多個獨立命理資料一致，屬八門基礎象意。'},
+  ],
+  '求桃花': [
+    {token:'六合',name:'六合', role:'催桃花第一核心',
+      desc:'六合是姻緣、情緣、正緣的關係總星，傳統上被視為「催桃花的第一核心」；六合遇六害＝正緣/介紹人這條線在承壓。',
+      note:'跨資料源一致：六合是桃花/姻緣預測的核心用神，比原本借用的「情欲(癸)」更貼切對應「桃花」本身。'},
+    {token:'休',name:'休門', role:'曖昧、相遇的吉門',
+      desc:'休門主休息、放鬆、私下相處，是曖昧、相遇的吉門；休門遇六害＝容易錯過或遇不到人。',
+      note:'跨資料源一致：休門是感情/曖昧/相遇的代表吉門之一。'},
+  ],
+};
+function analyzeSimpleLocate(pan, needKey, zfzs){
+  const defs=SIMPLE_LOCATE_DEFS[needKey];
+  if(!defs)return null;
+  const results=defs.map(def=>{
+    const guas=locateSymbol(def.token, pan, zfzs);
+    const rows=guas.map(g=>({gong:g, harms:harmsAtGong(g,pan)}));
+    return {...def, rows, guas, bad:rows.length?rows.some(r=>r.harms.length>0):null};
+  });
+  const crossHits=crossCheckGongRelations(results.filter(r=>r.guas&&r.guas.length)
+    .map(r=>({key:r.token, name:r.name, guas:r.guas})));
+  return {items:results, crossHits};
+}
+
 // ══════════════════ 號令: 日時/生年/意象/符使 四要素 ══════════════════
 // 來源: 荀爽視頻「保護各干」截圖逐字轉錄
 // 生年天干對照表 (西元年尾數 → 天干): 0庚 1辛 2壬 3癸 4甲 5乙 6丙 7丁 8戊 9己
@@ -2050,6 +2122,61 @@ function renderWealthCareerReport(pan, mode, industry){
       ② 命裡最容易的路 ≠ 本人真正想走的路，讀局時把「最佳路徑」和「當事人實際選擇」分開呈現。<br>
       ③ 月令五種關係的「性價比」邏輯只用於求財/財富，其他人生課題不一定按性價比走。</div>
     </div>
+  </div>`;
+}
+
+// ── 「簡明定位讀法」報告渲染 (權威/表現/情感/突破/桃花共用一套模板，沿用財富/事業七要
+//    的既有樣式，但明確標註這裡的符號來源分級較低、不是逐字教材，供使用者自行判斷輕重) ──
+function renderSimpleLocateReport(pan, needKey){
+  const T2=x=>t2(x||'');
+  const zfzs=pan.值符值使;
+  const {items, crossHits}=analyzeSimpleLocate(pan, needKey, zfzs);
+
+  const itemsHtml=items.map(it=>{
+    const badgeTxt = it.bad===null?'未定位':(it.bad?'⚠ 有六害':'✓ 乾淨');
+    const badgeCls = it.bad===null?'pill-neutral':(it.bad?'pill-xiong':'pill-ji');
+    const rowsHtml=(it.rows||[]).map(r=>{
+      const gongTxt=r.gong?`${T2(r.gong)}宮`:'（未定位）';
+      const harmTxt=r.harms&&r.harms.length?`命中：${r.harms.join('、')}`:'乾淨';
+      const curesHtml=(r.gong&&r.harms&&r.harms.length)
+        ? getCuresAtGong(r.gong,pan).map(c=>{
+            const xiangTxt=c.xiang?.wu ? `，${T2(c.xiang.wu)}` : '';
+            const placeTxt=c.place?`，放於${T2(c.place)}方位`:'';
+            return `<div class="ana-step" style="opacity:.8">　→ ${T2(c.hai)}：${T2(c.method||'')}${c.cureStem?'（用'+T2(c.cureStem)+'）':''}${xiangTxt}${placeTxt}${c.note?'　'+T2(c.note):''}</div>`;
+          }).join('')
+        : '';
+      return `<div class="ana-step">${gongTxt}——${harmTxt}</div>${curesHtml}`;
+    }).join('') || '<div class="ana-step" style="opacity:.75">這一局的盤面上沒有找到這個符號（可能落在中宮，或這個符號在中宮寄宮的規則尚未確認）。</div>';
+    return `<div class="ana-item">
+      <span class="pill ${badgeCls}">${badgeTxt}</span>
+      <b>${T2(it.name)}</b>${it.role?'（'+T2(it.role)+'）':''}
+      ${rowsHtml}
+      ${it.desc?`<div class="ana-step" style="opacity:.75">${T2(it.desc)}</div>`:''}
+      ${it.note?`<div class="ana-step" style="opacity:.55;font-size:11px">來源：${T2(it.note)}</div>`:''}
+    </div>`;
+  }).join('');
+
+  const seen=new Set();
+  const crossRows=crossHits.filter(h=>{
+    const k=[h.a,h.b,h.gongA,h.gongB].sort().join('|');
+    if(seen.has(k))return false; seen.add(k); return true;
+  }).map(h=>`<div class="ana-step">「${T2(h.aName)}」(${T2(h.gongA)}宮) 與「${T2(h.bName)}」(${T2(h.gongB)}宮)——${h.relation}</div>`).join('');
+
+  const badCount=items.filter(it=>it.bad===true).length;
+  let verdict;
+  if(badCount===0) verdict='這幾個核心符號基本乾淨，沒有明顯阻力。';
+  else if(badCount<items.length) verdict=`${badCount}／${items.length} 個核心符號命中六害，問題不算全面，針對命中的項目排雷即可。`;
+  else verdict=`這幾個核心符號都命中六害，阻力比較全面，建議按嚴重度優先處理，或考慮這條路本身是否適合走。`;
+
+  return `<div class="analysis-card">
+    <div style="font-size:11px;opacity:.7;margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed #D8E0EC">
+      這份「${T2(needKey)}」定位讀法，只挑了幾個有跨資料源共識支持的核心符號，不是像財富七要/事業七要
+      那樣逐字轉錄自單一教材的完整框架，項目數量也比七要少——請把它當成一個起點，跟下面的六害/格局分析
+      合併判斷，而不是唯一答案。
+    </div>
+    <div class="ana-block"><div class="ana-h">${T2(needKey)}・核心符號定位</div>${itemsHtml}</div>
+    ${crossRows?`<div class="ana-block"><div class="ana-h">符號之間的關聯（同宮/對宮，推導未經逐字驗證）</div>${crossRows}</div>`:''}
+    <div class="ana-block"><div class="ana-h">整體怎麼樣</div><div>${verdict}</div></div>
   </div>`;
 }
 
@@ -2670,7 +2797,8 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry){
     return html;
   })()}
 
-  ${(needKey==='財富七要'||needKey==='事業七要') ? renderWealthCareerReport(pan, needKey, industry) : ''}
+  ${(needKey==='財富七要'||needKey==='事業七要') ? renderWealthCareerReport(pan, needKey, industry)
+    : (SIMPLE_LOCATE_DEFS[needKey] ? renderSimpleLocateReport(pan, needKey) : '')}
 
   <div class="info-card">
     <div class="info-title">吉凶速覽</div>
