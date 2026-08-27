@@ -1473,19 +1473,27 @@ const YIXIANG_TABLE={
   '己':{need:'（視頻例子未覆蓋，暫缺）', verified:false},
   '壬':{need:'（視頻例子未覆蓋，暫缺）', verified:false},
 };
-// 常見問事需求 → 建議意象天干 (在 YIXIANG_TABLE 已驗證範圍內做正向映射；
-// 求事業/求桃花目前缺乏視頻原文對應天干，暫用最相關且已驗證的天干做保守推薦，需人工覆核)
+// 常見問事需求 → 建議意象天干 (在 YIXIANG_TABLE 已驗證範圍內做正向映射)
 const NEED_TO_STEM={
   '求財':'戊',
   '求權威地位':'甲',
   '求表現曝光':'丙',
   '求情感情欲':'癸',
   '求突破變革':'辛',
-  // 以下為未在視頻中直接給出對應天干的常見需求，暫standard推導，標記務必人工覆核:
-  '求事業':{stem:'甲', verified:false, note:'借用「權威」天干推導，非視頻原文明確對應'},
-  '求桃花':{stem:'癸', verified:false, note:'借用「情欲」天干推導，非視頻原文明確對應，桃花傳統上更常論六合/太陰，建議另行覆核'},
+  // 2026-08-27 修正：桃花原本借用「情欲(癸)」湊數，跟桃花本身不是同一件事。改用「乙」——
+  // 來源：多個獨立命理資料源一致提到「三奇乙丙丁」催桃花性質不同：乙＝溫柔正緣、丙＝熱情、
+  // 丁＝易招爛桃花，乙是三者中最貼近「求桃花」(而非泛桃花/爛桃花)本意的一個，仍標記待覆核。
+  '求桃花':{stem:'乙', verified:false, note:'來源：「三奇乙丙丁」催桃花性質說法(乙＝溫柔正緣)，跨網路資料源交叉核對，非荀爽老師視頻原文，仍建議人工覆核'},
+  // 「求事業」沒有納入：事業在源頭教材裡本來就是「開門/景門/玄武/庚虎/行業/符使/諸干」七個
+  // 面向的組合，不存在單一天干能代表整個事業，勉強湊一個(舊版本借用「甲」)反而是誤導；
+  // 已改為 getCureForKongWang 裡特殊處理，直接請使用者去看「事業七要」，不亂猜一個天干。
 };
 function getCureForKongWang(gua, needKey){
+  if(needKey==='求事業'){
+    return {hai:'空', gong:gua, cureStem:null, method:'缺啥補啥', xiang:null,
+      place:GUA_DIR[gua], placeVerified:true, verified:false,
+      note:'「事業」沒有單一天干可以代表(事業本身是開門/景門/玄武/庚虎/行業/符使/諸干七個面向的組合)，建議改選「事業七要」完整報告，針對命中空亡的那個面向具體判斷要補什麼'};
+  }
   const target=NEED_TO_STEM[needKey];
   const stem=typeof target==='string'?target:(target&&target.stem);
   if(!stem)return null;
@@ -1996,6 +2004,21 @@ const SIMPLE_LOCATE_DEFS = {
       desc:'休門主休息、放鬆、私下相處，是曖昧、相遇的吉門；休門遇六害＝容易錯過或遇不到人。',
       note:'跨資料源一致：休門是感情/曖昧/相遇的代表吉門之一。'},
   ],
+  // 「求事業」不是另外湊一套新符號，而是直接借用「事業七要」裡已經逐字驗證過的三個
+  // 最核心面向(開門/景門/符使/值使)，只挑最關鍵的三項做輕量版；想看完整七個面向，
+  // 選單裡另有「事業七要（完整報告）」。這樣求事業反而是這五個定位讀法裡來源最扎實的一個
+  // (直接沿用荀爽老師視頻內容，不是外部交叉核對的推導)。
+  '求事業': [
+    {token:'開',name:'開門', role:'工作單位、所在團體',
+      desc:'單位情況對你的影響。出問題＝單位的問題不是你的問題，是沒待對地方；人際關係複雜的單位也會表現為開門擊刑；開門遇六害＝工作環境基本都不好。',
+      note:'荀爽老師視頻「事業七要」明確給出，跟「事業七要」報告同一來源。', verified:true},
+    {token:'景',name:'景門', role:'業績展示、個人形象',
+      desc:'面試、考核、成果。核心：做出的成績能否被領導看到。出問題＝再有成績也不會被人看到。',
+      note:'荀爽老師視頻「事業七要」明確給出，跟「事業七要」報告同一來源。', verified:true},
+    {token:'值使',name:'值使（行動力/二把手）', role:'這件事能不能真的推動起來',
+      desc:'值使代表實際執行、真正能使得上力的位置；值使遇六害＝有想法但推不動、行動力受阻。',
+      note:'荀爽老師視頻「事業七要」明確給出（符使一項的下半部），跟「事業七要」報告同一來源。', verified:true},
+  ],
 };
 function analyzeSimpleLocate(pan, needKey, zfzs){
   const defs=SIMPLE_LOCATE_DEFS[needKey];
@@ -2010,6 +2033,29 @@ function analyzeSimpleLocate(pan, needKey, zfzs){
   return {items:results, crossHits};
 }
 
+// ══════════════════ 桃花：生肖固定桃花位 (咸池，三合局查桃花地支) ══════════════════
+// 來源: 命理基礎共識口訣，跨八字/紫微/奇門通用，非單一教材獨有——
+// 申子辰(猴鼠龍)桃花在酉、亥卯未(豬兔羊)桃花在子、寅午戌(虎馬狗)桃花在卯、巳酉丑(蛇雞牛)桃花在午。
+// 這是「求桃花」的第二種經典查法(第一種是本次盤面裡的六合/休門落宮)，用生年/日支所屬的
+// 三合局去查固定桃花地支，再透過既有 ZHI_TO_GONG 對照表換算成宮位。
+const PEACH_TRINE={
+  '申':'酉','子':'酉','辰':'酉',
+  '亥':'子','卯':'子','未':'子',
+  '寅':'卯','午':'卯','戌':'卯',
+  '巳':'午','酉':'午','丑':'午',
+};
+function getPeachBranch(branch){ return PEACH_TRINE[branch]||null; }
+// 給定一組(標籤,地支)清單，算出各自的桃花宮位，附上該宮的六害/化解 (跟其他定位讀法同一套引擎)
+function buildPeachBlossomLocates(pan, branchEntries){
+  return branchEntries.map(({label, branch})=>{
+    const peachBranch=getPeachBranch(branch);
+    const gong=peachBranch?ZHI_TO_GONG[peachBranch]:null;
+    return {label, branch, peachBranch, gong,
+      harms: gong?harmsAtGong(gong,pan):[],
+      bad: gong?harmsAtGong(gong,pan).length>0:null};
+  });
+}
+
 // ══════════════════ 號令: 日時/生年/意象/符使 四要素 ══════════════════
 // 來源: 荀爽視頻「保護各干」截圖逐字轉錄
 // 生年天干對照表 (西元年尾數 → 天干): 0庚 1辛 2壬 3癸 4甲 5乙 6丙 7丁 8戊 9己
@@ -2018,6 +2064,15 @@ function yearToStem(year){
   const y=parseInt(year,10);
   if(isNaN(y))return null;
   return YEAR_LASTDIGIT_STEM[((y%10)+10)%10];
+}
+// 西元年 → 地支 (用於「生肖固定桃花位」查生年三合局，跟「桃花位」古訣搭配用的是生肖/年支，
+// 不是精確到立春的八字年柱，用曆法年份做簡化對照是這類生肖桃花口訣的通行慣例)
+// 錨點: 2020年庚子(子=index0)、2024年甲辰(辰=index4)，公式 (year-4) mod 12 對應地支序位
+const BRANCH_ORDER='子丑寅卯辰巳午未申酉戌亥';
+function yearToBranch(year){
+  const y=parseInt(year,10);
+  if(isNaN(y))return null;
+  return BRANCH_ORDER[((y-4)%12+12)%12];
 }
 // 從干支字串 (如「甲辰年丙寅月壬戌日己酉時」) 抽出日干/時干
 function parseDayHourStem(ganzhiStr){
@@ -2127,7 +2182,7 @@ function renderWealthCareerReport(pan, mode, industry){
 
 // ── 「簡明定位讀法」報告渲染 (權威/表現/情感/突破/桃花共用一套模板，沿用財富/事業七要
 //    的既有樣式，但明確標註這裡的符號來源分級較低、不是逐字教材，供使用者自行判斷輕重) ──
-function renderSimpleLocateReport(pan, needKey){
+function renderSimpleLocateReport(pan, needKey, yearsInput){
   const T2=x=>t2(x||'');
   const zfzs=pan.值符值使;
   const {items, crossHits}=analyzeSimpleLocate(pan, needKey, zfzs);
@@ -2168,6 +2223,44 @@ function renderSimpleLocateReport(pan, needKey){
   else if(badCount<items.length) verdict=`${badCount}／${items.length} 個核心符號命中六害，問題不算全面，針對命中的項目排雷即可。`;
   else verdict=`這幾個核心符號都命中六害，阻力比較全面，建議按嚴重度優先處理，或考慮這條路本身是否適合走。`;
 
+  // 「求桃花」額外附上「生肖固定桃花位」(第二種經典查法，跟上面「本次盤面六合/休門落宮」
+  // 是兩套獨立方法並存——一個看這次起局當下的關係狀態，一個看個人固定的桃花方位)
+  let peachHtml='';
+  if(needKey==='求桃花'){
+    const gz=parseGanzhi(pan.干支);
+    const entries=[];
+    if(gz&&gz.日支)entries.push({label:`日支「${T2(gz.日支)}」`, branch:gz.日支});
+    String(yearsInput||'').split(/[,，、\s]+/).map(s=>s.trim()).filter(Boolean).forEach(y=>{
+      const b=yearToBranch(y);
+      if(b)entries.push({label:`生年${y}（${T2(b)}）`, branch:b});
+    });
+    const locates=buildPeachBlossomLocates(pan, entries);
+    if(locates.length){
+      const rowsHtml=locates.map(l=>{
+        if(!l.gong)return `<div class="ana-item">${l.label}——地支對照找不到宮位，暫無法定位</div>`;
+        const badgeTxt=l.bad?'⚠ 有六害':'✓ 乾淨';
+        const badgeCls=l.bad?'pill-xiong':'pill-ji';
+        const curesHtml=l.bad
+          ? getCuresAtGong(l.gong,pan).map(c=>{
+              const xiangTxt=c.xiang?.wu ? `，${T2(c.xiang.wu)}` : '';
+              const placeTxt=c.place?`，放於${T2(c.place)}方位`:'';
+              return `<div class="ana-step" style="opacity:.8">　→ ${T2(c.hai)}：${T2(c.method||'')}${c.cureStem?'（用'+T2(c.cureStem)+'）':''}${xiangTxt}${placeTxt}${c.note?'　'+T2(c.note):''}</div>`;
+            }).join('')
+          : '';
+        return `<div class="ana-item">
+          <span class="pill ${badgeCls}">${badgeTxt}</span>
+          ${l.label}的桃花位在「${T2(l.peachBranch)}」，對應<b>${T2(l.gong)}宮</b>
+          <div class="ana-step">${l.harms.length?`命中：${l.harms.join('、')}`:'乾淨'}</div>
+          ${curesHtml}
+        </div>`;
+      }).join('');
+      peachHtml=`<div class="ana-block"><div class="ana-h">桃花的第二種查法・生肖固定桃花位</div>
+        <div style="font-size:11px;opacity:.6;margin-bottom:6px">口訣：申子辰(猴鼠龍)桃花在酉、亥卯未(豬兔羊)桃花在子、寅午戌(虎馬狗)桃花在卯、巳酉丑(蛇雞牛)桃花在午——命理基礎共識口訣，非單一教材獨有；用生年地支查是每人固定的桃花位，日支則是這次起局當下附帶算出的參考。</div>
+        ${rowsHtml}
+      </div>`;
+    }
+  }
+
   return `<div class="analysis-card">
     <div style="font-size:11px;opacity:.7;margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed #D8E0EC">
       這份「${T2(needKey)}」定位讀法，只挑了幾個有跨資料源共識支持的核心符號，不是像財富七要/事業七要
@@ -2176,6 +2269,7 @@ function renderSimpleLocateReport(pan, needKey){
     </div>
     <div class="ana-block"><div class="ana-h">${T2(needKey)}・核心符號定位</div>${itemsHtml}</div>
     ${crossRows?`<div class="ana-block"><div class="ana-h">符號之間的關聯（同宮/對宮，推導未經逐字驗證）</div>${crossRows}</div>`:''}
+    ${peachHtml}
     <div class="ana-block"><div class="ana-h">整體怎麼樣</div><div>${verdict}</div></div>
   </div>`;
 }
@@ -2284,10 +2378,11 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry){
       ?(isKong?`這個空亡宮自己對應的方位是「${cure.place}」，缺啥補啥就去這裡補放`
               :`無腦法：灭象後放到「${cure.place}」方位`)
       :'';
+    const noteTxt=cure.note?`（${T2(cure.note)}）`:'';
     const x=cure.xiang;
-    if(!x)return placeLine?`化解：${placeLine}`:(cure.method?`化解：${cure.method}`:'');
+    if(!x)return (placeLine?`化解：${placeLine}${noteTxt}`:(cure.method?`化解：${cure.method}${noteTxt}`:''));
     const detail=`${cure.place&&!isKong?'（進階）':''}${cure.method}：用「${x.stem}」，放${x.placement||'高處'}`;
-    return `化解：${placeLine?placeLine+'；':''}${detail}`;
+    return `化解：${placeLine?placeLine+'；':''}${detail}${noteTxt}`;
   }
   function menpoBrief(cure){
     if(!cure)return '';
@@ -2703,12 +2798,13 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry){
           ?`<div class="cure-line">→ 這個空亡宮自己對應的現實方位是<b>${cure.place}</b>，缺啥補啥就去這個方位補放</div>`
           :`<div class="cure-line">→ 無腦法：灭象後放到<b>${cure.place}</b>方位，兩個方位都可以</div>`)
         :'';
+      const noteLine=cure.note?`<div class="cure-line" style="opacity:.75">→ ${T2(cure.note)}</div>`:'';
       const x=cure.xiang;
-      if(!x)return placeLine;
+      if(!x)return placeLine+noteLine;
       const unverified=cure.verified===false?'<span style="opacity:.6">（推導，未經視頻原文驗證，僅供參考）</span>':'';
       return placeLine+`<div class="cure-line">→ ${cure.place&&!isKong?'（進階）':''}${cure.method}：用「${x.stem}」，放${x.placement||'高處'}${unverified}<br>
         <span style="opacity:.85">字：${x.wu?x.wu:''}　字：${x.zi}</span><br>
-        <span style="opacity:.85">意：${x.yi}　行：${x.xing}</span></div>`;
+        <span style="opacity:.85">意：${x.yi}　行：${x.xing}</span></div>`+noteLine;
     };
     // 標記該條六害是否「命中號令」(日時/生年/意象/符使 之一): 命中者正常顯示, 未命中者弱化
     const hlTag=(isHit)=>isHit
@@ -2798,7 +2894,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry){
   })()}
 
   ${(needKey==='財富七要'||needKey==='事業七要') ? renderWealthCareerReport(pan, needKey, industry)
-    : (SIMPLE_LOCATE_DEFS[needKey] ? renderSimpleLocateReport(pan, needKey) : '')}
+    : (SIMPLE_LOCATE_DEFS[needKey] ? renderSimpleLocateReport(pan, needKey, yearsInput) : '')}
 
   <div class="info-card">
     <div class="info-title">吉凶速覽</div>
