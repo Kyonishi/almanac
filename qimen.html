@@ -381,6 +381,7 @@ footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spa
   <div class="sheet-sub" id="ssub"></div>
   <div class="sheet-meta" id="smeta"></div>
   <div class="sheet-desc" id="sdesc"></div>
+  <div id="shits"></div>
 </div>
 
 
@@ -965,7 +966,7 @@ function luckBadge(luck){
   if(luck)return `<span class="sheet-tag luck-neu">${luck}</span>`;
   return '';
 }
-function openSheet(kind, key){
+function openSheet(kind, key, gua, role){
   const L=window.LEX_DATA||{};
   let title='', sub='', metaHtml='', desc='請查閱資料';
   if(kind==='stem'){
@@ -1002,10 +1003,23 @@ function openSheet(kind, key){
       desc=`自然物象：${x.nature}。這一宮的天干/門/星/神落在這裡，都可以往「${x.person}」「${x.body}」「${x.nature}」這幾個方向去對應現實中的人事物。`;
     }
   }
+  // 這一宮這局命中的六害/格局摘要 (Phase 2: 由 renderPan 依 kind/role 事先組好放進
+  // window.CURRENT_GONG_HITS，這裡純粹取用，不重新判斷)
+  let hitsHtml='';
+  const H=gua&&window.CURRENT_GONG_HITS&&window.CURRENT_GONG_HITS[gua];
+  if(H){
+    if(kind==='gua')hitsHtml=H.all;
+    else if(kind==='door')hitsHtml=H.door;
+    else if(kind==='god')hitsHtml=H.god;
+    else if(kind==='star')hitsHtml=H.star;
+    else if(kind==='stem')hitsHtml=(role==='earth')?H.earth:H.sky;
+  }
+
   document.getElementById('sterm').textContent=t2(title)||key;
   document.getElementById('ssub').textContent=t2(sub);
   document.getElementById('smeta').innerHTML=metaHtml;
   document.getElementById('sdesc').textContent=t2(desc);
+  document.getElementById('shits').innerHTML=hitsHtml||'';
   document.getElementById('smask').classList.add('show');
   document.getElementById('sheet').classList.add('show');
 }
@@ -2127,6 +2141,92 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry){
   // 空亡命中宮位 (只取有旬空標記的宮, 排除中宮) —— 提到外層讓摘要卡和明細卡共用
   const kongHitGongs=Object.keys(kongGongMap).filter(g=>g!=='中');
 
+  /* ══ 把六害/主流格局的命中資訊，跟九宮格上每個可點符號的取象彈窗串起來 ══
+     目的：點某宮的天干/門/星/神/宮位時，彈窗除了講這個符號本身的意思，還順便告訴使用者
+     「這個符號在這一局正好命中了什麼、要不要緊、怎麼化解」，不用另外滑到下面的六害說明卡才看得到。
+     這裡按「跟哪個符號有關」把每宮的命中資訊分類、事先組好 HTML，存進 window.CURRENT_GONG_HITS，
+     openSheet() 依 kind/role 取對應那一份插入彈窗。不新增任何判斷方法論，純粹是把上面已經算好
+     的 jixingHits/rumuHits/gengHits/baihuHits/menpoHits/kongGongMap/gejuHits 重新組織一次。 */
+  const HAI_WORD_CLASS={刑:'lh-xing',墓:'lh-mu',庚:'lh-geng',虎:'lh-hu',迫:'lh-po',空:'lh-kong'};
+  const HAI_MEANING={刑:'爭執損耗',墓:'沉溺迷失',庚:'凶禍阻隔',虎:'快速危險',迫:'壓力脅迫',空:'虛假不實'};
+  // 精簡版化解摘要，措辭跟下面完整六害說明卡的 cureLine 對齊，只是縮成一行，方便塞進彈窗
+  function cureBrief(cure){
+    if(!cure)return '';
+    const isKong=cure.hai==='空';
+    const placeLine=cure.place
+      ?(isKong?`這個空亡宮自己對應的方位是「${cure.place}」，缺啥補啥就去這裡補放`
+              :`無腦法：灭象後放到「${cure.place}」方位`)
+      :'';
+    const x=cure.xiang;
+    if(!x)return placeLine?`化解：${placeLine}`:(cure.method?`化解：${cure.method}`:'');
+    const detail=`${cure.place&&!isKong?'（進階）':''}${cure.method}：用「${x.stem}」，放${x.placement||'高處'}`;
+    return `化解：${placeLine?placeLine+'；':''}${detail}`;
+  }
+  function menpoBrief(cure){
+    if(!cure)return '';
+    return `化解：用合，擺放「${cure.doorsText}」門象、對應地支「${cure.branchesText}」`;
+  }
+  const gongHitHtml={};
+  GRID_ORDER.forEach(gua=>{
+    if(gua==='中'){gongHitHtml[gua]={all:'',sky:'',earth:'',door:'',god:'',star:''};return;}
+    const parts=[]; // {type,label,isHit,cureHtml,rel:[哪些符號種類跟這條有關]}
+    if(jixingHits[gua]){
+      const st=jixingHits[gua];
+      parts.push({type:'刑',label:`${T2(st)}擊刑`,isHit:protectedStems.has(st),
+        cureHtml:cureBrief(getCureForJiXing(gua,st)),rel:['sky']});
+    }
+    if(rumuHits[gua]){
+      const st=rumuHits[gua];
+      parts.push({type:'墓',label:`${T2(st)}入墓`,isHit:protectedStems.has(st),
+        cureHtml:cureBrief(getCureForRuMu(gua,st)),rel:['sky']});
+    }
+    if(gengHits[gua]){
+      parts.push({type:'庚',label:'天干庚',isHit:protectedStems.has('庚'),
+        cureHtml:cureBrief(getCureForGengOrHu(gua,'庚')),rel:['sky']});
+    }
+    if(baihuHits[gua]){
+      parts.push({type:'虎',label:'白虎',isHit:gongHitsProtected(gua,sky,earth,protectedStems),
+        cureHtml:cureBrief(getCureForGengOrHu(gua,'虎')),rel:['god']});
+    }
+    if(menpoHits[gua]){
+      const dr=menpoHits[gua];
+      parts.push({type:'迫',label:`${T2(dr)}門迫`,
+        isHit:gongHitsProtected(gua,sky,earth,protectedStems)||dr===zfzs.值使門宮?.[0],
+        cureHtml:menpoBrief(getCureForMenPo(gua)),rel:['door']});
+    }
+    if(kongGongMap[gua]){
+      parts.push({type:'空',label:`空亡（${kongGongMap[gua].join('')}空）`,isHit:true,
+        cureHtml:cureBrief(getCureForKongWang(gua,needKey)),rel:['sky','earth','door','god','star']});
+    }
+    gejuHits.filter(h=>h.gong===gua).forEach(h=>{
+      parts.push({type:'格',label:`${T2(h.name)}（${T2(h.luck)}格）`,isHit:true,
+        cureHtml:h.caveat?T2(h.caveat):'',rel:['sky','earth']});
+    });
+
+    const renderParts=(rel)=>{
+      const list=rel?parts.filter(p=>p.rel.includes(rel)):parts;
+      if(!list.length)return '';
+      return `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #E5D5A8">
+        <div style="font-size:10px;color:var(--sub);margin-bottom:4px;letter-spacing:1px">這一宮這局命中</div>
+        ${list.map(p=>p.type==='格'
+          ?`<div class="cure-line" style="margin-top:4px">
+              <span class="pill ${p.label.includes('吉')?'pill-ji':'pill-xiong'}">格局</span>
+              <b>${p.label}</b>${p.cureHtml?`<div style="margin-top:3px;opacity:.8">${p.cureHtml}</div>`:''}
+            </div>`
+          :`<div class="cure-line" style="margin-top:4px">
+              <span class="lh-word ${HAI_WORD_CLASS[p.type]}">${T2(p.type)}</span>
+              <b>${p.label}</b>——${HAI_MEANING[p.type]}
+              <span class="hl-badge ${p.isHit?'hl-hit':'hl-bg'}">${p.isHit?'命中號令':'背景凶象'}</span>
+              ${p.cureHtml?`<div style="margin-top:3px">${p.cureHtml}</div>`:''}
+            </div>`
+        ).join('')}
+      </div>`;
+    };
+    gongHitHtml[gua]={all:renderParts(null),sky:renderParts('sky'),earth:renderParts('earth'),
+      door:renderParts('door'),god:renderParts('god'),star:renderParts('star')};
+  });
+  window.CURRENT_GONG_HITS=gongHitHtml;
+
   /* 日干/時干拆解 (供「事局/命局」雙重解讀用):
      來源：荀爽老師視頻截圖——同一組日干時干可以同時看「事局」(日干=此事實質，時干=此事表象)
      跟「命局」(日干=此人內心，時干=此人外在)，兩種解讀並存，不是起局時的另一個選項。 */
@@ -2166,17 +2266,17 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry){
       ${guaDir?`<div class="cell-dir">${guaDir}</div>`:''}
       ${kongLabels.length?`<div class="c-kong">空${kongLabels.join('')}</div>`:''}
       <div class="c-line c-line-top">
-        ${s?`<span class="c-sky term${skyCls}" onclick="openSheet('stem','${s}')">${T2(s)}</span>`:'<span class="c-sky dim">—</span>'}
-        ${!isCenter&&gd?`<span class="c-god-val term${isHu?' baihu':''}" onclick="openSheet('god','${gd}')">${T2(godDisp)}</span>`:''}
+        ${s?`<span class="c-sky term${skyCls}" onclick="openSheet('stem','${s}','${gua}','sky')">${T2(s)}</span>`:'<span class="c-sky dim">—</span>'}
+        ${!isCenter&&gd?`<span class="c-god-val term${isHu?' baihu':''}" onclick="openSheet('god','${gd}','${gua}')">${T2(godDisp)}</span>`:''}
       </div>
-      ${!isCenter&&dr?`<div class="c-door-line"><span class="c-door-val term${isMp?' menpo':''}" onclick="openSheet('door','${dr}')">${T2(doorDisp)}</span></div>`:''}
+      ${!isCenter&&dr?`<div class="c-door-line"><span class="c-door-val term${isMp?' menpo':''}" onclick="openSheet('door','${dr}','${gua}')">${T2(doorDisp)}</span></div>`:''}
       <div class="c-line c-line-bottom">
-        ${e?`<span class="c-earth term" onclick="openSheet('stem','${e}')">${T2(e)}</span>`:''}
-        ${!isCenter&&st?`<span class="c-star-val term" onclick="openSheet('star','${st}')">${T2(starDisp)}</span>`:''}
+        ${e?`<span class="c-earth term" onclick="openSheet('stem','${e}','${gua}','earth')">${T2(e)}</span>`:''}
+        ${!isCenter&&st?`<span class="c-star-val term" onclick="openSheet('star','${st}','${gua}')">${T2(starDisp)}</span>`:''}
       </div>
       ${isZf?'<div class="c-special zf-tag">值符</div>':''}
       ${isZs&&!isZf?'<div class="c-special zs-tag">值使</div>':''}
-      <div class="cell-gua${isKw?' kongwang':''}${isCenter?'':' term'}"${isCenter?'':` onclick="openSheet('gua','${gua}')"`}>${guaName}</div>
+      <div class="cell-gua${isKw?' kongwang':''}${isCenter?'':' term'}"${isCenter?'':` onclick="openSheet('gua','${gua}','${gua}')"`}>${guaName}</div>
     </div>`;
   }
 
