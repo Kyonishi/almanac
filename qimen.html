@@ -989,6 +989,18 @@ function openSheet(kind, key){
     if(d){title=d.name;sub=d.keyword||'';
       metaHtml=luckBadge(d.luck)+(d.wuxing?`<span class="sheet-tag color">五行屬${d.wuxing}</span>`:'');
       desc=d.desc;}
+  }else if(kind==='gua'){
+    const name=(typeof GUA_NAME!=='undefined'&&GUA_NAME[key])||key;
+    const dir=(typeof GUA_DIR!=='undefined'&&GUA_DIR[key])||'';
+    const x=typeof GUA_XIANG!=='undefined'?GUA_XIANG[key]:null;
+    title=`${name}宮`;
+    sub=dir?`方位：${dir}`:'';
+    if(x){
+      metaHtml=`<span class="sheet-tag color">人物：${x.person}</span>`
+        +`<span class="sheet-tag color">身體：${x.body}</span>`
+        +`<span class="sheet-tag color">性情：${x.trait}</span>`;
+      desc=`自然物象：${x.nature}。這一宮的天干/門/星/神落在這裡，都可以往「${x.person}」「${x.body}」「${x.nature}」這幾個方向去對應現實中的人事物。`;
+    }
   }
   document.getElementById('sterm').textContent=t2(title)||key;
   document.getElementById('ssub').textContent=t2(sub);
@@ -1193,6 +1205,19 @@ const GUA_NAME={'坎':'坎一水','坤':'坤二土','震':'震三木','巽':'巽
 
 // 後天八卦方位 (固定對照, 業界通用慣例): 離=南 坎=北 震=東 兌=西, 四角宮巽/坤/艮/乾對應東南/西南/東北/西北
 const GUA_DIR={'離':'南','坎':'北','震':'東','兌':'西','巽':'東南','坤':'西南','艮':'東北','乾':'西北'};
+
+// 後天八卦象義 (人物/身體/自然物/性情, 易經基礎共識內容, 跨門派通用, 非奇門特定流派內容)
+// 來源: 《說卦傳》後天八卦體系, 各家易學教材逐字一致, 沒有版本分歧
+const GUA_XIANG={
+  '乾':{person:'老父、長官、權威人物、政府', body:'頭', nature:'天、金屬', trait:'健（剛健、主動、領導）'},
+  '坤':{person:'老母、群眾、部屬、大眾', body:'腹', nature:'地、土壤', trait:'順（柔順、包容、承載）'},
+  '震':{person:'長男、決策者、行動者', body:'足', nature:'雷、震動之物', trait:'動（起始、驚動、行動力）'},
+  '巽':{person:'長女、業務/溝通者', body:'股（大腿）', nature:'風、木材、繩索', trait:'入（滲透、謀略、漸進）'},
+  '坎':{person:'中男、勞碌者、隱藏者', body:'耳', nature:'水、江河', trait:'陷（險難、辛勞、隱伏）'},
+  '離':{person:'中女、文書/媒體相關者', body:'目', nature:'火、光明之物', trait:'麗（附著、光明、文書之事）'},
+  '艮':{person:'少男、看守者、阻擋者', body:'手', nature:'山、丘陵', trait:'止（停止、阻隔、靜止不動）'},
+  '兌':{person:'少女、口才/娛樂相關者', body:'口', nature:'澤、金屬器物', trait:'悅（喜悅、口舌、交流）'},
+};
 
 // 後天八卦配支 (固定對照, 十二地支分配到八宮, 四角宮各佔兩支)
 // 用於把「日空/時空」的地支標到正確宮位上 — 此對照表是業界通用慣例,
@@ -2151,7 +2176,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry){
       </div>
       ${isZf?'<div class="c-special zf-tag">值符</div>':''}
       ${isZs&&!isZf?'<div class="c-special zs-tag">值使</div>':''}
-      <div class="cell-gua${isKw?' kongwang':''}">${guaName}</div>
+      <div class="cell-gua${isKw?' kongwang':''}${isCenter?'':' term'}"${isCenter?'':` onclick="openSheet('gua','${gua}')"`}>${guaName}</div>
     </div>`;
   }
 
