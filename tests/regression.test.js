@@ -311,5 +311,37 @@ function check(label, actual, expected) {
     tianshiHits.some(h=>h.gong==='離'), false);
 }
 
+// ── 主流斷局法：人和(門宮關係 迫/制/和/義) (2026-08-29 新增) ──
+// 「門克宮迫／宮克門制／門生宮和／宮生門義」這句原文用精確詞句比對過 3 個獨立來源才鎖定
+// (中途搜到一次語序相反的說法，因此特別加了這一步排除歧義，避免像「人假」那樣誤收矛盾說法)。
+{
+  console.log('\n── 人和(門宮關係 迫/制/和/義) ──');
+  check('門克宮(金克木)＝迫，凶', Rules.getMenGongRelation('金','木'), '迫');
+  check('宮克門(金克木，門木宮金)＝制，凶', Rules.getMenGongRelation('木','金'), '制');
+  check('門生宮(木生火)＝和，吉', Rules.getMenGongRelation('木','火'), '和');
+  check('宮生門(水生木，宮水門木)＝義，吉', Rules.getMenGongRelation('木','水'), '義');
+  check('五行相同＝比和，不屬於迫制和義任何一種', Rules.getMenGongRelation('土','土'), '比和');
+  check('中宮不計入人和判斷', Rules.checkRenhe({中:'開', 震:'休'}).some(h=>h.gong==='中'), false);
+
+  const pan1 = QimenJS.qimenChaibu(Solar, 2024, 2, 28, 18, 39);
+  const renheHits = Rules.checkRenhe(pan1.門);
+  check('案例一：8個外宮全部各命中一筆(無漏算無重複)', renheHits.length, 8);
+  check('案例一：震宮驚門(金)克木宮＝迫，凶',
+    renheHits.some(h=>h.gong==='震' && h.door==='驚' && h.relation==='迫' && h.luck==='凶'), true);
+  check('案例一：兌宮傷門(木)被金宮克＝制，凶',
+    renheHits.some(h=>h.gong==='兌' && h.door==='傷' && h.relation==='制' && h.luck==='凶'), true);
+  check('案例一：坤宮生門(土)與坤宮(土)比和',
+    renheHits.some(h=>h.gong==='坤' && h.door==='生' && h.relation==='比和' && h.luck==='平'), true);
+  check('這局剛好沒有和/義案例，8個外宮全部落在迫/制/比和三類',
+    renheHits.every(h=>['迫','制','比和'].includes(h.relation)), true);
+
+  const pan2 = QimenJS.qimenChaibu(Solar, 1901, 4, 13, 14, 30);
+  const renheHits2 = Rules.checkRenhe(pan2.門);
+  check('案例二：兌宮生門(土)生金宮＝和，吉',
+    renheHits2.some(h=>h.gong==='兌' && h.door==='生' && h.relation==='和' && h.luck==='吉'), true);
+  check('案例二：坎宮杜門(木)被水宮生＝義，吉',
+    renheHits2.some(h=>h.gong==='坎' && h.door==='杜' && h.relation==='義' && h.luck==='吉'), true);
+}
+
 console.log(`\n══ 結果: ${pass} 通過, ${fail} 失敗 ══`);
 process.exit(fail > 0 ? 1 : 0);

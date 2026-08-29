@@ -337,6 +337,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
   const zhukeHits=checkZhuke(sky, earth);
   const gzForTianshi=parseGanzhi(pan.干支);
   const tianshiHits=checkTianshi(star, gzForTianshi && gzForTianshi.月支);
+  const renheHits=checkRenhe(door);
 
   /* 號令: 日時/生年/意象/符使 四要素合併的保護天干集合 */
   const zhifuStem=zfzs.值符天干?zfzs.值符天干[1]:null;
@@ -634,6 +635,24 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
       <div style="font-size:11px;opacity:.6;margin-bottom:6px">跟一般五行旺相休囚死的判斷基準不同：九星看重的是「往外生助」的作用力，我生月令才是旺，跟月令同五行只排第二(相)；月令生我則最弱(死/廢)。得天時(有力)＝旺/相，失天時(無力)＝囚/死，休＝中性不列出。跟六害/格局/地利/主客是完全獨立的另一個維度。</div>
       ${jiHits.length?`<div class="ana-step" style="font-weight:700;color:var(--grn);margin-top:4px">得天時</div>${jiHits.map(rowHtml).join('')}`:''}
       ${xiongHits.length?`<div class="ana-step" style="font-weight:700;color:var(--red);margin-top:4px">失天時</div>${xiongHits.map(rowHtml).join('')}`:''}
+    </div>`;
+  })()}
+  ${(function(){
+    if(!renheHits.length)return '';
+    const withHit=renheHits.map(h=>({...h, isHit:gongHitsProtected(h.gong,sky,earth,protectedStems)}));
+    const jiHits=withHit.filter(h=>h.luck==='吉').sort((a,b)=>(b.isHit-a.isHit));
+    const xiongHits=withHit.filter(h=>h.luck==='凶').sort((a,b)=>(b.isHit-a.isHit));
+    const pingHits=withHit.filter(h=>h.luck==='平').sort((a,b)=>(b.isHit-a.isHit));
+    const rowHtml=h=>`<div class="ana-step"${h.isHit?'':' style="opacity:.5"'}>
+      ${T2(h.gong)}宮　${T2(h.door)}門(${T2(h.doorWx)})／宮(${T2(h.gongWx)})——${T2(h.relation)}
+      <span class="hl-badge ${h.isHit?'hl-hit':'hl-bg'}">${h.isHit?'命中號令':'背景'}</span>
+    </div>`;
+    return `<div class="geju-card">
+      <div class="geju-title">主流斷局法：人和（門宮關係 迫/制/和/義）</div>
+      <div style="font-size:11px;opacity:.6;margin-bottom:6px">門克宮＝迫，宮克門＝制，門生宮＝和，宮生門＝義，五行相同則比和。迫跟制都是「被外力壓著、動不了」(只是施力方向相反)，原本吉的門吉不全、原本凶的門更凶；和跟義都是有利的。其中「迫」跟下面荀爽老師「六害：刑墓庚虎迫空」是同一個計算，這裡放在完整的迫/制/和/義脈絡下對照呈現。</div>
+      ${jiHits.length?`<div class="ana-step" style="font-weight:700;color:var(--grn);margin-top:4px">和／義（有利）</div>${jiHits.map(rowHtml).join('')}`:''}
+      ${xiongHits.length?`<div class="ana-step" style="font-weight:700;color:var(--red);margin-top:4px">迫／制（不利）</div>${xiongHits.map(rowHtml).join('')}`:''}
+      ${pingHits.length?`<div class="ana-step" style="font-weight:700;opacity:.7;margin-top:4px">比和</div>${pingHits.map(rowHtml).join('')}`:''}
     </div>`;
   })()}
 
