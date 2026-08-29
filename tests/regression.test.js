@@ -466,6 +466,22 @@ function check(label, actual, expected) {
   check('黃金案例：師傅總結引擎正常跑出3個熱點，不崩潰', summaryGolden.hotspots.length, 3);
   check('黃金案例最高分熱點是巽宮(時干己酉的己在巽宮擊刑+全局門反吟)',
     summaryGolden.hotspots[0].gong, '巽');
+
+  // 事局 vs 命局：灭象布阵是荀爽老師針對「事局」設計的具體操作方法，命局是天生整體結構，
+  // 不是在問一件具體的事，硬套「去某方位擺某物品」的指令會文不對題(用戶實測發現的問題：
+  // 命局跟事局混在一起講，很容易搞亂、顯得不準)。2026-08-29 修正：命局模式下只講「命中了
+  // 什麼」，不給具體布阵操作指令，改用 MINGJU_CURE_NOTE 說明原因。
+  const summaryShiju = Rules.buildMasterSummary(pan, protectedStems, null, '事局');
+  const summaryMingju = Rules.buildMasterSummary(pan, protectedStems, null, '命局');
+  check('事局模式：巽宮擊刑有完整的灭象布阵步驟(cureSteps 非空)',
+    summaryShiju.hotspots.find(h=>h.gong==='巽').xunlao.find(x=>x.type==='刑').cureSteps!==null, true);
+  check('命局模式：巽宮擊刑不給具體布阵指令(cureSteps 為 null)，改用說明文字取代',
+    summaryMingju.hotspots.find(h=>h.gong==='巽').xunlao.find(x=>x.type==='刑'),
+    {type:'刑', stem:'壬', isHit:true,
+      text:'天干「壬」在這裡擊刑——爭執損耗。刑打的是「六儀」（正面主力）——正面主力被絞殺殆盡，全面崩潰',
+      cureSteps:null, cureNote:Rules.MINGJU_CURE_NOTE});
+  check('命局模式下，兩種局的「命中了什麼」判斷本身完全一樣(只有化解步驟的呈現方式不同)',
+    summaryMingju.hotspots.map(h=>h.gong), summaryShiju.hotspots.map(h=>h.gong));
 }
 
 console.log(`\n══ 結果: ${pass} 通過, ${fail} 失敗 ══`);

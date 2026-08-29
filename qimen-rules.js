@@ -1371,10 +1371,20 @@ function formatCureSteps(cure){
   };
 }
 
+// 灭象布阵(摆放物品/寫字的具體方位、字物意行)是荀爽老師針對「事局」(問一件具體的事)設計的
+// 化解手段——命局代表一個人一輩子的天生結構，不是在問一件具體的事，硬套「去正西擺個東西」
+// 這種操作指令會文不對題(用戶明確指出的問題：命局跟事局混在一起講，很容易搞亂、顯得不準)。
+// 所以命局模式下只講「命中了什麼」(這是命局固有的結構特徵，判斷本身沒問題)，不給出具體的
+// 布阵操作指令，改用這句提示取代。
+const MINGJU_CURE_NOTE='灭象布阵是荀爽老師針對「事局」(具體某件事)設計的化解方法，命局代表你天生的整體結構，不是在問一件具體的事，這裡先不給出具體的擺放/方位指令，以免文不對題。如果想針對這個宮對應的問題找到對症的化解步驟，建議挑一件具體想問的事，重新起一個「事局」來問。';
+
 // 荀爽老師體系：某一宮命中的六害清單(刑/墓/庚/虎/迫/空)，每條帶白話說明 + 化解步驟
-function buildXunlaoItems(gong, pan, protectedStems, needKey){
+// juType: '事局'(預設)給完整灭象布阵步驟；'命局'只講命中了什麼，不給具體操作指令(見上方註解)
+function buildXunlaoItems(gong, pan, protectedStems, needKey, juType){
   const sky=pan.天盤||{}, earth=pan.地盤||{}, door=pan.門||{}, god=pan.神||{};
   const zfzs=pan.值符值使||{};
+  const isMingju=juType==='命局';
+  const cureOrNote=(cure)=>isMingju?null:formatCureSteps(cure);
   const items=[];
   const jixingHits=checkJiXing(sky), rumuHits=checkRuMu(sky), menpoHits=checkMenPo(door),
         gengHits=checkGeng(sky), baihuHits=checkBaiHu(god);
@@ -1382,35 +1392,35 @@ function buildXunlaoItems(gong, pan, protectedStems, needKey){
     const st=jixingHits[gong];
     items.push({type:'刑', stem:st, isHit:protectedStems.has(st),
       text:`天干「${st}」在這裡擊刑——${XUNLAO_MEANING['刑']}。${XUNLAO_DEEPER['刑']}`,
-      cureSteps:formatCureSteps(getCureForJiXing(gong,st))});
+      cureSteps:cureOrNote(getCureForJiXing(gong,st)), cureNote:isMingju?MINGJU_CURE_NOTE:null});
   }
   if(rumuHits[gong]){
     const st=rumuHits[gong];
     items.push({type:'墓', stem:st, isHit:protectedStems.has(st),
       text:`天干「${st}」在這裡入墓——${XUNLAO_MEANING['墓']}。${XUNLAO_DEEPER['墓']}`,
-      cureSteps:formatCureSteps(getCureForRuMu(gong,st))});
+      cureSteps:cureOrNote(getCureForRuMu(gong,st)), cureNote:isMingju?MINGJU_CURE_NOTE:null});
   }
   if(gengHits[gong]){
     items.push({type:'庚', isHit:protectedStems.has('庚'),
       text:`這裡天盤見庚——${XUNLAO_MEANING['庚']}。${XUNLAO_DEEPER['庚']}`,
-      cureSteps:formatCureSteps(getCureForGengOrHu(gong,'庚'))});
+      cureSteps:cureOrNote(getCureForGengOrHu(gong,'庚')), cureNote:isMingju?MINGJU_CURE_NOTE:null});
   }
   if(baihuHits[gong]){
     items.push({type:'虎', isHit:gongHitsProtected(gong,sky,earth,protectedStems),
       text:`這裡有白虎——${XUNLAO_MEANING['虎']}`,
-      cureSteps:formatCureSteps(getCureForGengOrHu(gong,'虎'))});
+      cureSteps:cureOrNote(getCureForGengOrHu(gong,'虎')), cureNote:isMingju?MINGJU_CURE_NOTE:null});
   }
   if(menpoHits[gong]){
     const dr=menpoHits[gong];
     items.push({type:'迫', door:dr,
       isHit:gongHitsProtected(gong,sky,earth,protectedStems)||dr===zfzs.值使門宮?.[0],
       text:`「${dr}」門在這裡被宮位迫住——${XUNLAO_MEANING['迫']}`,
-      cureSteps:formatCureSteps(getCureForMenPo(gong))});
+      cureSteps:cureOrNote(getCureForMenPo(gong)), cureNote:isMingju?MINGJU_CURE_NOTE:null});
   }
   if(getKongGongs(pan).has(gong)){
     items.push({type:'空', isHit:true,
       text:`這裡是空亡——${XUNLAO_MEANING['空']}`,
-      cureSteps:formatCureSteps(getCureForKongWang(gong, needKey))});
+      cureSteps:cureOrNote(getCureForKongWang(gong, needKey)), cureNote:isMingju?MINGJU_CURE_NOTE:null});
   }
   return items;
 }
@@ -1445,10 +1455,11 @@ function buildMainstreamItems(gong, pan, protectedStems){
 }
 
 // 彙整全部 8 個外宮，兩套體系各自獨立列出，不合併
-function buildGongProfiles(pan, protectedStems, needKey){
+// juType: '事局'(預設)/'命局'，決定荀爽體系的部分要不要給具體灭象布阵操作指令(見 buildXunlaoItems 註解)
+function buildGongProfiles(pan, protectedStems, needKey, juType){
   return GRID_ORDER.filter(g=>g!=='中').map(gong=>({
     gong,
-    xunlao:buildXunlaoItems(gong, pan, protectedStems, needKey),
+    xunlao:buildXunlaoItems(gong, pan, protectedStems, needKey, juType),
     mainstream:buildMainstreamItems(gong, pan, protectedStems),
   }));
 }
@@ -1479,9 +1490,9 @@ function tallyDirection(profile){
 }
 
 // 主入口：回傳結構化的「師傅總結」資料(不含 HTML，交給 qimen-ui.js 渲染)。
-// opts.maxHotspots: 最多挑幾個宮出來細講，預設 3。
-function buildMasterSummary(pan, protectedStems, needKey, opts={}){
-  const profiles=buildGongProfiles(pan, protectedStems, needKey);
+// juType: '事局'(預設)/'命局'；opts.maxHotspots: 最多挑幾個宮出來細講，預設 3。
+function buildMasterSummary(pan, protectedStems, needKey, juType, opts={}){
+  const profiles=buildGongProfiles(pan, protectedStems, needKey, juType);
   const scored=profiles.map(p=>({...p, score:scoreProfile(p), direction:tallyDirection(p)}))
     .sort((a,b)=>b.score-a.score);
   const maxHotspots=opts.maxHotspots||3;
@@ -1518,7 +1529,7 @@ if (typeof module !== 'undefined' && module.exports) {
     BRANCH_WUXING, getNineStarState, checkTianshi,
     DOOR_WUXING, GONG_WUXING, KE_MAP, getMenGongRelation, checkRenhe,
     STAR_HOME, DOOR_HOME, checkFuyinFanyin,
-    formatCureSteps, buildXunlaoItems, buildMainstreamItems, buildGongProfiles,
+    formatCureSteps, buildXunlaoItems, buildMainstreamItems, buildGongProfiles, MINGJU_CURE_NOTE,
     scoreProfile, tallyDirection, buildMasterSummary, buildProtectedStems, gongHitsProtected,
   };
 }
