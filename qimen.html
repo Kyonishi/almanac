@@ -69,7 +69,10 @@ header{
 .h-btn:hover{background:rgba(212,175,55,.15)}
 .h-btn-danger{border-color:#B03030;color:#B03030}
 .h-list{max-height:320px;overflow-y:auto}
-.h-row{display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid #EEE0BB}
+/* 原本用 display:flex 讓「本行資訊」跟「事後回看」兩個區塊並排半版寬，這次新增「起局時
+   判斷」快照變成第三個要並排的區塊，繼續用 flex 平分寬度會把每個都擠得太窄；改成直向堆疊，
+   review 欄位反而拿到更寬的可輸入空間，不是退步(2026-08-29 新增預註冊式驗證日誌時一併修正) */
+.h-row{display:block;padding:8px 0;border-bottom:1px solid #EEE0BB}
 .h-row:last-child{border-bottom:none}
 .h-row-main{flex:1;cursor:pointer}
 .h-row-main:hover{opacity:.7}
@@ -81,6 +84,13 @@ header{
 .h-badge{font-size:10px;padding:1px 6px;border-radius:8px;margin-left:6px;font-weight:700}
 .h-badge-done{background:#E3F2E3;color:#2E7D32}
 .h-badge-todo{background:#F0F0F0;color:#999}
+/* 預註冊式驗證日誌：起局當下鎖定的判斷快照，唯讀、跟下面可編輯的「事後回看」視覺上明確分開 */
+.h-pred{margin-top:6px;background:#FFFBF0;border:1px solid #EEDCA8;border-radius:6px;padding:6px 8px}
+.h-pred>summary{cursor:pointer;font-size:11px;color:#8A6D1A;font-weight:700}
+.h-pred-gong{font-weight:700;margin-top:6px;font-size:11.5px;color:#8A6D1A}
+.h-pred-line{font-size:11.5px;opacity:.85;margin-top:2px;padding-left:8px}
+.h-badge-hit{background:var(--red);color:#fff}
+.h-badge-bg{background:#EFEFEF;color:#999}
 .h-review{margin-top:6px}
 .h-review-input{width:100%;min-height:44px;box-sizing:border-box;border:1px solid #DDD;border-radius:6px;
   padding:6px 8px;font-size:12px;font-family:inherit;resize:vertical;margin-bottom:4px}

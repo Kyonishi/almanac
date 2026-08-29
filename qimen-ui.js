@@ -202,6 +202,25 @@ function importHistoryJson(fileInput){
 function escHtml(s){
   return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+// 預註冊式驗證日誌：把起局當下鎖定的 prediction 快照渲染成唯讀文字，跟下面可編輯的
+// 「事後回看」欄位並排放，方便對照「起局時真的判斷了什麼」vs「後來實際發生了什麼」。
+// r.prediction 是 undefined 代表這筆記錄建立於功能上線前，沒有快照可看；是空陣列代表
+// 那次起局本身是「無特別突出宮位」的平穩局，不是資料缺漏。
+function renderPredictionSnapshot(r){
+  if(r.prediction===undefined){
+    return '<div class="h-pred-note">（此筆記錄建立於「預註冊式驗證日誌」上線前，沒有起局當下的判斷快照）</div>';
+  }
+  if(r.prediction.length===0){
+    return '<div class="h-pred-note">起局當下判斷：這局整體沒有特別突出的宮位，算是比較平穩的一局。</div>';
+  }
+  const badge=x=>`<span class="h-badge ${x.isHit?'h-badge-hit':'h-badge-bg'}">${x.isHit?'命中號令':'背景'}</span>`;
+  const body=r.prediction.map((hp,idx)=>`
+    <div class="h-pred-gong">${idx+1}. ${t2(hp.gong)}宮</div>
+    ${hp.xunlao.map(x=>`<div class="h-pred-line">［荀爽］${t2(x.text)}${badge(x)}</div>`).join('')}
+    ${hp.mainstream.map(x=>`<div class="h-pred-line">［主流］${t2(x.text)}${badge(x)}</div>`).join('')}
+  `).join('');
+  return `<details class="h-pred"><summary>起局當下的判斷（預註冊，鎖定不可改，共 ${r.prediction.length} 個熱點宮）</summary>${body}</details>`;
+}
 function renderHistoryPanel(){
   const p=document.getElementById('historyPanel');
   const list=loadHistory();
@@ -219,6 +238,7 @@ function renderHistoryPanel(){
         </div>
         <button class="h-row-del" onclick="deleteHistoryRecord(${r.id})" title="刪除">✕</button>
       </div>
+      ${renderPredictionSnapshot(r)}
       <div class="h-review">
         <textarea class="h-review-input" id="review_${r.id}" placeholder="事後回看：這局準不準？實際發生了什麼？（用來校對方法論）">${r.review?escHtml(r.review):''}</textarea>
         <button class="h-btn" onclick="saveReview(${r.id})">保存復盤</button>
@@ -1182,6 +1202,18 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
   if(Object.keys(baihuHits).length)hitLabels.push('虎');
   if(Object.keys(menpoHits).length)hitLabels.push('迫');
   if(Object.keys(kongGongMap).filter(g=>g!=='中').length)hitLabels.push('空');
+  // 預註冊式驗證日誌(2026-08-29 新增)：起局當下把師傅總結的熱點宮判斷原封不動存成快照，
+  // 之後在歷史記錄裡唯讀顯示、永遠不會被之後的「事後回看」文字或算法更新覆蓋掉。這樣事後
+  // 回看時，看到的是「起局那一刻真的判斷了什麼」而不是憑印象事後重構，才有校對意義——
+  // 對照 ChatGPT 建議的「拿過去人生大事回測」，這裡是唯一站得住腳的驗證方式：先留下判斷，
+  // 不看結果，時間到了再對照，而不是找到結果後回頭找理由解釋，避免確認偏誤。純粹紀錄，
+  // 不強迫使用、不影響原本起局流程，用戶不填「事後回看」也完全不影響工具正常運作。
+  const predictionSnapshot = masterSummary.quiet ? [] : masterSummary.hotspots.map(hp=>({
+    gong: hp.gong,
+    agreement: hp.agreement,
+    xunlao: hp.xunlao.map(x=>({text:x.text, isHit:x.isHit})),
+    mainstream: hp.mainstream.map(x=>({text:x.text, isHit:x.isHit})),
+  }));
   pushHistoryRecord({
     id: Date.now(),
     dateStr: `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`,
@@ -1192,6 +1224,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     juLabel,
     gz,
     hitsSummary: hitLabels.length?`六害命中：${hitLabels.join('、')}`:'六害：無命中',
+    prediction: predictionSnapshot,
   });
 }
 
