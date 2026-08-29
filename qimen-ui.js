@@ -338,6 +338,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
   const gzForTianshi=parseGanzhi(pan.干支);
   const tianshiHits=checkTianshi(star, gzForTianshi && gzForTianshi.月支);
   const renheHits=checkRenhe(door);
+  const fuyinFanyinHits=checkFuyinFanyin(star, door);
 
   /* 號令: 日時/生年/意象/符使 四要素合併的保護天干集合 */
   const zhifuStem=zfzs.值符天干?zfzs.值符天干[1]:null;
@@ -653,6 +654,25 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
       ${jiHits.length?`<div class="ana-step" style="font-weight:700;color:var(--grn);margin-top:4px">和／義（有利）</div>${jiHits.map(rowHtml).join('')}`:''}
       ${xiongHits.length?`<div class="ana-step" style="font-weight:700;color:var(--red);margin-top:4px">迫／制（不利）</div>${xiongHits.map(rowHtml).join('')}`:''}
       ${pingHits.length?`<div class="ana-step" style="font-weight:700;opacity:.7;margin-top:4px">比和</div>${pingHits.map(rowHtml).join('')}`:''}
+    </div>`;
+  })()}
+  ${(function(){
+    if(!fuyinFanyinHits.length)return '';
+    const withHit=fuyinFanyinHits.map(h=>({...h, isHit:gongHitsProtected(h.gong,sky,earth,protectedStems)}));
+    const byType=type=>withHit.filter(h=>h.type===type).sort((a,b)=>(b.isHit-a.isHit));
+    const xingFu=byType('星伏吟'), xingFan=byType('星反吟'), menFu=byType('門伏吟'), menFan=byType('門反吟');
+    const rowHtml=h=>`<div class="ana-step"${h.isHit?'':' style="opacity:.5"'}>
+      ${T2(h.gong)}宮　${T2(h.symbol)}(本宮${T2(h.home)})
+      <span class="hl-badge ${h.isHit?'hl-hit':'hl-bg'}">${h.isHit?'命中號令':'背景'}</span>
+    </div>`;
+    const groupHtml=(label,list,note)=>list.length?`<div class="ana-step" style="font-weight:700;margin-top:4px">${T2(label)}（本局為整局現象，${list.length}個外宮同時命中——${T2(note)}）</div>${list.map(rowHtml).join('')}`:'';
+    return `<div class="geju-card">
+      <div class="geju-title">主流斷局法：伏吟反吟（星／門）</div>
+      <div style="font-size:11px;opacity:.6;margin-bottom:6px">伏吟＝星或門落在自己的洛書固定本宮，反吟＝落在本宮的正對沖宮。因為星盤/門盤是整圈一起轉動，伏吟/反吟永遠是整局同時出現(8個外宮同時命中同一種)，不會只有單一宮位孤立命中。這裡不像上面幾項標吉凶——伏吟反吟的意象比較複雜，不是單純好壞，要配合實際問的事情解讀。值符伏吟/反吟(涉及六甲值符)本專案暫不收錄。</div>
+      ${groupHtml('星伏吟', xingFu, '停滯不前、僵化、徘徊')}
+      ${groupHtml('星反吟', xingFan, '衝突反覆、變動不安，主快、主變動、也可能失而復得')}
+      ${groupHtml('門伏吟', menFu, '停滯不前、僵化、徘徊')}
+      ${groupHtml('門反吟', menFan, '衝突反覆、變動不安，主快、主變動、也可能失而復得')}
     </div>`;
   })()}
 

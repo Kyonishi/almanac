@@ -343,5 +343,41 @@ function check(label, actual, expected) {
     renheHits2.some(h=>h.gong==='坎' && h.door==='杜' && h.relation==='義' && h.luck==='吉'), true);
 }
 
+// ── 主流斷局法：伏吟反吟(星/門) (2026-08-29 新增) ──
+// 兩個獨立來源交叉核對一致的固定本宮表(洛書配宮)。窮舉搜尋 2020 年附近日期找到的 4 種真實
+// 觸發案例，順便驗證了一個結構性事實：由於星盤/門盤是整圈一起旋轉，伏吟/反吟永遠是「整局」
+// 同時出現(全部 8 個外宮同時命中同一種)，不會只有單一宮位孤立命中——這不是憑空假設，是拿
+// 這 3 個真實案例實測出來的。
+{
+  console.log('\n── 伏吟反吟(星/門) ──');
+  check('天蓬本宮為坎', Rules.STAR_HOME['蓬'], '坎');
+  check('天英本宮為離(坎的對沖)', Rules.STAR_HOME['英'], '離');
+  check('休門本宮為坎', Rules.DOOR_HOME['休'], '坎');
+
+  const panFu = QimenJS.qimenChaibu(Solar, 2020, 1, 1, 0, 0);
+  const fuHits = Rules.checkFuyinFanyin(panFu.星, panFu.門);
+  check('2020-01-01 00:00：全局星伏吟(8個外宮全部命中，門盤未伏吟未反吟)',
+    { 星伏吟數: fuHits.filter(h=>h.type==='星伏吟').length, 其他數: fuHits.filter(h=>h.type!=='星伏吟').length },
+    { 星伏吟數: 8, 其他數: 0 });
+
+  const panFan = QimenJS.qimenChaibu(Solar, 2020, 1, 1, 12, 0);
+  const fanHits = Rules.checkFuyinFanyin(panFan.星, panFan.門);
+  check('2020-01-01 12:00：星反吟＋門反吟同時全局命中(16筆)',
+    { 星反吟數: fanHits.filter(h=>h.type==='星反吟').length, 門反吟數: fanHits.filter(h=>h.type==='門反吟').length },
+    { 星反吟數: 8, 門反吟數: 8 });
+
+  const panMenFu = QimenJS.qimenChaibu(Solar, 2020, 1, 1, 2, 0);
+  const menFuHits = Rules.checkFuyinFanyin(panMenFu.星, panMenFu.門);
+  check('2020-01-01 02:00：全局門伏吟(8個外宮全部命中，星盤未伏吟未反吟)',
+    { 門伏吟數: menFuHits.filter(h=>h.type==='門伏吟').length, 其他數: menFuHits.filter(h=>h.type!=='門伏吟').length },
+    { 門伏吟數: 8, 其他數: 0 });
+
+  const pan1 = QimenJS.qimenChaibu(Solar, 2024, 2, 28, 18, 39);
+  const hits1 = Rules.checkFuyinFanyin(pan1.星, pan1.門);
+  check('案例一(2024-02-28 18:39)：全局門反吟(荀爽老師案例本身剛好是門反吟局)',
+    { 門反吟數: hits1.filter(h=>h.type==='門反吟').length, 其他數: hits1.filter(h=>h.type!=='門反吟').length },
+    { 門反吟數: 8, 其他數: 0 });
+}
+
 console.log(`\n══ 結果: ${pass} 通過, ${fail} 失敗 ══`);
 process.exit(fail > 0 ? 1 : 0);
