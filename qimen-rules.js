@@ -90,6 +90,34 @@ function checkDili(sky, earth){
   return hits;
 }
 
+// ══════════════════ 主流斷局法：主客(天盤干/地盤干生克關係) ══════════════════
+// 來源: 2026-08-29 綜合多個獨立線上命理資料源交叉核對一致：天盤跟著時辰轉動＝客，
+// 地盤在一局的六十個時辰內不動＝主。生克判斷是「被克/被生的那一方，是誰的利益」：
+// 天盤干克地盤干 → 利客；地盤干生天盤干 → 利客(主在餵客，客得利)；
+// 地盤干克天盤干 → 利主；天盤干生地盤干 → 利主(客在餵主，主得利)；
+// 五行相同(比和) → 主客同心，不分勝負。
+// 通常自己/我方問事視為「主」，對方或所問之事的變化視為「客」——這是預設慣例、不是絕對規則，
+// 依實際占問對象可能相反，此處只算五行關係，「主/客」的角色指派留給使用者自行判斷。
+// 這套判斷跟六害/格局/地利是完全獨立的另一個維度，用天盤干、地盤干本身的五行做判斷，
+// 不管它們落在哪個宮(宮位五行是另一個維度，門迫已經在用了，這裡不重複套用)。
+function checkZhuke(sky, earth){
+  const hits=[];
+  Object.keys(sky).forEach(gua=>{
+    if(gua==='中')return;
+    const skyStem=sky[gua], earthStem=earth[gua];
+    if(!skyStem||!earthStem)return;
+    const skyWx=stemWuxing(skyStem), earthWx=stemWuxing(earthStem);
+    let relation, favor;
+    if(skyWx===earthWx){ relation='比和'; favor='平'; }
+    else if(KE_TABLE_WUXING[skyWx]===earthWx){ relation='天克地'; favor='客'; }
+    else if(KE_TABLE_WUXING[earthWx]===skyWx){ relation='地克天'; favor='主'; }
+    else if(SHENG_TABLE[skyWx]===earthWx){ relation='天生地'; favor='主'; }
+    else if(SHENG_TABLE[earthWx]===skyWx){ relation='地生天'; favor='客'; }
+    if(relation) hits.push({gong:gua, skyStem, earthStem, skyWx, earthWx, relation, favor});
+  });
+  return hits;
+}
+
 // ══ 六仪擊刑 (固定查表, 與時間無關) ══
 // 來源: 多方獨立命理資料交叉核對 + 荀爽老師實測案例驗證 (1901-04-13, 2024-02-28 兩案例
 // 全部命中, 無一遺漏無一多報)
@@ -1201,5 +1229,6 @@ if (typeof module !== 'undefined' && module.exports) {
     harmsAtGong, getCuresAtGong, parseGanzhi, GRID_ORDER, ZHI_TO_GONG,
     monthRelation, analyzeWealthSeven,
     CHANGSHENG_START, TWELVE_STAGES, GONG_TO_ZHI, getTwelveStage, getTwelveStagesAtGong, checkDili,
+    stemWuxing, SHENG_TABLE, KE_TABLE_WUXING, checkZhuke,
   };
 }

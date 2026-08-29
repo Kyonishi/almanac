@@ -250,5 +250,35 @@ function check(label, actual, expected) {
     true);
 }
 
+// ── 主流斷局法：主客(天盤干/地盤干生克關係) (2026-08-29 新增) ──
+// 「被克/被生的一方，利益歸誰」的判斷邏輯，多方獨立資料源交叉核對一致後鎖定的基準值：
+// 天盤克地盤／地盤生天盤＝利客；地盤克天盤／天盤生地盤＝利主；五行相同(比和)不分勝負。
+{
+  console.log('\n── 主客(天盤干/地盤干生克關係) ──');
+  check('天盤木克地盤土：天克地，利客', Rules.checkZhuke({艮:'甲'}, {艮:'己'})[0].relation, '天克地');
+  check('天盤木克地盤土：天克地，利客(favor)', Rules.checkZhuke({艮:'甲'}, {艮:'己'})[0].favor, '客');
+  check('地盤金克天盤木：地克天，利主', Rules.checkZhuke({艮:'甲'}, {艮:'庚'})[0].relation, '地克天');
+  check('地盤金克天盤木：地克天，利主(favor)', Rules.checkZhuke({艮:'甲'}, {艮:'庚'})[0].favor, '主');
+  check('天盤水生地盤木：天生地，利主', Rules.checkZhuke({艮:'壬'}, {艮:'甲'})[0].favor, '主');
+  check('地盤水生天盤木：地生天，利客', Rules.checkZhuke({艮:'甲'}, {艮:'壬'})[0].favor, '客');
+  check('天盤地盤同五行(甲/乙皆木)：比和，不分勝負', Rules.checkZhuke({艮:'甲'}, {艮:'乙'})[0], {
+    gong:'艮', skyStem:'甲', earthStem:'乙', skyWx:'木', earthWx:'木', relation:'比和', favor:'平',
+  });
+  check('中宮不計入主客判斷', Rules.checkZhuke({中:'庚', 艮:'甲'}, {中:'庚', 艮:'己'}).some(h=>h.gong==='中'), false);
+
+  const pan1 = QimenJS.qimenChaibu(Solar, 2024, 2, 28, 18, 39);
+  const zhukeHits = Rules.checkZhuke(pan1.天盤, pan1.地盤);
+  check('案例一：巽宮天盤壬(水)地盤己(土)——地克天，利主',
+    zhukeHits.some(h => h.gong==='巽' && h.skyStem==='壬' && h.earthStem==='己' && h.relation==='地克天' && h.favor==='主'),
+    true);
+  check('案例一：震宮天盤乙(木)地盤戊(土)——天克地，利客',
+    zhukeHits.some(h => h.gong==='震' && h.skyStem==='乙' && h.earthStem==='戊' && h.relation==='天克地' && h.favor==='客'),
+    true);
+  check('案例一：兌宮天盤癸(水)地盤壬(水)——比和',
+    zhukeHits.some(h => h.gong==='兌' && h.skyStem==='癸' && h.earthStem==='壬' && h.relation==='比和' && h.favor==='平'),
+    true);
+  check('案例一：8個外宮全部各命中一筆(無漏算無重複)', zhukeHits.length, 8);
+}
+
 console.log(`\n══ 結果: ${pass} 通過, ${fail} 失敗 ══`);
 process.exit(fail > 0 ? 1 : 0);
