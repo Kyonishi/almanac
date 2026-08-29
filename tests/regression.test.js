@@ -94,14 +94,14 @@ function check(label, actual, expected) {
 {
   console.log('\n── 主流格局判斷 (checkMainstreamGeju) ──');
   const pan1 = QimenJS.qimenChaibu(Solar, 2024, 2, 28, 18, 39);
-  check('案例一命中朱雀投江@艮',
-    Rules.checkMainstreamGeju(pan1.天盤, pan1.地盤).map(h => `${h.name}@${h.gong}`),
-    ['朱雀投江@艮']);
+  check('案例一命中朱雀投江@艮、陰害陽門@震(乙加戊，2026-08-29新增格局命中)',
+    Rules.checkMainstreamGeju(pan1.天盤, pan1.地盤).map(h => `${h.name}@${h.gong}`).sort(),
+    ['朱雀投江@艮', '陰害陽門@震'].sort());
 
   const pan2 = QimenJS.qimenChaibu(Solar, 1901, 4, 13, 14, 30);
-  check('案例二命中白虎猖狂@乾、朱雀投江@震',
+  check('案例二命中白虎猖狂@乾、朱雀投江@震、陰害陽門@兌(乙加戊，2026-08-29新增格局命中)',
     Rules.checkMainstreamGeju(pan2.天盤, pan2.地盤).map(h => `${h.name}@${h.gong}`).sort(),
-    ['朱雀投江@震', '白虎猖狂@乾'].sort());
+    ['朱雀投江@震', '白虎猖狂@乾', '陰害陽門@兌'].sort());
 
   const pan3 = QimenJS.qimenChaibu(Solar, 2024, 8, 1, 12, 0);
   check('案例三命中飛鳥跌穴@兌、青龍逃走@巽(乙加辛，2026-08-29新增格局命中)',
@@ -134,6 +134,15 @@ function check(label, actual, expected) {
     true);
   check('奇儀順遂@坤宮 (乙天盤/丙地盤，2000-01-02 14:00)',
     Rules.checkMainstreamGeju(panBatch2.天盤, panBatch2.地盤).some(h => h.name === '奇儀順遂' && h.gong === '坤'),
+    true);
+
+  // 格局庫擴充第二批(2026-08-29)：2 個格局，因網頁抓取工具被組織政策擋掉大部分命理站台，
+  // 改用搜尋引擎彙整多篇獨立文章摘要交叉核對一致；同一批查證的「太白入熒/熒入太白」發現
+  // 不同來源對其吉凶有真正矛盾的解讀(一般事務判凶，測賊/測敵情境下方向相反判吉)，跳過不收錄。
+  // 陰害陽門在上面案例一/案例二已經有真實觸發案例，這裡補另一個窮舉搜出的真實觸發案例
+  const panRQRDW = QimenJS.qimenChaibu(Solar, 2000, 1, 1, 8, 0);
+  check('日奇入地網@震宮 (乙天盤/癸地盤，2000-01-01 08:00)',
+    Rules.checkMainstreamGeju(panRQRDW.天盤, panRQRDW.地盤).some(h => h.name === '日奇入地網' && h.gong === '震'),
     true);
 }
 

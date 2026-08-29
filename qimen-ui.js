@@ -706,7 +706,8 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     </div>`).join('')}
   </div>` : `<div class="geju-card" style="opacity:.65">
     <div class="geju-title">命中的吉凶格局</div>
-    <div>本局未命中青龍返首／飛鳥跌穴／白虎猖狂／朱雀投江／螣蛇夭矯／大格／小格這 7 個跨門派高共識格局。</div>
+    <div>本局未命中青龍返首／飛鳥跌穴／白虎猖狂／朱雀投江／螣蛇夭矯／大格／小格／奇儀順遂／
+    奇儀相佐／青龍逃走／星奇朱雀／日奇入地網／陰害陽門這 13 個跨門派高共識格局。</div>
   </div>`}
   ${sanzhaWujiaHits.length ? `<div class="geju-card">
     <div class="geju-title">命中的三詐五假（謀略/隱蔽性質，不是單純吉凶判斷）</div>
