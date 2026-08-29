@@ -344,8 +344,32 @@ function hourGanzhiZhifu(hourGz) {
   return XUN_TO_DUNGAN[xunShouOf(hourGz)];
 }
 
+// ── 真太陽時校正 (經度校正，不含均時差) ──
+// 來源: 時家奇門排盤需以真太陽時定時辰是跨資料源一致的說法 (中國跨5個時區、全國統一用北京
+// 時間，手錶時間不等於當地實際太陽時間)；只做經度校正(每偏離標準經線120°E一度、差4分鐘)，
+// 不做均時差(地球公轉橢圓軌道造成的±16分鐘內的次要修正)——經度校正是主要誤差來源，均時差
+// 影響小、又需要額外的天文公式，這裡先不做，2026-08-29 決定的取捨。
+// longitude 為 null/undefined 時完全不做任何校正，回傳原始年月日時分——確保沒有傳經度的
+// 既有呼叫方(含所有回歸測試)行為完全不變。
+function applyTrueSolarTime(year, month, day, hour, minute, longitude) {
+  if (longitude === null || longitude === undefined || longitude === '' || isNaN(longitude)) {
+    return { year, month, day, hour, minute, correctionMin: 0 };
+  }
+  const correctionMin = Math.round((Number(longitude) - 120) * 4);
+  const ts = Date.UTC(year, month - 1, day, hour, minute, 0) + correctionMin * 60000;
+  const d = new Date(ts);
+  return {
+    year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate(),
+    hour: d.getUTCHours(), minute: d.getUTCMinutes(), correctionMin,
+  };
+}
+
 // ── 主函式: 起時家奇門局 (拆補法) ──
-function qimenChaibu(Solar, year, month, day, hour, minute) {
+// longitude: 可選，出生地經度(東經為正)。不傳則完全不做真太陽時校正，行為與之前完全一致。
+function qimenChaibu(Solar, year, month, day, hour, minute, longitude) {
+  const corrected = applyTrueSolarTime(year, month, day, hour, minute, longitude);
+  ({ year, month, day, hour, minute } = corrected);
+
   const [yGz, mGz, dGz, hGz] = getGanZhi(Solar, year, month, day, hour, minute);
   const solar = Solar.fromYmdHms(year, month, day, hour, minute, 0);
   const lunar = solar.getLunar();
@@ -374,11 +398,15 @@ function qimenChaibu(Solar, year, month, day, hour, minute) {
     地盤: earth,
     門: door,
     星: star,
-    神: god
+    神: god,
+    真太陽時校正: corrected.correctionMin ? {
+      校正分鐘: corrected.correctionMin,
+      校正後時刻: `${corrected.year}-${String(corrected.month).padStart(2,'0')}-${String(corrected.day).padStart(2,'0')} ${String(corrected.hour).padStart(2,'0')}:${String(corrected.minute).padStart(2,'0')}`,
+    } : null,
   };
 }
 
-const QimenJS = { qimenChaibu };
+const QimenJS = { qimenChaibu, applyTrueSolarTime };
 if (typeof module !== 'undefined' && module.exports) module.exports = QimenJS;
 if (typeof window !== 'undefined') window.QimenJS = QimenJS;
 

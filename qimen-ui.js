@@ -298,8 +298,10 @@ function calc(){
   const yearsInput=document.getElementById('iYears').value;
   const juType=document.getElementById('iJuType').value||'事局';
   const industry=(document.getElementById('iIndustrySmall')||{}).value||'';
+  const lonRaw=(document.getElementById('iLongitude')||{}).value;
+  const longitude=lonRaw===''||lonRaw===undefined?undefined:Number(lonRaw);
   try{
-    const pan=QimenJS.qimenChaibu(Solar,y,m,d,h,mi);
+    const pan=QimenJS.qimenChaibu(Solar,y,m,d,h,mi,longitude);
     renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry);
   }catch(e){
     document.getElementById('result').innerHTML=
@@ -541,6 +543,10 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry){
         <div class="meta-v">${jq}</div>
       </div>
     </div>
+    ${pan.真太陽時校正?`<div style="margin-top:10px;padding:6px 8px;background:#F0F4FA;border-radius:6px;font-size:11px;color:#3A4A66">
+      已依經度做真太陽時校正：輸入時刻校正 ${pan.真太陽時校正.校正分鐘>0?'+':''}${pan.真太陽時校正.校正分鐘} 分鐘，
+      實際用於排盤的時刻是 <b>${pan.真太陽時校正.校正後時刻}</b>（只做經度校正，未含均時差，差距通常在16分鐘內）。
+    </div>`:''}
     <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #E5D5A8;font-size:11px;opacity:.75">
       本局有效期約三個月（局勢到最強，也可能提前變化結束），一事只起一局，事無變化不起新局。用完記得封局。
     </div>

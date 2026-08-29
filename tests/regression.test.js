@@ -154,5 +154,33 @@ function check(label, actual, expected) {
   check('卯對應震宮', Rules.ZHI_TO_GONG['卯'], '震');
 }
 
+// ── 真太陽時校正 (2026-08-29 新增)：確認不傳經度時行為完全不變，且成都經度校正
+//    真的能把時柱算成不同的時辰 (17:30 己酉時 → 校正後 16:26 戊申時) ──
+{
+  console.log('\n── 真太陽時校正 (applyTrueSolarTime / qimenChaibu 第7參數) ──');
+  check('不傳經度=完全不校正',
+    QimenJS.applyTrueSolarTime(2024, 2, 28, 17, 30, undefined),
+    { year: 2024, month: 2, day: 28, hour: 17, minute: 30, correctionMin: 0 });
+  check('成都經度104°E，校正-64分鐘',
+    QimenJS.applyTrueSolarTime(2024, 2, 28, 17, 30, 104),
+    { year: 2024, month: 2, day: 28, hour: 16, minute: 26, correctionMin: -64 });
+
+  const panUncorrected = QimenJS.qimenChaibu(Solar, 2024, 2, 28, 17, 30);
+  check('未校正：17:30 是己酉時，真太陽時校正為 null',
+    { gz: panUncorrected.干支, tst: panUncorrected.真太陽時校正 },
+    { gz: '甲辰年丙寅月壬戌日己酉時', tst: null });
+
+  const panCorrected = QimenJS.qimenChaibu(Solar, 2024, 2, 28, 17, 30, 104);
+  check('成都經度校正後：17:30 變成戊申時 (跨時辰邊界，日柱不變)',
+    { gz: panCorrected.干支, tst: panCorrected.真太陽時校正 },
+    { gz: '甲辰年丙寅月壬戌日戊申時', tst: { 校正分鐘: -64, 校正後時刻: '2024-02-28 16:26' } });
+
+  // 既有黃金案例：不傳經度時，結果必須跟原本一模一樣 (證明加這個功能沒有動到既有行為)
+  const panGolden = QimenJS.qimenChaibu(Solar, 2024, 2, 28, 18, 39);
+  check('既有黃金案例(18:39)不傳經度時完全不受影響',
+    { gz: panGolden.干支, tst: panGolden.真太陽時校正 },
+    { gz: '甲辰年丙寅月壬戌日己酉時', tst: null });
+}
+
 console.log(`\n══ 結果: ${pass} 通過, ${fail} 失敗 ══`);
 process.exit(fail > 0 ? 1 : 0);
