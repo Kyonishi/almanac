@@ -104,9 +104,9 @@ function check(label, actual, expected) {
     ['朱雀投江@震', '白虎猖狂@乾'].sort());
 
   const pan3 = QimenJS.qimenChaibu(Solar, 2024, 8, 1, 12, 0);
-  check('案例三命中飛鳥跌穴@兌',
-    Rules.checkMainstreamGeju(pan3.天盤, pan3.地盤).map(h => `${h.name}@${h.gong}`),
-    ['飛鳥跌穴@兌']);
+  check('案例三命中飛鳥跌穴@兌、青龍逃走@巽(乙加辛，2026-08-29新增格局命中)',
+    Rules.checkMainstreamGeju(pan3.天盤, pan3.地盤).map(h => `${h.name}@${h.gong}`).sort(),
+    ['飛鳥跌穴@兌', '青龍逃走@巽'].sort());
 
   // 窮舉搜出的真實觸發案例 (2026-08-27 開發時已核對過天盤/地盤干完全對應公式)
   const panXiaoge = QimenJS.qimenChaibu(Solar, 2000, 1, 1, 10, 0);
@@ -116,6 +116,24 @@ function check(label, actual, expected) {
   const panDage = QimenJS.qimenChaibu(Solar, 2000, 1, 1, 18, 0);
   check('大格@震宮 (庚天盤/癸地盤，2000-01-01 18:00)',
     Rules.checkMainstreamGeju(panDage.天盤, panDage.地盤).some(h => h.name === '大格' && h.gong === '震'),
+    true);
+
+  // 格局庫擴充第一批(2026-08-29)：4 個「奇儀相加」格局，經 2 個獨立來源交叉核對一致，
+  // 窮舉搜出的真實觸發案例
+  const panQTZ = QimenJS.qimenChaibu(Solar, 2000, 1, 1, 10, 0);
+  check('青龍逃走@坎宮 (乙天盤/辛地盤，2000-01-01 10:00)',
+    Rules.checkMainstreamGeju(panQTZ.天盤, panQTZ.地盤).some(h => h.name === '青龍逃走' && h.gong === '坎'),
+    true);
+  const panQYXZ = QimenJS.qimenChaibu(Solar, 2000, 1, 1, 12, 0);
+  check('奇儀相佐@巽宮 (乙天盤/丁地盤，2000-01-01 12:00)',
+    Rules.checkMainstreamGeju(panQYXZ.天盤, panQYXZ.地盤).some(h => h.name === '奇儀相佐' && h.gong === '巽'),
+    true);
+  const panBatch2 = QimenJS.qimenChaibu(Solar, 2000, 1, 2, 14, 0);
+  check('星奇朱雀@坎宮 (丙天盤/丁地盤，2000-01-02 14:00)',
+    Rules.checkMainstreamGeju(panBatch2.天盤, panBatch2.地盤).some(h => h.name === '星奇朱雀' && h.gong === '坎'),
+    true);
+  check('奇儀順遂@坤宮 (乙天盤/丙地盤，2000-01-02 14:00)',
+    Rules.checkMainstreamGeju(panBatch2.天盤, panBatch2.地盤).some(h => h.name === '奇儀順遂' && h.gong === '坤'),
     true);
 }
 
