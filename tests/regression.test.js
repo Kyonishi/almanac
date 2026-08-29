@@ -144,6 +144,16 @@ function check(label, actual, expected) {
   check('日奇入地網@震宮 (乙天盤/癸地盤，2000-01-01 08:00)',
     Rules.checkMainstreamGeju(panRQRDW.天盤, panRQRDW.地盤).some(h => h.name === '日奇入地網' && h.gong === '震'),
     true);
+
+  // 格局庫擴充第三批(2026-08-29)：2 個格局，查證方式同第二批，窮舉搜出的真實觸發案例
+  const panRQRM = QimenJS.qimenChaibu(Solar, 2000, 1, 1, 16, 0);
+  check('日奇入墓@艮宮 (乙天盤/己地盤，2000-01-01 16:00)',
+    Rules.checkMainstreamGeju(panRQRM.天盤, panRQRM.地盤).some(h => h.name === '日奇入墓' && h.gong === '艮'),
+    true);
+  const panRQBX = QimenJS.qimenChaibu(Solar, 2000, 1, 1, 2, 0);
+  check('日奇被刑@離宮 (乙天盤/庚地盤，2000-01-01 02:00)',
+    Rules.checkMainstreamGeju(panRQBX.天盤, panRQBX.地盤).some(h => h.name === '日奇被刑' && h.gong === '離'),
+    true);
 }
 
 // ── 三詐五假：6 個窮舉搜出的真實觸發案例 (人假因資料源矛盾未收錄，不測) ──
