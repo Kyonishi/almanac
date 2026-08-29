@@ -397,5 +397,76 @@ function check(label, actual, expected) {
     { 門反吟數: 8, 其他數: 0 });
 }
 
+// ── 師傅總結引擎 (buildMasterSummary / buildGongProfiles) (2026-08-29 新增) ──
+// 用戶真實命局(1988-02-23 20:45，河南鄭州，經度113.65)當作主要驗證案例，逐項手算核對過
+// 才寫成測試；用戶明確要求「主流認為.../荀爽認為...」必須分開標籤，不能融在一起，所以這裡
+// 特別鎖定 xunlao(荀爽)/mainstream(主流) 兩個陣列彼此獨立、互不污染。
+{
+  console.log('\n── 師傅總結引擎 (buildMasterSummary) ──');
+
+  // formatCureSteps: 純資料重組，用簡單假資料鎖定行為
+  check('formatCureSteps 對 null 回傳 null', Rules.formatCureSteps(null), null);
+  {
+    const cs=Rules.formatCureSteps({hai:'刑', xiang:{stem:'丁',wuxing:'火',zi:'寫「丁」字',
+      wu:'擺放暗紅尖刺類物品',yi:'學習表達/展示型知識',xing:'有氧/爆發類運動',placement:'高處'},
+      place:'正西或正北', method:'用合(天干五合)', verified:true});
+    check('formatCureSteps 字/物/意/行 4 維度齊全',
+      cs.buzhen.map(b=>b.dimension), ['字','物','意','行']);
+    check('formatCureSteps 保留 place/method', {place:cs.place, method:cs.method},
+      {place:'正西或正北', method:'用合(天干五合)'});
+  }
+
+  const gz1 = Rules.parseGanzhi('戊辰年甲寅月戊申日壬戌時');
+  check('用戶命局干支拆解正確', gz1, {年干:'戊',年支:'辰',月干:'甲',月支:'寅',日干:'戊',日支:'申',時干:'壬',時支:'戌'});
+
+  const pan = QimenJS.qimenChaibu(Solar, 1988, 2, 23, 20, 45, 113.65);
+  check('用戶命局干支(含真太陽時校正)', pan.干支, '戊辰年甲寅月戊申日壬戌時');
+  const zfzs = pan.值符值使;
+  const zhifuStem = zfzs.值符天干 ? zfzs.值符天干[1] : null;
+  check('用戶命局值符天干為癸', zhifuStem, '癸');
+  const protectedStems = Rules.buildProtectedStems(pan.干支, '', null, zhifuStem);
+  check('命局籠統分析(無所求)的號令天干＝日干戊/時干壬/值符癸',
+    [...protectedStems].sort(), ['戊','壬','癸'].sort());
+
+  const summary = Rules.buildMasterSummary(pan, protectedStems, null);
+  check('最該注意的3個宮依序是巽/乾/艮', summary.hotspots.map(h=>h.gong), ['巽','乾','艮']);
+
+  const xunGong = summary.hotspots.find(h=>h.gong==='巽');
+  check('巽宮荀爽體系命中刑+迫，兩條都命中號令(時干壬)',
+    xunGong.xunlao.map(x=>({type:x.type, isHit:x.isHit})),
+    [{type:'刑',isHit:true},{type:'迫',isHit:true}]);
+  check('巽宮主流體系：地利×3(2失1得)+主客+人和，共5條',
+    xunGong.mainstream.map(x=>x.type),
+    ['地利','地利','地利','主客','人和']);
+  check('巽宮地利：天盤壬墓/絕命中號令，地盤己帝旺不命中號令(己非護體天干)',
+    xunGong.mainstream.filter(x=>x.type==='地利').map(x=>x.isHit),
+    [true, true, false]);
+
+  const ganGong = summary.hotspots.find(h=>h.gong==='乾');
+  check('乾宮(日干戊天盤位)：荀爽六害完全乾淨，不代表沒事，只是六害這層沒命中',
+    ganGong.xunlao.length, 0);
+  check('乾宮主流體系5條全部命中號令(日干戊)',
+    ganGong.mainstream.every(x=>x.isHit), true);
+
+  const genGong = summary.hotspots.find(h=>h.gong==='艮');
+  check('艮宮荀爽體系：入墓命中的是丁(非護體天干，isHit false)，空亡isHit永遠true',
+    genGong.xunlao.map(x=>({type:x.type, isHit:x.isHit})),
+    [{type:'墓',isHit:false},{type:'空',isHit:true}]);
+  check('艮宮命中朱雀投江格局，但丁不是護體天干，isHit為false(背景，不是直接命中你自己)',
+    genGong.mainstream.find(x=>x.type==='格局').isHit, false);
+
+  // 一致性/分歧標記：巽/乾/艮 這局都是 mixed (主流內部有吉有凶，不是單邊倒)
+  check('巽/乾/艮三個熱點在這個案例裡都是 mixed(體系內部吉凶不一致，如實呈現不強行調和)',
+    summary.hotspots.map(h=>h.agreement), ['mixed','mixed','mixed']);
+
+  // 黃金案例：確保新引擎套用在既有案例上不會崩潰、且找得出熱點
+  const panGolden = QimenJS.qimenChaibu(Solar, 2024, 2, 28, 18, 39);
+  const protectedGolden = Rules.buildProtectedStems(panGolden.干支, '', '求財', null);
+  const summaryGolden = Rules.buildMasterSummary(panGolden, protectedGolden, '求財');
+  check('黃金案例：師傅總結引擎正常跑出3個熱點，不崩潰', summaryGolden.hotspots.length, 3);
+  check('黃金案例最高分熱點是巽宮(時干己酉的己在巽宮擊刑+全局門反吟)',
+    summaryGolden.hotspots[0].gong, '巽');
+}
+
 console.log(`\n══ 結果: ${pass} 通過, ${fail} 失敗 ══`);
 process.exit(fail > 0 ? 1 : 0);
