@@ -258,6 +258,52 @@ window.toggleHistory=function(){
   }
 };
 
+/* ── 城市經度快速帶入(2026-08-29 新增：大多數人不知道自己所在地精確經度，直接手動輸入不
+   現實，改用常見城市下拉快速帶入，仍保留手動輸入欄位供更精確的地點使用) ──
+   經度取城市中心點的概略值，真太陽時校正本身只做到分鐘級，城市級精度已經足夠。 */
+const CITY_LONGITUDE=[
+  {group:'中國大陸', cities:[
+    ['北京','116.40'],['上海','121.47'],['天津','117.20'],['重慶','106.55'],
+    ['廣州','113.26'],['深圳','114.06'],['成都','104.06'],['杭州','120.15'],
+    ['南京','118.78'],['武漢','114.31'],['西安','108.95'],['蘇州','120.62'],
+    ['鄭州','113.65'],['長沙','112.94'],['青島','120.33'],['大連','121.62'],
+    ['廈門','118.10'],['瀋陽','123.43'],['哈爾濱','126.53'],['昆明','102.83'],
+    ['南寧','108.37'],['濟南','117.00'],['合肥','117.27'],['福州','119.30'],
+    ['蘭州','103.83'],['貴陽','106.71'],['南昌','115.86'],['太原','112.55'],
+    ['石家莊','114.51'],['烏魯木齊','87.62'],
+  ]},
+  {group:'港澳台', cities:[
+    ['香港','114.17'],['澳門','113.55'],['台北','121.56'],['台中','120.68'],
+    ['高雄','120.30'],
+  ]},
+  {group:'海外常見', cities:[
+    ['東京','139.69'],['首爾','126.98'],['新加坡','103.85'],['曼谷','100.50'],
+    ['吉隆坡','101.69'],['雪梨','151.21'],['倫敦','-0.13'],['紐約','-74.01'],
+    ['洛杉磯','-118.24'],['溫哥華','-123.12'],
+  ]},
+];
+function initCityPreset(){
+  const sel=document.getElementById('iCityPreset');
+  if(!sel)return;
+  CITY_LONGITUDE.forEach(({group,cities})=>{
+    const og=document.createElement('optgroup');
+    og.label=group;
+    cities.forEach(([name,lng])=>{
+      const opt=document.createElement('option');
+      opt.value=lng;
+      opt.textContent=`${name} ${lng}`;
+      og.appendChild(opt);
+    });
+    sel.appendChild(og);
+  });
+}
+function applyCityPreset(){
+  const sel=document.getElementById('iCityPreset');
+  if(!sel||!sel.value)return;
+  document.getElementById('iLongitude').value=sel.value;
+}
+window.applyCityPreset=applyCityPreset;
+
 /* ── 時間工具 ── */
 function pad(n){return String(n).padStart(2,'0');}
 function setNow(){
@@ -1130,6 +1176,7 @@ const init=()=>{
   if(typeof Solar==='undefined'||typeof QimenJS==='undefined'){setTimeout(init,50);return;}
   initT2();
   setNow();
+  initCityPreset();
   const bigSel=document.getElementById('iIndustryBig');
   if(bigSel){
     let opts='<option value="">（不選，僅財富/事業七要報告用到）</option>';

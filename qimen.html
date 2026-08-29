@@ -330,6 +330,15 @@ footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spa
 
 <div class="input-panel">
   <div class="input-row">
+    <div class="input-label">局類型</div>
+    <select class="inp" id="iJuType" onchange="updateNeedHint()">
+      <option value="事局">事局（問一件事/一件事的走向）</option>
+      <option value="命局">命局（用某個人的出生時刻，分析這個人）</option>
+    </select>
+  </div>
+  <div class="input-hint">先決定這次是要問一件具體的事(事局)，還是用某個人的出生時刻分析這個人
+    整體(命局)——後面「所求」「經度」該填什麼，都跟著這個選擇走。</div>
+  <div class="input-row">
     <div class="input-label">日期</div>
     <input class="inp" type="date" id="iDate">
     <button class="btn-now" onclick="setNow()">現在</button>
@@ -339,11 +348,18 @@ footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spa
     <input class="inp" type="time" id="iTime">
   </div>
   <div class="input-row">
+    <div class="input-label">地點</div>
+    <select class="inp" id="iCityPreset" onchange="applyCityPreset()">
+      <option value="">（可選：挑城市快速帶入經度，下方也可以手動輸入更精確的值）</option>
+    </select>
+  </div>
+  <div class="input-row">
     <div class="input-label">經度</div>
     <input class="inp" type="number" id="iLongitude" step="0.01" placeholder="留空＝不校正" value="104.06">
   </div>
-  <div class="input-hint">真太陽時校正用：東經為正，成都約104.06(預設)。事局填「這件事發生地」的經度；
-    命局填「出生地」的經度，因人而異記得改。留空則完全不校正，跟原本行為一樣。</div>
+  <div class="input-hint">真太陽時校正用：東經為正(西經填負數，如紐約-74.01)，成都約104.06(預設)。
+    事局填「這件事發生地」的經度；命局填「出生地」的經度，因人而異記得改。留空則完全不校正，
+    跟原本行為一樣。</div>
   <div class="input-row">
     <div class="input-label">生年</div>
     <input class="inp" type="text" id="iYears" placeholder="家中長住者生年,如 1990,1988,2015">
@@ -352,16 +368,19 @@ footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spa
     <div class="input-label">所求</div>
     <select class="inp" id="iNeed">
       <option value="求財">求財</option>
-      <option value="財富七要">財富七要（完整報告）</option>
-      <option value="事業七要">事業七要（完整報告）</option>
-      <option value="求事業">求事業（推導，未經視頻原文驗證）</option>
+      <option value="財富七要">財富七要</option>
+      <option value="事業七要">事業七要</option>
+      <option value="求事業">求事業</option>
       <option value="求權威地位">求權威地位</option>
       <option value="求表現曝光">求表現曝光</option>
       <option value="求情感情欲">求情感情欲</option>
-      <option value="求桃花">求桃花（定位讀法已查證六合/休門；空亡化解暫沿用癸，未完全驗證）</option>
+      <option value="求桃花">求桃花</option>
       <option value="求突破變革">求突破變革</option>
     </select>
   </div>
+  <div class="input-hint" id="needHint"></div>
+  <div class="input-hint">財富七要／事業七要為完整報告；求事業為推導、未經視頻原文逐字驗證；
+    求桃花的定位讀法已查證(六合/休門)，但空亡化解方式暫沿用癸、未完全驗證。</div>
   <div class="input-row">
     <div class="input-label">大行業</div>
     <select class="inp" id="iIndustryBig">
@@ -388,14 +407,6 @@ footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spa
   <div class="input-hint">「月令五種關係」沒有固定比較對象，要按這次具體問的是什麼來定——比如比
     「戊(本錢)」就選土，比某個特定人/宮位就選那個對象的五行。不知道要比什麼就留空，只看月令
     本身的季節氣候背景。</div>
-  <div class="input-row">
-    <div class="input-label">局類型</div>
-    <select class="inp" id="iJuType" onchange="updateNeedHint()">
-      <option value="事局">事局（問一件事/一件事的走向）</option>
-      <option value="命局">命局（用某個人的出生時刻，分析這個人）</option>
-    </select>
-  </div>
-  <div class="input-hint" id="needHint"></div>
   <button class="btn-ritual" onclick="toggleRitual()" type="button">☯ 起局須知 / 起局儀式</button>
   <div class="ritual-panel" id="ritualPanel" style="display:none"></div>
   <button class="btn-ritual" onclick="toggleHistory()" type="button">🕘 起局歷史記錄</button>
