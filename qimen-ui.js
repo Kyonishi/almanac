@@ -334,6 +334,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
   const gejuHits=checkMainstreamGeju(sky, earth);
   const sanzhaWujiaHits=checkSanzhaWujia(sky, door, god);
   const diliHits=checkDili(sky, earth);
+  const zhukeHits=checkZhuke(sky, earth);
 
   /* 號令: 日時/生年/意象/符使 四要素合併的保護天干集合 */
   const zhifuStem=zfzs.值符天干?zfzs.值符天干[1]:null;
@@ -597,6 +598,24 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
       <div style="font-size:11px;opacity:.6;margin-bottom:6px">跨八字/紫微/奇門通用的旺衰推運工具，跟六害/格局是完全獨立的第三套判斷。天盤干代表現在/未來的狀態，地盤干代表過去的狀態；長生/臨官/帝旺＝得地利，死/墓/絕＝失地利，其餘階段(沐浴/冠帶/衰/病/胎/養)算平不列出。四角宮(艮/巽/坤/乾)各對應兩個地支，分開列不強行合併。</div>
       ${jiHits.length?`<div class="ana-step" style="font-weight:700;color:var(--grn);margin-top:4px">得地利</div>${jiHits.map(rowHtml).join('')}`:''}
       ${xiongHits.length?`<div class="ana-step" style="font-weight:700;color:var(--red);margin-top:4px">失地利</div>${xiongHits.map(rowHtml).join('')}`:''}
+    </div>`;
+  })()}
+  ${(function(){
+    if(!zhukeHits.length)return '';
+    const withHit=zhukeHits.map(h=>({...h, isHit:protectedStems.has(h.skyStem)||protectedStems.has(h.earthStem)}));
+    const zhuHits=withHit.filter(h=>h.favor==='主').sort((a,b)=>(b.isHit-a.isHit));
+    const keHits=withHit.filter(h=>h.favor==='客').sort((a,b)=>(b.isHit-a.isHit));
+    const biheHits=withHit.filter(h=>h.favor==='平').sort((a,b)=>(b.isHit-a.isHit));
+    const rowHtml=h=>`<div class="ana-step"${h.isHit?'':' style="opacity:.5"'}>
+      ${T2(h.gong)}宮　天盤${T2(h.skyStem)}(${T2(h.skyWx)})／地盤${T2(h.earthStem)}(${T2(h.earthWx)})——${T2(h.relation)}
+      <span class="hl-badge ${h.isHit?'hl-hit':'hl-bg'}">${h.isHit?'命中號令':'背景'}</span>
+    </div>`;
+    return `<div class="geju-card">
+      <div class="geju-title">主流斷局法：主客（天盤干／地盤干生克關係）</div>
+      <div style="font-size:11px;opacity:.6;margin-bottom:6px">天盤隨時辰轉動視為「客」，地盤在一局內不動視為「主」。被克/被生的一方，利益歸誰：天盤克地盤或地盤生天盤＝利客；地盤克天盤或天盤生地盤＝利主；五行相同(比和)則主客同心不分勝負。通常自己/我方問事預設為「主」，對方或事情的變化預設為「客」，實際指派請依占問對象自行判斷，跟六害/格局/地利是完全獨立的另一個維度。</div>
+      ${zhuHits.length?`<div class="ana-step" style="font-weight:700;color:var(--grn);margin-top:4px">利主</div>${zhuHits.map(rowHtml).join('')}`:''}
+      ${keHits.length?`<div class="ana-step" style="font-weight:700;color:var(--red);margin-top:4px">利客</div>${keHits.map(rowHtml).join('')}`:''}
+      ${biheHits.length?`<div class="ana-step" style="font-weight:700;opacity:.7;margin-top:4px">比和(主客同心)</div>${biheHits.map(rowHtml).join('')}`:''}
     </div>`;
   })()}
 
