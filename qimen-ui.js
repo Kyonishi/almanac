@@ -310,6 +310,69 @@ function calc(){
   }
 }
 
+/* ── 師傅總結：把 buildMasterSummary() 算好的結構化資料渲染成卡片 ──
+   用戶明確要求「主流認為.../荀爽認為...」必須分開標籤，不能融在一起講，所以這裡刻意用
+   liuhai-card(紅系，跟解讀二六害卡同色)裝荀爽老師體系的內容、geju-card(紫系，跟解讀一
+   格局卡同色)裝主流斷局法的內容，一眼就能分辨這句話是哪套體系說的。 */
+function renderMasterSummary(summary, juType){
+  const T2=x=>t2(x||'');
+  if(summary.quiet){
+    return `<div class="master-card">
+      <div class="master-title">師傅總結</div>
+      <div class="ana-step">這局整體沒有特別突出的宮位——六害/格局/地利/主客/天時/人和都沒有明顯集中在你的號令天干上，算是比較平穩的一局，不用特別緊張哪個方向。</div>
+    </div>`;
+  }
+  const renderCureSteps=(cs, cureNote)=>{
+    if(!cs){
+      return cureNote?`<div class="ana-step" style="opacity:.75">${T2(cureNote)}</div>`
+        :'<div class="ana-step" style="opacity:.7">（化解方法暫缺，需人工覆核）</div>';
+    }
+    const mx=cs.miexiang?`<div class="ana-step">灭象：${T2(cs.miexiang.action)}${cs.miexiang.verified?'':'（此步驟未見視頻原文明確說明，建議自行覆核）'}</div>`:'';
+    const bz=(cs.buzhen||[]).map(b=>`<div class="ana-step">布阵（${T2(b.dimension)}）：${T2(b.text)}</div>`).join('');
+    // 這裡的「方位」指的是布阵物品/文字實際要擺放的位置(家裡或辦公室的哪個方向角落)，
+    // 跟「你本人現實中該不該去這個方向」是兩件不相干的事，容易被誤讀成後者，所以講清楚。
+    const placeLine=cs.place?`<div class="ana-step">擺放位置：把布阵的物品/文字放在家裡或辦公室的「${T2(cs.place)}」方位角落——這是物品要擺哪裡，跟你本人要不要去這個方向沒有關係。</div>`:'';
+    const verifyNote=cs.verified?'':'<div class="ana-step" style="opacity:.7">（此化解方法為推導，非視頻原文逐字說明，僅供參考）</div>';
+    const noteLine=cs.note?`<div class="ana-step" style="opacity:.7">${T2(cs.note)}</div>`:'';
+    return mx+bz+placeLine+verifyNote+noteLine||'<div class="ana-step" style="opacity:.7">（化解方法暫缺，需人工覆核）</div>';
+  };
+  const AGREEMENT_NOTE={
+    consistent_xiong:'這一宮兩套體系方向一致，都偏不利——多個獨立算出來的結果指向同一個地方，可信度比單一體系說凶更高。',
+    consistent_ji:'這一宮兩套體系方向一致，都偏有利。',
+    mixed:'這一宮同時有偏吉跟偏凶的判斷，不是單邊倒——這是這個宮本來就有的複雜面，不是矛盾，不用強行調和成一個結論，你自己感受哪個更準。',
+    none:'',
+  };
+  const hotspotHtml=summary.hotspots.map((h,idx)=>{
+    const xunlaoHtml=h.xunlao.length?`<div class="liuhai-card" style="margin-bottom:6px">
+        <div class="liuhai-title">荀爽老師體系認為</div>
+        ${h.xunlao.map(x=>`<div class="liuhai-sec">
+          <div>${T2(x.text)}<span class="hl-badge ${x.isHit?'hl-hit':'hl-bg'}">${x.isHit?'命中號令':'背景'}</span></div>
+          ${renderCureSteps(x.cureSteps, x.cureNote)}
+        </div>`).join('')}
+      </div>`:'';
+    const mainstreamHtml=h.mainstream.length?`<div class="geju-card" style="margin-bottom:0">
+        <div class="geju-title">主流斷局法認為</div>
+        ${h.mainstream.map(x=>`<div class="geju-item">
+          ${T2(x.text)}<span class="hl-badge ${x.isHit?'hl-hit':'hl-bg'}">${x.isHit?'命中號令':'背景'}</span>
+        </div>`).join('')}
+        <div class="ana-step" style="opacity:.6;margin-top:6px">（主流斷局法目前沒有對應的化解方法；想知道具體怎麼破解，請看上面荀爽老師體系那部分）</div>
+      </div>`:'';
+    return `<div class="master-hotspot">
+      <div class="master-hotspot-title">${idx+1}. ${T2(h.gong)}宮</div>
+      ${AGREEMENT_NOTE[h.agreement]?`<div class="ana-step" style="margin-bottom:6px">${AGREEMENT_NOTE[h.agreement]}</div>`:''}
+      ${xunlaoHtml}${mainstreamHtml}
+    </div>`;
+  }).join('');
+  const mingjuIntro=juType==='命局'
+    ?'　這是命局模式：下面「命中了什麼」的判斷照樣算給你看，但荀爽老師體系的灭象布阵(具體要擺什麼、放哪裡)這次先不給——那套方法是針對「事局」(問一件具體的事)設計的，命局是你天生的整體結構，硬套具體操作指令會文不對題，遇到這些宮對應的具體麻煩時，建議另外起一個事局來問。'
+    :'';
+  return `<div class="master-card">
+    <div class="master-title">師傅總結</div>
+    <div class="ana-step" style="margin-bottom:10px">下面依「這局最該注意的程度」排出最多 3 個宮，每個宮都把主流斷局法跟荀爽老師體系的判斷分開列出，絕不混在一起講。「命中號令」代表這件事直接壓在你自己（日干/時干/值符/所求對應天干）身上，比較要緊；「背景」代表這件事存在於這局，但不是直接衝著你來，程度上輕一些——如果想看完整的逐宮明細，往下滑可以看到兩套體系各自完整的判斷卡片。${mingjuIntro}</div>
+    ${hotspotHtml}
+  </div>`;
+}
+
 /* ── 渲染盤面 ── */
 function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxing){
   needKey=needKey||'求財';
@@ -344,6 +407,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
   const zhifuStem=zfzs.值符天干?zfzs.值符天干[1]:null;
   const protectedStems=buildProtectedStems(pan.干支, yearsInput, needKey, zhifuStem);
   const hasProtected=protectedStems.size>0;
+  const masterSummary=buildMasterSummary(pan, protectedStems, needKey, juType);
 
   /* 值符/值使宮判斷 (中宮值符寄坤) */
   const realZfGong=zfGong==='中'?'坤':zfGong;
@@ -566,6 +630,8 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     </div>
     <div class="pan-grid">${gridHTML}</div>
   </div>
+
+  ${renderMasterSummary(masterSummary, juType)}
 
   <div class="section-label">解讀一・主流斷局法（跨門派共識，與下面荀爽老師體系是兩套不同來源）</div>
   ${gejuHits.length ? `<div class="geju-card">
