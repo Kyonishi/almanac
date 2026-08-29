@@ -220,5 +220,35 @@ function check(label, actual, expected) {
   check('centerInfo 正確標記 inCenter', wuItem.centerInfo.inCenter, true);
 }
 
+// ── 主流斷局法：地利(十二長生) (2026-08-29 新增) ──
+// 十天干起長生的地支/陰陽干順逆行方向，三個獨立資料源交叉核對一致後鎖定的基準值。
+{
+  console.log('\n── 地利(十二長生) ──');
+  check('甲(陽干,長生亥)順行：亥=長生/子=沐浴/寅=臨官/午=死', {
+    亥: Rules.getTwelveStage('甲','亥'), 子: Rules.getTwelveStage('甲','子'),
+    寅: Rules.getTwelveStage('甲','寅'), 午: Rules.getTwelveStage('甲','午'),
+  }, { 亥:'長生', 子:'沐浴', 寅:'臨官', 午:'死' });
+  check('乙(陰干,長生午)逆行：午=長生/巳=沐浴', {
+    午: Rules.getTwelveStage('乙','午'), 巳: Rules.getTwelveStage('乙','巳'),
+  }, { 午:'長生', 巳:'沐浴' });
+  check('戊長生寅、己長生酉(土寄丙丁)、庚長生巳、壬長生申、癸長生卯', {
+    戊: Rules.getTwelveStage('戊','寅'), 己: Rules.getTwelveStage('己','酉'),
+    庚: Rules.getTwelveStage('庚','巳'), 壬: Rules.getTwelveStage('壬','申'),
+    癸: Rules.getTwelveStage('癸','卯'),
+  }, { 戊:'長生', 己:'長生', 庚:'長生', 壬:'長生', 癸:'長生' });
+  check('艮宮(丑+寅)兩地支分開列，不強行合併成一個結論',
+    Rules.getTwelveStagesAtGong('戊','艮'),
+    [{branch:'丑',stage:'養'},{branch:'寅',stage:'長生'}]);
+
+  const pan1 = QimenJS.qimenChaibu(Solar, 2024, 2, 28, 18, 39);
+  const diliHits = Rules.checkDili(pan1.天盤, pan1.地盤);
+  check('案例一：天盤乙落震宮(卯)為臨官(得地利)',
+    diliHits.some(h => h.panType==='天盤' && h.gong==='震' && h.stem==='乙' && h.stage==='臨官' && h.luck==='吉'),
+    true);
+  check('案例一：天盤壬落巽宮(辰)為墓(失地利)',
+    diliHits.some(h => h.panType==='天盤' && h.gong==='巽' && h.stem==='壬' && h.branch==='辰' && h.stage==='墓' && h.luck==='凶'),
+    true);
+}
+
 console.log(`\n══ 結果: ${pass} 通過, ${fail} 失敗 ══`);
 process.exit(fail > 0 ? 1 : 0);

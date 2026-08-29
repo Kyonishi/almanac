@@ -333,6 +333,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
   const baihuHits=checkBaiHu(god);
   const gejuHits=checkMainstreamGeju(sky, earth);
   const sanzhaWujiaHits=checkSanzhaWujia(sky, door, god);
+  const diliHits=checkDili(sky, earth);
 
   /* 號令: 日時/生年/意象/符使 四要素合併的保護天干集合 */
   const zhifuStem=zfzs.值符天干?zfzs.值符天干[1]:null;
@@ -561,7 +562,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     <div class="pan-grid">${gridHTML}</div>
   </div>
 
-  <div class="section-label">解讀一・主流格局判斷（跨門派共識，與下面荀爽老師體系是兩套不同來源）</div>
+  <div class="section-label">解讀一・主流斷局法（跨門派共識，與下面荀爽老師體系是兩套不同來源）</div>
   ${gejuHits.length ? `<div class="geju-card">
     <div class="geju-title">命中的吉凶格局</div>
     ${gejuHits.map(h=>`<div class="geju-item">
@@ -582,6 +583,22 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
       ${T2(h.desc)}
     </div>`).join('')}
   </div>` : ''}
+  ${(function(){
+    if(!diliHits.length)return '';
+    const withHit=diliHits.map(h=>({...h, isHit:protectedStems.has(h.stem)}));
+    const jiHits=withHit.filter(h=>h.luck==='吉').sort((a,b)=>(b.isHit-a.isHit));
+    const xiongHits=withHit.filter(h=>h.luck==='凶').sort((a,b)=>(b.isHit-a.isHit));
+    const rowHtml=h=>`<div class="ana-step"${h.isHit?'':' style="opacity:.5"'}>
+      ${T2(h.panType)}${T2(h.stem)}　落${T2(h.gong)}宮(${T2(h.branch)})——${T2(h.stage)}
+      <span class="hl-badge ${h.isHit?'hl-hit':'hl-bg'}">${h.isHit?'命中號令':'背景'}</span>
+    </div>`;
+    return `<div class="geju-card">
+      <div class="geju-title">主流斷局法：地利（十二長生）</div>
+      <div style="font-size:11px;opacity:.6;margin-bottom:6px">跨八字/紫微/奇門通用的旺衰推運工具，跟六害/格局是完全獨立的第三套判斷。天盤干代表現在/未來的狀態，地盤干代表過去的狀態；長生/臨官/帝旺＝得地利，死/墓/絕＝失地利，其餘階段(沐浴/冠帶/衰/病/胎/養)算平不列出。四角宮(艮/巽/坤/乾)各對應兩個地支，分開列不強行合併。</div>
+      ${jiHits.length?`<div class="ana-step" style="font-weight:700;color:var(--grn);margin-top:4px">得地利</div>${jiHits.map(rowHtml).join('')}`:''}
+      ${xiongHits.length?`<div class="ana-step" style="font-weight:700;color:var(--red);margin-top:4px">失地利</div>${xiongHits.map(rowHtml).join('')}`:''}
+    </div>`;
+  })()}
 
   <div class="section-label">解讀二・荀爽老師體系（六害：刑墓庚虎迫空 ＋ 灭象布阵化解）</div>
   ${(function(){

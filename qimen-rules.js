@@ -36,6 +36,59 @@ const GUA_XIANG={
 // 採用傳統命理通行寫法。
 const ZHI_TO_GONG={'子':'坎','丑':'艮','寅':'艮','卯':'震','辰':'巽','巳':'巽',
   '午':'離','未':'坤','申':'坤','酉':'兌','戌':'乾','亥':'乾'};
+// ZHI_TO_GONG 反查：每宮對應哪些地支(四角宮各兩個)。供十二長生查地利用。
+const GONG_TO_ZHI={};
+Object.entries(ZHI_TO_GONG).forEach(([zhi,gong])=>{ (GONG_TO_ZHI[gong]=GONG_TO_ZHI[gong]||[]).push(zhi); });
+
+// ══════════════════ 主流斷局法：地利(十二長生) ══════════════════
+// 來源: 2026-08-29 綜合多個獨立線上命理資料源交叉核對一致(十天干起長生的地支、陰陽干順逆行
+// 方向)，是跨八字/紫微/奇門通用的基礎推運工具，非奇門特定流派內容。跟荀爽老師的六害體系是
+// 完全獨立的另一套判斷，用戶要求：主流斷局法(天時地利人和主客)要陸續補上、跟荀爽體系分開
+// 展示，這是第一個要補的維度(地利)。
+//
+// 十天干起「長生」的地支 (陽干順行、陰干逆行走完12個階段)：
+// 甲→亥／乙→午／丙→寅／丁→酉／戊→寅(寄丙)／己→酉(寄丁)／庚→巳／辛→子／壬→申／癸→卯
+const CHANGSHENG_START={'甲':'亥','乙':'午','丙':'寅','丁':'酉','戊':'寅','己':'酉','庚':'巳','辛':'子','壬':'申','癸':'卯'};
+const YANG_STEMS=new Set(['甲','丙','戊','庚','壬']); // 陽干順行；陰干(乙丁己辛癸)逆行
+const TWELVE_STAGES=['長生','沐浴','冠帶','臨官','帝旺','衰','病','死','墓','絕','胎','養'];
+// 得地利(旺)＝長生/臨官/帝旺；失地利(衰)＝死/墓/絕；其餘六個階段(沐浴/冠帶/衰/病/胎/養)算平，不特別標注
+const DILI_JI=new Set(['長生','臨官','帝旺']);
+const DILI_XIONG=new Set(['死','墓','絕']);
+
+// 用 BRANCH_ORDER('子丑寅卯...', 定義於本檔案下方 yearToBranch 那段)算地支順逆位移，
+// 不引用 qimen-engine.js 內部的 DI_ZHI——那個被包在 IIFE 裡，qimen-rules.js 拿不到。
+function getTwelveStage(stem, branch){
+  const start=CHANGSHENG_START[stem];
+  if(!start)return null;
+  const startIdx=BRANCH_ORDER.indexOf(start), branchIdx=BRANCH_ORDER.indexOf(branch);
+  const isYang=YANG_STEMS.has(stem);
+  const diff=isYang ? (branchIdx-startIdx+12)%12 : (startIdx-branchIdx+12)%12;
+  return TWELVE_STAGES[diff];
+}
+// 給一個天干+它現在所在的宮，回傳這個宮對應的每個地支各自的十二長生階段。
+// 四角宮(艮/巽/坤/乾)各對應兩個地支，兩個分開列，不強行合併成一個結論——
+// 跟專案裡「旬空」處理四角宮的方式(日空/時空分開標)是同一個做法。
+function getTwelveStagesAtGong(stem, gong){
+  const branches=GONG_TO_ZHI[gong]||[];
+  return branches.map(branch=>({branch, stage:getTwelveStage(stem, branch)}));
+}
+// 掃描天盤/地盤全部8個外宮(中宮無獨立地支，寄宮規則各派不同，不在此判斷範圍內)，
+// 找出「得地利」或「失地利」的天干+宮位組合。
+function checkDili(sky, earth){
+  const hits=[];
+  const scan=(map, panType)=>{
+    Object.entries(map).forEach(([gong,stem])=>{
+      if(gong==='中'||!stem)return;
+      getTwelveStagesAtGong(stem,gong).forEach(({branch,stage})=>{
+        if(DILI_JI.has(stage)) hits.push({panType, gong, stem, branch, stage, luck:'吉'});
+        else if(DILI_XIONG.has(stage)) hits.push({panType, gong, stem, branch, stage, luck:'凶'});
+      });
+    });
+  };
+  scan(sky,'天盤');
+  scan(earth,'地盤');
+  return hits;
+}
 
 // ══ 六仪擊刑 (固定查表, 與時間無關) ══
 // 來源: 多方獨立命理資料交叉核對 + 荀爽老師實測案例驗證 (1901-04-13, 2024-02-28 兩案例
@@ -1147,5 +1200,6 @@ if (typeof module !== 'undefined' && module.exports) {
     locateStem, locateDoor, locateStar, locateGod, locateSymbol,
     harmsAtGong, getCuresAtGong, parseGanzhi, GRID_ORDER, ZHI_TO_GONG,
     monthRelation, analyzeWealthSeven,
+    CHANGSHENG_START, TWELVE_STAGES, GONG_TO_ZHI, getTwelveStage, getTwelveStagesAtGong, checkDili,
   };
 }
