@@ -185,6 +185,16 @@ function check(label, actual, expected) {
   check('玉女刑殺@離宮 (丁天盤/庚地盤，2000-01-01 10:00)',
     Rules.checkMainstreamGeju(panYNXS.天盤, panYNXS.地盤).some(h => h.name === '玉女刑殺' && h.gong === '離'),
     true);
+
+  // 格局庫擴充第七批(2026-08-29)：2 個格局，查證方式同前幾批，窮舉搜出的真實觸發案例
+  const panRDJG = QimenJS.qimenChaibu(Solar, 2000, 1, 1, 12, 0);
+  check('人遁吉格@乾宮 (丁天盤/乙地盤，2000-01-01 12:00)',
+    Rules.checkMainstreamGeju(panRDJG.天盤, panRDJG.地盤).some(h => h.name === '人遁吉格' && h.gong === '乾'),
+    true);
+  const panZFFG = QimenJS.qimenChaibu(Solar, 2000, 1, 1, 18, 0);
+  check('值符飛宮@離宮 (戊天盤/庚地盤，2000-01-01 18:00)',
+    Rules.checkMainstreamGeju(panZFFG.天盤, panZFFG.地盤).some(h => h.name === '值符飛宮' && h.gong === '離'),
+    true);
 }
 
 // ── 三詐五假：6 個窮舉搜出的真實觸發案例 (人假因資料源矛盾未收錄，不測) ──
