@@ -455,6 +455,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
   const protectedStems=buildProtectedStems(pan.干支, yearsInput, needKey, zhifuStem);
   const hasProtected=protectedStems.size>0;
   const masterSummary=buildMasterSummary(pan, protectedStems, needKey, juType);
+  const yimaHits=checkYima(pan, sky, protectedStems);
   // 已經在師傅總結卡列出來過的宮，下面「解讀一」各張明細卡遇到同一個宮的資料時改用精簡格式，
   // 避免整段解釋文字重複兩遍(2026-08-29 用戶要求：把重複說明的內容進行刪減)。
   const hotspotGongs=new Set(masterSummary.hotspots.map(h=>h.gong));
@@ -808,6 +809,18 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
       ${groupHtml('星反吟', xingFan, '衝突反覆、變動不安，主快、主變動、也可能失而復得')}
       ${groupHtml('門伏吟', menFu, '停滯不前、僵化、徘徊')}
       ${groupHtml('門反吟', menFan, '衝突反覆、變動不安，主快、主變動、也可能失而復得')}
+    </div>`;
+  })()}
+  ${(function(){
+    if(!yimaHits.length)return '';
+    const rowHtml=h=>`<div class="ana-step"${h.isHit?'':' style="opacity:.5"'}>
+      ${T2(h.ref)}支「${T2(h.refBranch)}」驛馬在「${T2(h.yimaBranch)}」——落${T2(h.gong)}宮
+      <span class="hl-badge ${h.isHit?'hl-hit':'hl-bg'}">${h.isHit?'命中號令':'背景'}</span>
+    </div>`;
+    return `<div class="geju-card">
+      <div class="geju-title">主流斷局法：驛馬</div>
+      <div style="font-size:11px;opacity:.6;margin-bottom:6px">驛馬主奔波、走動、出行、搬家、轉職等跟移動有關的意象，跨八字/紫微/奇門通用，跟六害/格局/地利是完全獨立的另一個維度。傳統查法：申子辰馬在寅、寅午戌馬在申、巳酉丑馬在亥、亥卯未馬在巳。年支/月支/日支/時支分開起，四個參照點各自獨立列出，不強行合併——如果好幾個參照點的驛馬剛好落在同一個宮，可以當作比較值得注意的訊號。「馬星」在奇門裡其實還有天馬/丁馬兩套不同查法(要配合用神/旬首)，本專案目前只做了這裡的驛馬，天馬/丁馬暫不收錄。</div>
+      ${[...yimaHits].sort((a,b)=>(b.isHit-a.isHit)).map(rowHtml).join('')}
     </div>`;
   })()}
 
