@@ -197,6 +197,40 @@ function checkMenPo(doorMap){
   return hits;
 }
 
+// ══════════════════ 主流斷局法：人和(門宮關係 迫/制/和/義) ══════════════════
+// 來源: 2026-08-29 三個獨立線上命理資料源用完全相同的字句交叉核對一致(其中一次是逐字比對
+// 「門克宮迫／宮克門制／門生宮和／宮生門義」這句原文才鎖定，因為搜到一次語序相反的說法，
+// 為了避免像之前「人假」那樣踩進矛盾說法，特別多查一次用精確詞句比對排除歧義)：
+// 門克宮＝迫(上面 checkMenPo 已經在算，是荀爽老師六害體系「刑墓庚虎迫空」的其中一害)；
+// 宮克門＝制；門生宮＝和；宮生門＝義；五行相同(比和)則不屬於以上四種，另外標注。
+// 吉凶：門遇迫或制，原本吉的門吉不全、原本凶的門更凶(兩者都是「被外力壓著、動不了」，只是
+// 施力方向相反)；門遇和或義，都是有利的(和＝門把力量交給宮位形成和諧，義＝宮位反過來滋養門)。
+// 這是完整攤開「迫/制/和/義」四態＋比和，跟荀爽老師只把「迫」當作六害之一挑出來講是不同的
+// 呈現方式——同一套底層計算(門的五行 vs 宮的五行)，在主流框架下用「人和」的完整脈絡呈現。
+const RENHE_JI=new Set(['和','義']);
+const RENHE_XIONG=new Set(['迫','制']);
+function getMenGongRelation(doorWx, gongWx){
+  if(doorWx===gongWx) return '比和';
+  if(KE_MAP[doorWx]===gongWx) return '迫';
+  if(KE_MAP[gongWx]===doorWx) return '制';
+  if(SHENG_TABLE[doorWx]===gongWx) return '和';
+  if(SHENG_TABLE[gongWx]===doorWx) return '義';
+  return null;
+}
+function checkRenhe(doorMap){
+  const hits=[];
+  Object.entries(doorMap||{}).forEach(([gua,door])=>{
+    if(gua==='中'||!door)return;
+    const dWx=DOOR_WUXING[door], gWx=GONG_WUXING[gua];
+    if(!dWx||!gWx)return;
+    const relation=getMenGongRelation(dWx,gWx);
+    if(!relation)return;
+    const luck=RENHE_JI.has(relation)?'吉':RENHE_XIONG.has(relation)?'凶':'平';
+    hits.push({gong:gua, door, doorWx:dWx, gongWx:gWx, relation, luck});
+  });
+  return hits;
+}
+
 // ══ 庚 (六害之一, 獨立於擊刑檢測: 只要天盤出現庚即命中) ══
 // 來源: 荀爽視頻「六害: 刑墓庚虎迫空」明確列出庚為獨立一害, 與擊刑表中庚落艮宮的
 // "六儀擊刑"是兩件事 (庚本身即為害, 不論落在哪一宮)
@@ -1265,5 +1299,6 @@ if (typeof module !== 'undefined' && module.exports) {
     CHANGSHENG_START, TWELVE_STAGES, GONG_TO_ZHI, getTwelveStage, getTwelveStagesAtGong, checkDili,
     stemWuxing, SHENG_TABLE, KE_TABLE_WUXING, checkZhuke,
     BRANCH_WUXING, getNineStarState, checkTianshi,
+    DOOR_WUXING, GONG_WUXING, KE_MAP, getMenGongRelation, checkRenhe,
   };
 }
