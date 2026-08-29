@@ -104,9 +104,9 @@ function check(label, actual, expected) {
     ['朱雀投江@震', '白虎猖狂@乾', '陰害陽門@兌'].sort());
 
   const pan3 = QimenJS.qimenChaibu(Solar, 2024, 8, 1, 12, 0);
-  check('案例三命中飛鳥跌穴@兌、青龍逃走@巽(乙加辛，2026-08-29新增格局命中)',
+  check('案例三命中飛鳥跌穴@兌、青龍逃走@巽、青龍耀明@坎(戊加丁，2026-08-29新增格局命中)',
     Rules.checkMainstreamGeju(pan3.天盤, pan3.地盤).map(h => `${h.name}@${h.gong}`).sort(),
-    ['飛鳥跌穴@兌', '青龍逃走@巽'].sort());
+    ['飛鳥跌穴@兌', '青龍逃走@巽', '青龍耀明@坎'].sort());
 
   // 窮舉搜出的真實觸發案例 (2026-08-27 開發時已核對過天盤/地盤干完全對應公式)
   const panXiaoge = QimenJS.qimenChaibu(Solar, 2000, 1, 1, 10, 0);
@@ -163,6 +163,17 @@ function check(label, actual, expected) {
   const panHBRX = QimenJS.qimenChaibu(Solar, 2000, 1, 6, 10, 0);
   check('火悖入刑@乾宮 (丙天盤/己地盤，2000-01-06 10:00)',
     Rules.checkMainstreamGeju(panHBRX.天盤, panHBRX.地盤).some(h => h.name === '火悖入刑' && h.gong === '乾'),
+    true);
+
+  // 格局庫擴充第五批(2026-08-29)：3 個格局，查證方式同前幾批，窮舉搜出的真實觸發案例；
+  // 青龍耀明(戊加丁)在上面案例三已經有真實觸發案例，這裡補另外 2 個
+  const panQLZG = QimenJS.qimenChaibu(Solar, 2000, 1, 1, 8, 0);
+  check('青龍轉光@兌宮 (丁天盤/戊地盤，2000-01-01 08:00)',
+    Rules.checkMainstreamGeju(panQLZG.天盤, panQLZG.地盤).some(h => h.name === '青龍轉光' && h.gong === '兌'),
+    true);
+  const panRYXH = QimenJS.qimenChaibu(Solar, 2000, 1, 2, 18, 0);
+  check('日月相會@兌宮 (丙天盤/辛地盤，2000-01-02 18:00)',
+    Rules.checkMainstreamGeju(panRYXH.天盤, panRYXH.地盤).some(h => h.name === '日月相會' && h.gong === '兌'),
     true);
 }
 
