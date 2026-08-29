@@ -460,6 +460,14 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
   // 避免整段解釋文字重複兩遍(2026-08-29 用戶要求：把重複說明的內容進行刪減)。
   const hotspotGongs=new Set(masterSummary.hotspots.map(h=>h.gong));
   const seenNote='<span style="opacity:.55;font-size:10px">（同上方師傅總結，此處從簡）</span>';
+  // 「命中號令」永遠直接顯示；「背景」條目(既非熱點宮、也沒命中號令)預設收進 <details>折疊，
+  // 避免一個宮位大部分是背景資訊時，真正要緊的命中號令被淹沒(2026-08-29 用戶提出的檢視項目)。
+  function renderWithBgCollapse(items, rowHtml){
+    const always=items.filter(h=>hotspotGongs.has(h.gong)||h.isHit);
+    const bg=items.filter(h=>!hotspotGongs.has(h.gong)&&!h.isHit);
+    const bgHtml=bg.map(rowHtml).join('');
+    return always.map(rowHtml).join('')+(bg.length?`<details class="bg-collapse"><summary>展開其餘 ${bg.length} 條背景資訊（沒有直接命中你）</summary>${bgHtml}</details>`:'');
+  }
 
   /* 值符/值使宮判斷 (中宮值符寄坤) */
   const realZfGong=zfGong==='中'?'坤':zfGong;
@@ -727,8 +735,8 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     return `<div class="geju-card">
       <div class="geju-title">主流斷局法：地利（十二長生）</div>
       <div style="font-size:11px;opacity:.6;margin-bottom:6px">跨八字/紫微/奇門通用的旺衰推運工具，跟六害/格局是完全獨立的第三套判斷。天盤干代表現在/未來的狀態，地盤干代表過去的狀態；長生/臨官/帝旺＝得地利，死/墓/絕＝失地利，其餘階段(沐浴/冠帶/衰/病/胎/養)算平不列出。四角宮(艮/巽/坤/乾)各對應兩個地支，分開列不強行合併。</div>
-      ${jiHits.length?`<div class="ana-step" style="font-weight:700;color:var(--grn);margin-top:4px">得地利</div>${jiHits.map(rowHtml).join('')}`:''}
-      ${xiongHits.length?`<div class="ana-step" style="font-weight:700;color:var(--red);margin-top:4px">失地利</div>${xiongHits.map(rowHtml).join('')}`:''}
+      ${jiHits.length?`<div class="ana-step" style="font-weight:700;color:var(--grn);margin-top:4px">得地利</div>${renderWithBgCollapse(jiHits,rowHtml)}`:''}
+      ${xiongHits.length?`<div class="ana-step" style="font-weight:700;color:var(--red);margin-top:4px">失地利</div>${renderWithBgCollapse(xiongHits,rowHtml)}`:''}
     </div>`;
   })()}
   ${(function(){
@@ -747,9 +755,9 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     return `<div class="geju-card">
       <div class="geju-title">主流斷局法：主客（天盤干／地盤干生克關係）</div>
       <div style="font-size:11px;opacity:.6;margin-bottom:6px">天盤隨時辰轉動視為「客」，地盤在一局內不動視為「主」。被克/被生的一方，利益歸誰：天盤克地盤或地盤生天盤＝利客；地盤克天盤或天盤生地盤＝利主；五行相同(比和)則主客同心不分勝負。通常自己/我方問事預設為「主」，對方或事情的變化預設為「客」，實際指派請依占問對象自行判斷，跟六害/格局/地利是完全獨立的另一個維度。</div>
-      ${zhuHits.length?`<div class="ana-step" style="font-weight:700;color:var(--grn);margin-top:4px">利主</div>${zhuHits.map(rowHtml).join('')}`:''}
-      ${keHits.length?`<div class="ana-step" style="font-weight:700;color:var(--red);margin-top:4px">利客</div>${keHits.map(rowHtml).join('')}`:''}
-      ${biheHits.length?`<div class="ana-step" style="font-weight:700;opacity:.7;margin-top:4px">比和(主客同心)</div>${biheHits.map(rowHtml).join('')}`:''}
+      ${zhuHits.length?`<div class="ana-step" style="font-weight:700;color:var(--grn);margin-top:4px">利主</div>${renderWithBgCollapse(zhuHits,rowHtml)}`:''}
+      ${keHits.length?`<div class="ana-step" style="font-weight:700;color:var(--red);margin-top:4px">利客</div>${renderWithBgCollapse(keHits,rowHtml)}`:''}
+      ${biheHits.length?`<div class="ana-step" style="font-weight:700;opacity:.7;margin-top:4px">比和(主客同心)</div>${renderWithBgCollapse(biheHits,rowHtml)}`:''}
     </div>`;
   })()}
   ${(function(){
@@ -767,8 +775,8 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     return `<div class="geju-card">
       <div class="geju-title">主流斷局法：天時（九星按月令旺相休囚死）</div>
       <div style="font-size:11px;opacity:.6;margin-bottom:6px">跟一般五行旺相休囚死的判斷基準不同：九星看重的是「往外生助」的作用力，我生月令才是旺，跟月令同五行只排第二(相)；月令生我則最弱(死/廢)。得天時(有力)＝旺/相，失天時(無力)＝囚/死，休＝中性不列出。跟六害/格局/地利/主客是完全獨立的另一個維度。</div>
-      ${jiHits.length?`<div class="ana-step" style="font-weight:700;color:var(--grn);margin-top:4px">得天時</div>${jiHits.map(rowHtml).join('')}`:''}
-      ${xiongHits.length?`<div class="ana-step" style="font-weight:700;color:var(--red);margin-top:4px">失天時</div>${xiongHits.map(rowHtml).join('')}`:''}
+      ${jiHits.length?`<div class="ana-step" style="font-weight:700;color:var(--grn);margin-top:4px">得天時</div>${renderWithBgCollapse(jiHits,rowHtml)}`:''}
+      ${xiongHits.length?`<div class="ana-step" style="font-weight:700;color:var(--red);margin-top:4px">失天時</div>${renderWithBgCollapse(xiongHits,rowHtml)}`:''}
     </div>`;
   })()}
   ${(function(){
@@ -787,9 +795,9 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     return `<div class="geju-card">
       <div class="geju-title">主流斷局法：人和（門宮關係 迫/制/和/義）</div>
       <div style="font-size:11px;opacity:.6;margin-bottom:6px">門克宮＝迫，宮克門＝制，門生宮＝和，宮生門＝義，五行相同則比和。迫跟制都是「被外力壓著、動不了」(只是施力方向相反)，原本吉的門吉不全、原本凶的門更凶；和跟義都是有利的。其中「迫」跟下面荀爽老師「六害：刑墓庚虎迫空」是同一個計算，這裡放在完整的迫/制/和/義脈絡下對照呈現。</div>
-      ${jiHits.length?`<div class="ana-step" style="font-weight:700;color:var(--grn);margin-top:4px">和／義（有利）</div>${jiHits.map(rowHtml).join('')}`:''}
-      ${xiongHits.length?`<div class="ana-step" style="font-weight:700;color:var(--red);margin-top:4px">迫／制（不利）</div>${xiongHits.map(rowHtml).join('')}`:''}
-      ${pingHits.length?`<div class="ana-step" style="font-weight:700;opacity:.7;margin-top:4px">比和</div>${pingHits.map(rowHtml).join('')}`:''}
+      ${jiHits.length?`<div class="ana-step" style="font-weight:700;color:var(--grn);margin-top:4px">和／義（有利）</div>${renderWithBgCollapse(jiHits,rowHtml)}`:''}
+      ${xiongHits.length?`<div class="ana-step" style="font-weight:700;color:var(--red);margin-top:4px">迫／制（不利）</div>${renderWithBgCollapse(xiongHits,rowHtml)}`:''}
+      ${pingHits.length?`<div class="ana-step" style="font-weight:700;opacity:.7;margin-top:4px">比和</div>${renderWithBgCollapse(pingHits,rowHtml)}`:''}
     </div>`;
   })()}
   ${(function(){
@@ -820,7 +828,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     return `<div class="geju-card">
       <div class="geju-title">主流斷局法：驛馬</div>
       <div style="font-size:11px;opacity:.6;margin-bottom:6px">驛馬主奔波、走動、出行、搬家、轉職等跟移動有關的意象，跨八字/紫微/奇門通用，跟六害/格局/地利是完全獨立的另一個維度。傳統查法：申子辰馬在寅、寅午戌馬在申、巳酉丑馬在亥、亥卯未馬在巳。年支/月支/日支/時支分開起，四個參照點各自獨立列出，不強行合併——如果好幾個參照點的驛馬剛好落在同一個宮，可以當作比較值得注意的訊號。「馬星」在奇門裡其實還有天馬/丁馬兩套不同查法(要配合用神/旬首)，本專案目前只做了這裡的驛馬，天馬/丁馬暫不收錄。</div>
-      ${[...yimaHits].sort((a,b)=>(b.isHit-a.isHit)).map(rowHtml).join('')}
+      ${renderWithBgCollapse([...yimaHits].sort((a,b)=>(b.isHit-a.isHit)),rowHtml)}
     </div>`;
   })()}
 
