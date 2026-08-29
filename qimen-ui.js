@@ -322,11 +322,8 @@ function renderMasterSummary(summary, juType){
       <div class="ana-step">這局整體沒有特別突出的宮位——六害/格局/地利/主客/天時/人和都沒有明顯集中在你的號令天干上，算是比較平穩的一局，不用特別緊張哪個方向。</div>
     </div>`;
   }
-  const renderCureSteps=(cs, cureNote)=>{
-    if(!cs){
-      return cureNote?`<div class="ana-step" style="opacity:.75">${T2(cureNote)}</div>`
-        :'<div class="ana-step" style="opacity:.7">（化解方法暫缺，需人工覆核）</div>';
-    }
+  const renderCureSteps=(cs)=>{
+    if(!cs)return '<div class="ana-step" style="opacity:.7">（化解方法暫缺，需人工覆核）</div>';
     const mx=cs.miexiang?`<div class="ana-step">灭象：${T2(cs.miexiang.action)}${cs.miexiang.verified?'':'（此步驟未見視頻原文明確說明，建議自行覆核）'}</div>`:'';
     const bz=(cs.buzhen||[]).map(b=>`<div class="ana-step">布阵（${T2(b.dimension)}）：${T2(b.text)}</div>`).join('');
     // 這裡的「方位」指的是布阵物品/文字實際要擺放的位置(家裡或辦公室的哪個方向角落)，
@@ -343,12 +340,16 @@ function renderMasterSummary(summary, juType){
     none:'',
   };
   const hotspotHtml=summary.hotspots.map((h,idx)=>{
+    // 命局模式下每一條命中的 cureNote 都是同一句 MINGJU_CURE_NOTE，逐條重複貼一遍會顯得
+    // 機械囉唆(2026-08-29 用戶點出的問題)，所以只在整張卡片最後統一講一次，不逐條重複。
+    const mingjuNote=h.xunlao.find(x=>x.cureNote)?.cureNote;
     const xunlaoHtml=h.xunlao.length?`<div class="liuhai-card" style="margin-bottom:6px">
         <div class="liuhai-title">荀爽老師體系認為</div>
         ${h.xunlao.map(x=>`<div class="liuhai-sec">
           <div>${T2(x.text)}<span class="hl-badge ${x.isHit?'hl-hit':'hl-bg'}">${x.isHit?'命中號令':'背景'}</span></div>
-          ${renderCureSteps(x.cureSteps, x.cureNote)}
+          ${x.cureNote?'':renderCureSteps(x.cureSteps)}
         </div>`).join('')}
+        ${mingjuNote?`<div class="ana-step" style="opacity:.75;margin-top:4px">${T2(mingjuNote)}</div>`:''}
       </div>`:'';
     const mainstreamHtml=h.mainstream.length?`<div class="geju-card" style="margin-bottom:0">
         <div class="geju-title">主流斷局法認為</div>

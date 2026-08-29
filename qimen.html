@@ -262,7 +262,8 @@ header{
 .master-hotspot-title{font-weight:700;color:#8A6D1A;margin-bottom:4px;font-size:12px}
 
 
-/* cross-nav */
+/* cross-nav：常駐按鈕(萬年曆)不透明度降低一點、佔用範圍縮小，減少對卡片內容的遮擋；
+   回頂部是額外的小圓鈕，只在往下滑一段距離後才出現，平常不佔位置 */
 .cross-nav{
   position:fixed;bottom:20px;
   right:max(16px, calc((100vw - 500px) / 2 + 16px));
@@ -271,14 +272,20 @@ header{
 }
 .cross-nav a{
   display:flex;align-items:center;gap:8px;
-  background:rgba(26,26,46,.92);color:#E8D5A3;
-  border-radius:24px;padding:8px 14px 8px 10px;
-  text-decoration:none;font-size:12px;letter-spacing:1px;
-  box-shadow:0 2px 10px rgba(0,0,0,.3);backdrop-filter:blur(4px);
+  background:rgba(26,26,46,.8);color:#E8D5A3;
+  border-radius:24px;padding:7px 12px 7px 9px;
+  text-decoration:none;font-size:11px;letter-spacing:1px;
+  box-shadow:0 2px 10px rgba(0,0,0,.25);backdrop-filter:blur(4px);
   transition:transform .15s,opacity .15s;
 }
-.cross-nav a:hover{opacity:.88;transform:scale(1.04)}
-.cross-nav a .nav-icon{font-size:16px}
+.cross-nav a:hover{opacity:1;transform:scale(1.04)}
+.cross-nav a .nav-icon{font-size:14px}
+.cross-nav a.top-btn{
+  width:34px;height:34px;padding:0;border-radius:50%;justify-content:center;
+  opacity:0;pointer-events:none;transform:translateY(6px);
+}
+.cross-nav a.top-btn.show{opacity:.85;pointer-events:auto;transform:translateY(0)}
+.cross-nav a.top-btn:hover{opacity:1}
 
 /* ── clickable terms ── */
 .term{cursor:pointer}
@@ -423,9 +430,23 @@ footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spa
 <script src="qimen-ui.js"></script>
 
 <div class="cross-nav">
+  <a href="#" id="backToTopBtn" class="top-btn" aria-label="回頂部"><span class="nav-icon">⬆</span></a>
   <a href="index.html">
     <span class="nav-icon">📅</span>萬年曆
   </a>
 </div>
+<script>
+(function(){
+  var btn=document.getElementById('backToTopBtn');
+  if(!btn)return;
+  window.addEventListener('scroll',function(){
+    btn.classList.toggle('show', window.scrollY>500);
+  },{passive:true});
+  btn.addEventListener('click',function(e){
+    e.preventDefault();
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+})();
+</script>
 </body>
 </html>
