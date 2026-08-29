@@ -699,13 +699,16 @@ function analyzeWealthSeven(pan, opts={}){
   const results=[];
   function addLocated(key, guas, meta={}){
     const rows=guas.map(g=>({gong:g, harms:harmsAtGong(g,pan)}));
-    results.push({key, ...WEALTH_SEVEN[key], rows, guas, bad:rows.some(r=>r.harms.length>0), ...meta});
+    // rows 為空(符號完全沒落在8個外宮，最常見的原因是落在中宮)時，不能算 bad:false(看起來像
+    // "乾淨"，其實是根本沒查到)，要跟"未定位"一樣算 bad:null，否則報告會誤導使用者以為沒事。
+    // 2026-08-29 修正：這裡原本沒有 rows.length 判斷，戊/時干若落中宮會被誤判成"✓ 乾淨"。
+    results.push({key, ...WEALTH_SEVEN[key], rows, guas, bad:rows.length?rows.some(r=>r.harms.length>0):null, ...meta});
   }
 
   addLocated('戊', locateStem(pan.天盤,'戊'), {centerInfo:locateStemIncludingCenter(pan.天盤,'戊')});
   addLocated('生門', locateDoor(pan.門,'生'));
   addLocated('六合', locateGod(pan.神,'六合'));
-  addLocated('時干', locateStem(pan.天盤, gz.時干));
+  addLocated('時干', locateStem(pan.天盤, gz.時干), {centerInfo:locateStemIncludingCenter(pan.天盤, gz.時干)});
 
   const industryEntry=getIndustryStems(opts.industry);
   if(opts.industry && industryEntry){
@@ -720,7 +723,7 @@ function analyzeWealthSeven(pan, opts={}){
   const ganCaiStems=[...ganCai.日干財, ...ganCai.生年財];
   const ganCaiRows=ganCaiStems.flatMap(s=>locateStem(pan.天盤,s).map(g=>({gong:g, stem:s, harms:harmsAtGong(g,pan)})));
   results.push({key:'干財', ...WEALTH_SEVEN['干財'], rows:ganCaiRows, guas:ganCaiRows.map(r=>r.gong),
-    bad:ganCaiRows.some(r=>r.harms.length>0), detail:ganCai});
+    bad:ganCaiRows.length?ganCaiRows.some(r=>r.harms.length>0):null, detail:ganCai});
 
   // 月令: 就是這次「起局」當下月支的五行(月支已從 pan.干支 動態解析，不是固定值，
   // 每次起局的月份都不一樣，季節氣候也不一樣)。荀爽老師只給了「月令五種關係」這張表，
@@ -746,7 +749,8 @@ function analyzeCareerSeven(pan, zfzs, opts={}){
   const results=[];
   function addLocated(key, guas, meta={}){
     const rows=guas.map(g=>({gong:g, harms:harmsAtGong(g,pan)}));
-    results.push({key, ...CAREER_SEVEN[key], rows, guas, bad:rows.some(r=>r.harms.length>0), ...meta});
+    // 同 analyzeWealthSeven 的修正：rows 為空時要回報 bad:null(未定位)，不能算 bad:false(乾淨)。
+    results.push({key, ...CAREER_SEVEN[key], rows, guas, bad:rows.length?rows.some(r=>r.harms.length>0):null, ...meta});
   }
 
   addLocated('開門', locateDoor(pan.門,'開'));
@@ -992,11 +996,16 @@ function renderWealthCareerReport(pan, mode, industry, targetWuxing){
         : '';
       return `<div class="ana-step">${stemTxt}${gongTxt}——${harmTxt}</div>${curesHtml}`;
     }).join('');
+    // 符號完全沒落在8個外宮時(rows為空)，最常見原因是落在中宮——中五寄宮規則各派不同、尚未
+    // 確認，這裡老實告訴使用者「查不到」是為什麼，而不是讓 rowsHtml 留白看起來像沒事一樣。
+    const centerHtml=(!it.rows||!it.rows.length)&&it.centerInfo&&it.centerInfo.inCenter
+      ? `<div class="ana-step" style="opacity:.8">${T2(it.centerInfo.note)}</div>` : '';
     return `<div class="ana-item">
       <span class="pill ${badgeCls}">${badgeTxt}</span>
       <b>${T2(it.name)}</b>（${T2(it.role||'')}）${it.keyword?'——'+T2(it.keyword):''}
       ${it.key==='行業'&&it.industry?`<div class="ana-step">已選行業：${T2(it.industry.replace('::',' > '))}</div>`:''}
       ${rowsHtml}
+      ${centerHtml}
       ${it.desc?`<div class="ana-step" style="opacity:.75">${T2(it.desc)}</div>`:''}
     </div>`;
   }).join('');
