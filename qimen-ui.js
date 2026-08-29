@@ -163,6 +163,7 @@ function reloadHistoryRecord(id){
   document.getElementById('iNeed').value=rec.needKey||'求財';
   document.getElementById('iYears').value=rec.yearsInput||'';
   document.getElementById('iJuType').value=rec.juType||'事局';
+  updateNeedHint();
   document.getElementById('ritualPanel').style.display='none';
   document.getElementById('historyPanel').style.display='none';
   calc();
@@ -264,7 +265,21 @@ function setNow(){
   document.getElementById('iDate').value=`${n.getFullYear()}-${pad(n.getMonth()+1)}-${pad(n.getDate())}`;
   document.getElementById('iTime').value=`${pad(n.getHours())}:${pad(n.getMinutes())}`;
   document.getElementById('iJuType').value='事局';
+  updateNeedHint();
 }
+// 「所求」跟「局類型」是兩個獨立欄位，但命局模式下「所求」的意義不是「問這件事的結果」
+// (命局本身不是在問一件事)，而是「決定看這個人的哪個面向」——這個字段依然會影響號令保護
+// 哪個意象天干、以及底部出現哪份報告，只是含義換了一層，容易讓人誤以為選錯或忘了改，
+// 所以用一行動態提示把這個換算講清楚，而不是隱藏「所求」欄位或改變它的預設值。
+function updateNeedHint(){
+  const hint=document.getElementById('needHint');
+  if(!hint)return;
+  const jt=(document.getElementById('iJuType')||{}).value;
+  hint.textContent = jt==='命局'
+    ? '命局模式下，「所求」不是在問一件事的結果，而是決定要看這個人的哪個面向(財富/事業/桃花…)——會影響號令保護哪個意象天干、下面出現哪份報告，不用因為預設是「求財」而覺得選錯了。'
+    : '事局模式下，「所求」就是這次要問的事本身。';
+}
+window.updateNeedHint=updateNeedHint;
 function updHeader(){
   const n=new Date();
   const dw='日一二三四五六'[n.getDay()];

@@ -31,6 +31,7 @@ header{
 .input-row{display:flex;gap:8px;align-items:center;margin-bottom:10px}
 .input-row:last-child{margin-bottom:0}
 .input-label{font-size:11px;color:var(--sub);width:48px;flex-shrink:0;font-weight:600;letter-spacing:.5px}
+.input-hint{font-size:11px;color:var(--sub);line-height:1.6;margin:-4px 0 10px;padding-left:56px}
 .inp{flex:1;border:1px solid var(--brd);border-radius:8px;padding:7px 10px;
   font-size:14px;background:#FFFDF7;color:var(--ink);font-family:inherit}
 .inp:focus{outline:none;border-color:var(--gold)}
@@ -354,11 +355,12 @@ footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spa
   </div>
   <div class="input-row">
     <div class="input-label">局類型</div>
-    <select class="inp" id="iJuType">
+    <select class="inp" id="iJuType" onchange="updateNeedHint()">
       <option value="事局">事局（問一件事/一件事的走向）</option>
       <option value="命局">命局（用某個人的出生時刻，分析這個人）</option>
     </select>
   </div>
+  <div class="input-hint" id="needHint"></div>
   <button class="btn-ritual" onclick="toggleRitual()" type="button">☯ 起局須知 / 起局儀式</button>
   <div class="ritual-panel" id="ritualPanel" style="display:none"></div>
   <button class="btn-ritual" onclick="toggleHistory()" type="button">🕘 起局歷史記錄</button>
