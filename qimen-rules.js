@@ -383,6 +383,11 @@ const MAINSTREAM_GEJU = [
   {key:'riyue_xianghui', name:'日月相會', sky:'丙', earth:'辛', luck:'吉',
     desc:'丙加臨辛，丙辛相合：謀事能有成就，問疾病則病情不算凶險，利合作、等待時機。',
     caveat:'不利遠行，出行類的事情要另外留意。'},
+  // 以下 2 個格局為 2026-08-29 新增(格局庫擴充第六批)，查證方式同前幾批：
+  {key:'yunu_xingsha', name:'玉女刑殺', sky:'丁', earth:'庚', luck:'凶',
+    desc:'丁(文書)加臨庚(阻隔之神)：主文書往來受阻、行人必須折返，事情難以強求，情勢容易反覆不穩定。'},
+  {key:'taibai_fengxing', name:'太白逢星', sky:'庚', earth:'乙', luck:'凶',
+    desc:'庚加臨乙：退守禮讓則吉，強行推進、妄動謀為則凶，宜以退為進化解紛爭，不宜主動出擊。'},
 ];
 function checkMainstreamGeju(sky, earth){
   const hits=[];
