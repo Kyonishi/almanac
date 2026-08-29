@@ -1125,3 +1125,17 @@ function luckClass(v){
   if(['死','驚','傷','天內','天柱','天英','螣蛇','白虎','玄武','九地','勾陳','朱雀'].includes(v))return 'pill-xiong';
   return 'pill-neutral';
 }
+
+// 供 tests/regression.test.js 在 Node 環境下直接 require 這個檔案來測純邏輯函式/資料表，
+// 不用像瀏覽器一樣靠 <script> 順序共享全域作用域。瀏覽器裡 typeof module==='undefined'，
+// 這段不會執行，行為不變。
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    JIXING_TABLE, checkJiXing, RUMU_TABLE, checkRuMu, checkMenPo, checkGeng, checkBaiHu,
+    MAINSTREAM_GEJU, checkMainstreamGeju, SANZHA_DEFS, WUJIA_DEFS, checkSanzhaWujia,
+    SIMPLE_LOCATE_DEFS, analyzeSimpleLocate,
+    PEACH_TRINE, getPeachBranch, buildPeachBlossomLocates, yearToBranch, yearToStem,
+    locateStem, locateDoor, locateStar, locateGod, locateSymbol,
+    harmsAtGong, getCuresAtGong, parseGanzhi, GRID_ORDER, ZHI_TO_GONG,
+  };
+}
