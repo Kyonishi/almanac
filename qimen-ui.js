@@ -298,11 +298,12 @@ function calc(){
   const yearsInput=document.getElementById('iYears').value;
   const juType=document.getElementById('iJuType').value||'事局';
   const industry=(document.getElementById('iIndustrySmall')||{}).value||'';
+  const targetWuxing=(document.getElementById('iMonthTarget')||{}).value||'';
   const lonRaw=(document.getElementById('iLongitude')||{}).value;
   const longitude=lonRaw===''||lonRaw===undefined?undefined:Number(lonRaw);
   try{
     const pan=QimenJS.qimenChaibu(Solar,y,m,d,h,mi,longitude);
-    renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry);
+    renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxing);
   }catch(e){
     document.getElementById('result').innerHTML=
       `<div class="empty"><div class="big">⚠</div>起局失敗：${e.message}</div>`;
@@ -310,7 +311,7 @@ function calc(){
 }
 
 /* ── 渲染盤面 ── */
-function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry){
+function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxing){
   needKey=needKey||'求財';
   juType=juType||'事局';
   const sky=pan.天盤||{}, earth=pan.地盤||{};
@@ -900,7 +901,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry){
     return html;
   })()}
 
-  ${(needKey==='財富七要'||needKey==='事業七要') ? renderWealthCareerReport(pan, needKey, industry)
+  ${(needKey==='財富七要'||needKey==='事業七要') ? renderWealthCareerReport(pan, needKey, industry, targetWuxing)
     : (SIMPLE_LOCATE_DEFS[needKey] ? renderSimpleLocateReport(pan, needKey, yearsInput) : '')}
 
   <div class="info-card">

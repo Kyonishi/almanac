@@ -182,5 +182,30 @@ function check(label, actual, expected) {
     { gz: '甲辰年丙寅月壬戌日己酉時', tst: null });
 }
 
+// ── 月令五種關係 (2026-08-29 修好的死代碼)：monthRelation 本身 + 財富七要接上 UI 後真的生效 ──
+{
+  console.log('\n── 月令五種關係 (monthRelation / 財富七要月令項) ──');
+  check('木月令 對 土目標 → 月令克A(大虧量小)',
+    Rules.monthRelation('木', '土'),
+    { rel: '月令克A', effect: '大虧+量小', rank: 5 });
+  check('木月令 對 火目標 → 月令生A(擴張量大)',
+    Rules.monthRelation('木', '火'),
+    { rel: '月令生A', effect: '擴張+量大', rank: 1 });
+  check('木月令 對 木目標 → 月令同A(穩健量大)',
+    Rules.monthRelation('木', '木'),
+    { rel: '月令同A', effect: '穩健+量大', rank: 2 });
+
+  // 不傳 targetWuxing：維持原本「只回報月令本身，不算關係」的行為 (確認沒有意外變成有預設值)
+  const pan1 = QimenJS.qimenChaibu(Solar, 2024, 2, 28, 18, 39);
+  const noTarget = Rules.analyzeWealthSeven(pan1, { targetWuxing: null }).items.find(it => it.key === '月令');
+  check('不指定比較對象時，relation 仍是 null(沒有被偷偷塞預設值)', noTarget.relation, null);
+
+  // 傳 targetWuxing='土'：這次會話新增的 UI 路徑，確認真的算出關係、不再是死代碼
+  const withTarget = Rules.analyzeWealthSeven(pan1, { targetWuxing: '土' }).items.find(it => it.key === '月令');
+  check('指定比較對象「土」後，relation 真的算出來了',
+    { monthWuxing: withTarget.monthWuxing, relation: withTarget.relation },
+    { monthWuxing: '木', relation: { rel: '月令克A', effect: '大虧+量小', rank: 5 } });
+}
+
 console.log(`\n══ 結果: ${pass} 通過, ${fail} 失敗 ══`);
 process.exit(fail > 0 ? 1 : 0);

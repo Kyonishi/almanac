@@ -360,6 +360,20 @@ footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spa
     </select>
   </div>
   <div class="input-row">
+    <div class="input-label">月令比較</div>
+    <select class="inp" id="iMonthTarget">
+      <option value="">（不比較，僅顯示月令本身——僅財富七要報告用到）</option>
+      <option value="木">木（比如比六合/生年財屬木時）</option>
+      <option value="火">火</option>
+      <option value="土">土（比如比戊/本錢，戊屬土）</option>
+      <option value="金">金</option>
+      <option value="水">水</option>
+    </select>
+  </div>
+  <div class="input-hint">「月令五種關係」沒有固定比較對象，要按這次具體問的是什麼來定——比如比
+    「戊(本錢)」就選土，比某個特定人/宮位就選那個對象的五行。不知道要比什麼就留空，只看月令
+    本身的季節氣候背景。</div>
+  <div class="input-row">
     <div class="input-label">局類型</div>
     <select class="inp" id="iJuType" onchange="updateNeedHint()">
       <option value="事局">事局（問一件事/一件事的走向）</option>

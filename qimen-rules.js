@@ -961,12 +961,12 @@ const XIONG_STAR=new Set(['天內','天柱','天英']);
 const JI_GOD=new Set(['值符','太陰','六合','九天']);
 const XIONG_GOD=new Set(['螣蛇','白虎','玄武','九地','勾陳','朱雀']);
 // ── 財富七要 / 事業七要 報告渲染 (沿用 ana-block/ana-h/ana-item 既有樣式) ──
-function renderWealthCareerReport(pan, mode, industry){
+function renderWealthCareerReport(pan, mode, industry, targetWuxing){
   const T2=x=>t2(x||'');
   const zfzs=pan.值符值使;
   const isWealth=mode==='財富七要';
   const {items, crossHits}=isWealth
-    ? analyzeWealthSeven(pan, {industry, targetWuxing:null})
+    ? analyzeWealthSeven(pan, {industry, targetWuxing: targetWuxing||null})
     : analyzeCareerSeven(pan, zfzs, {industry});
 
   const itemsHtml=items.map(it=>{
@@ -1137,5 +1137,6 @@ if (typeof module !== 'undefined' && module.exports) {
     PEACH_TRINE, getPeachBranch, buildPeachBlossomLocates, yearToBranch, yearToStem,
     locateStem, locateDoor, locateStar, locateGod, locateSymbol,
     harmsAtGong, getCuresAtGong, parseGanzhi, GRID_ORDER, ZHI_TO_GONG,
+    monthRelation, analyzeWealthSeven,
   };
 }
