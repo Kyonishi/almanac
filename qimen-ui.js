@@ -335,6 +335,8 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
   const sanzhaWujiaHits=checkSanzhaWujia(sky, door, god);
   const diliHits=checkDili(sky, earth);
   const zhukeHits=checkZhuke(sky, earth);
+  const gzForTianshi=parseGanzhi(pan.干支);
+  const tianshiHits=checkTianshi(star, gzForTianshi && gzForTianshi.月支);
 
   /* 號令: 日時/生年/意象/符使 四要素合併的保護天干集合 */
   const zhifuStem=zfzs.值符天干?zfzs.值符天干[1]:null;
@@ -616,6 +618,22 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
       ${zhuHits.length?`<div class="ana-step" style="font-weight:700;color:var(--grn);margin-top:4px">利主</div>${zhuHits.map(rowHtml).join('')}`:''}
       ${keHits.length?`<div class="ana-step" style="font-weight:700;color:var(--red);margin-top:4px">利客</div>${keHits.map(rowHtml).join('')}`:''}
       ${biheHits.length?`<div class="ana-step" style="font-weight:700;opacity:.7;margin-top:4px">比和(主客同心)</div>${biheHits.map(rowHtml).join('')}`:''}
+    </div>`;
+  })()}
+  ${(function(){
+    if(!tianshiHits.length)return '';
+    const withHit=tianshiHits.map(h=>({...h, isHit:gongHitsProtected(h.gong,sky,earth,protectedStems)}));
+    const jiHits=withHit.filter(h=>h.luck==='吉').sort((a,b)=>(b.isHit-a.isHit));
+    const xiongHits=withHit.filter(h=>h.luck==='凶').sort((a,b)=>(b.isHit-a.isHit));
+    const rowHtml=h=>`<div class="ana-step"${h.isHit?'':' style="opacity:.5"'}>
+      ${T2(h.gong)}宮　${T2(LEX_DATA.stars[h.star].name)}(${T2(h.starWx)})——${T2(h.state)}
+      <span class="hl-badge ${h.isHit?'hl-hit':'hl-bg'}">${h.isHit?'命中號令':'背景'}</span>
+    </div>`;
+    return `<div class="geju-card">
+      <div class="geju-title">主流斷局法：天時（九星按月令旺相休囚死）</div>
+      <div style="font-size:11px;opacity:.6;margin-bottom:6px">跟一般五行旺相休囚死的判斷基準不同：九星看重的是「往外生助」的作用力，我生月令才是旺，跟月令同五行只排第二(相)；月令生我則最弱(死/廢)。得天時(有力)＝旺/相，失天時(無力)＝囚/死，休＝中性不列出。跟六害/格局/地利/主客是完全獨立的另一個維度。</div>
+      ${jiHits.length?`<div class="ana-step" style="font-weight:700;color:var(--grn);margin-top:4px">得天時</div>${jiHits.map(rowHtml).join('')}`:''}
+      ${xiongHits.length?`<div class="ana-step" style="font-weight:700;color:var(--red);margin-top:4px">失天時</div>${xiongHits.map(rowHtml).join('')}`:''}
     </div>`;
   })()}
 
