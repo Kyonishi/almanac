@@ -280,5 +280,36 @@ function check(label, actual, expected) {
   check('案例一：8個外宮全部各命中一筆(無漏算無重複)', zhukeHits.length, 8);
 }
 
+// ── 主流斷局法：天時(九星按月令旺相休囚死) (2026-08-29 新增) ──
+// 跟一般八字五行旺相休囚死的判斷基準點不同(著眼星曜「往外生助」的作用力，而非跟季節比同氣)，
+// 163.com/CSDN 等多方獨立來源給出的天蓬(水)具體案例，是鎖定這套規則的關鍵基準值。
+{
+  console.log('\n── 天時(九星按月令旺相休囚死) ──');
+  check('天蓬(水)：旺寅卯/相亥子/休巳午/囚辰戌丑未/死申酉 全部核對', {
+    寅:Rules.getNineStarState('水','木'), 亥:Rules.getNineStarState('水','水'),
+    巳:Rules.getNineStarState('水','火'), 辰:Rules.getNineStarState('水','土'),
+    申:Rules.getNineStarState('水','金'),
+  }, { 寅:'旺', 亥:'相', 巳:'休', 辰:'囚', 申:'死' });
+  check('天冲(木)：旺巳午/相寅卯/休辰戌丑未/囚申酉/死亥子(古訣反推第二例)', {
+    巳:Rules.getNineStarState('木','火'), 寅:Rules.getNineStarState('木','木'),
+    辰:Rules.getNineStarState('木','土'), 申:Rules.getNineStarState('木','金'),
+    亥:Rules.getNineStarState('木','水'),
+  }, { 巳:'旺', 寅:'相', 辰:'休', 申:'囚', 亥:'死' });
+  check('休(平)不算吉也不算凶，不進入吉凶清單', Rules.checkTianshi({艮:'心'}, '寅').length, 0);
+
+  const pan1 = QimenJS.qimenChaibu(Solar, 2024, 2, 28, 18, 39);
+  const gz1 = Rules.parseGanzhi(pan1.干支);
+  check('案例一月支為寅(木令)', gz1.月支, '寅');
+  const tianshiHits = Rules.checkTianshi(pan1.星, gz1.月支);
+  check('案例一：坤宮天蓬(水)在寅月為旺(吉)',
+    tianshiHits.some(h=>h.gong==='坤' && h.star==='蓬' && h.state==='旺' && h.luck==='吉'), true);
+  check('案例一：兌宮天任(土)在寅月為囚(凶)',
+    tianshiHits.some(h=>h.gong==='兌' && h.star==='任' && h.state==='囚' && h.luck==='凶'), true);
+  check('案例一：乾宮天冲(木)在寅月為相(吉)',
+    tianshiHits.some(h=>h.gong==='乾' && h.star==='沖' && h.state==='相' && h.luck==='吉'), true);
+  check('案例一：離宮天心(金)在寅月為休，不列入吉凶清單',
+    tianshiHits.some(h=>h.gong==='離'), false);
+}
+
 console.log(`\n══ 結果: ${pass} 通過, ${fail} 失敗 ══`);
 process.exit(fail > 0 ? 1 : 0);

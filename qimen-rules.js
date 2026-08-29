@@ -118,6 +118,40 @@ function checkZhuke(sky, earth){
   return hits;
 }
 
+// ══════════════════ 主流斷局法：天時(九星按月令旺相休囚死) ══════════════════
+// 來源: 2026-08-29 查證時發現九星的旺相休囚「廢」跟一般八字五行旺相休囚死的判斷基準點不同
+// (CSDN/163等多方獨立來源明確指出、解釋原因一致，非單一部落格說法)：
+// 八字是拿「地上五行」跟「當令季節」比，同我者旺；奇門九星是拿「星曜」跟「當令月支五行」比，
+// 看重的是星曜「往外生助」的作用力，我生之月才是旺，跟自己同五行反而只排第二(相)。
+// 古訣(六親式口訣，來源與上述一致)：「我生之月誠為旺，與我同行及為相，廢於父母休於財，
+// 囚於鬼兮真不妄」──父母=生我者，財=我克者，鬼(官鬼)=克我者。已用天蓬(水)在 163.com/CSDN
+// 給出的具體案例(旺寅卯/相亥子/休巳午/囚辰戌丑未/死申酉)逐一核對，5 個狀態全部一致。
+// 得天時(有力)＝旺/相；失天時(無力)＝囚/死(廢)；休＝退居中性，不特別標注(比照地利中間六階段的處理方式)。
+const TIANSHI_JI=new Set(['旺','相']);
+const TIANSHI_XIONG=new Set(['囚','死']);
+function getNineStarState(starWx, seasonWx){
+  if(starWx===seasonWx) return '相';
+  if(SHENG_TABLE[starWx]===seasonWx) return '旺';
+  if(KE_TABLE_WUXING[starWx]===seasonWx) return '休';
+  if(KE_TABLE_WUXING[seasonWx]===starWx) return '囚';
+  if(SHENG_TABLE[seasonWx]===starWx) return '死';
+  return null;
+}
+// starMap: pan.星 (每宮一個單字星名, 如'蓬'/'內'/'禽'等); monthZhi: 月支(如'寅')
+function checkTianshi(starMap, monthZhi){
+  const seasonWx=BRANCH_WUXING[monthZhi];
+  if(!seasonWx)return [];
+  const hits=[];
+  Object.entries(starMap||{}).forEach(([gua,starKey])=>{
+    const starEntry=LEX_DATA.stars[starKey];
+    if(!starEntry)return;
+    const state=getNineStarState(starEntry.wuxing, seasonWx);
+    if(TIANSHI_JI.has(state)) hits.push({gong:gua, star:starKey, starWx:starEntry.wuxing, state, luck:'吉'});
+    else if(TIANSHI_XIONG.has(state)) hits.push({gong:gua, star:starKey, starWx:starEntry.wuxing, state, luck:'凶'});
+  });
+  return hits;
+}
+
 // ══ 六仪擊刑 (固定查表, 與時間無關) ══
 // 來源: 多方獨立命理資料交叉核對 + 荀爽老師實測案例驗證 (1901-04-13, 2024-02-28 兩案例
 // 全部命中, 無一遺漏無一多報)
@@ -1230,5 +1264,6 @@ if (typeof module !== 'undefined' && module.exports) {
     monthRelation, analyzeWealthSeven,
     CHANGSHENG_START, TWELVE_STAGES, GONG_TO_ZHI, getTwelveStage, getTwelveStagesAtGong, checkDili,
     stemWuxing, SHENG_TABLE, KE_TABLE_WUXING, checkZhuke,
+    BRANCH_WUXING, getNineStarState, checkTianshi,
   };
 }
