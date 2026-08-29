@@ -152,6 +152,34 @@ function checkTianshi(starMap, monthZhi){
   return hits;
 }
 
+// ══════════════════ 主流斷局法：伏吟反吟(星/門) ══════════════════
+// 來源: 2026-08-29 兩個獨立線上命理資料源交叉核對一致：伏吟＝九星/八門落在自己的固定本宮
+// (洛書固定配宮：天蓬坎/天芮(本專案叫「內」)坤/天冲震/天輔巽/天禽中/天心乾/天柱兌/天任艮/
+// 天英離；八門固定配宮：休坎/死坤/傷震/杜巽/景離/驚兌/開乾/生艮)，象徵停滯不前、僵化。
+// 反吟＝落在本宮的正對沖宮(坎↔離/艮↔坤/震↔兌/巽↔乾，用本檔案已有的 OPPOSITE_GUA)，
+// 象徵衝突反覆、變動不安。
+// 這裡只做「星伏吟/星反吟/門伏吟/門反吟」這兩類，是直接查表、跟時間無關、可獨立驗證的部分。
+// 「值符伏吟/值符反吟」牽涉六甲值符(甲子戊/甲午辛等六十甲子的六個旬首)這個更深一層的概念，
+// 需要另外查證值符在本專案排盤方式下的對應規則，暫不收錄(跟「人假」一樣，寧可暫缺也不猜)。
+const STAR_HOME={'蓬':'坎','內':'坤','沖':'震','輔':'巽','禽':'中','心':'乾','柱':'兌','任':'艮','英':'離'};
+const DOOR_HOME={'休':'坎','死':'坤','傷':'震','杜':'巽','景':'離','驚':'兌','開':'乾','生':'艮'};
+function checkFuyinFanyin(starMap, doorMap){
+  const hits=[];
+  Object.entries(starMap||{}).forEach(([gua,starKey])=>{
+    const home=STAR_HOME[starKey];
+    if(!home)return;
+    if(home===gua) hits.push({type:'星伏吟', gong:gua, symbol:starKey, home});
+    else if(OPPOSITE_GUA[home]===gua) hits.push({type:'星反吟', gong:gua, symbol:starKey, home});
+  });
+  Object.entries(doorMap||{}).forEach(([gua,doorKey])=>{
+    const home=DOOR_HOME[doorKey];
+    if(!home)return;
+    if(home===gua) hits.push({type:'門伏吟', gong:gua, symbol:doorKey, home});
+    else if(OPPOSITE_GUA[home]===gua) hits.push({type:'門反吟', gong:gua, symbol:doorKey, home});
+  });
+  return hits;
+}
+
 // ══ 六仪擊刑 (固定查表, 與時間無關) ══
 // 來源: 多方獨立命理資料交叉核對 + 荀爽老師實測案例驗證 (1901-04-13, 2024-02-28 兩案例
 // 全部命中, 無一遺漏無一多報)
@@ -1300,5 +1328,6 @@ if (typeof module !== 'undefined' && module.exports) {
     stemWuxing, SHENG_TABLE, KE_TABLE_WUXING, checkZhuke,
     BRANCH_WUXING, getNineStarState, checkTianshi,
     DOOR_WUXING, GONG_WUXING, KE_MAP, getMenGongRelation, checkRenhe,
+    STAR_HOME, DOOR_HOME, checkFuyinFanyin,
   };
 }
