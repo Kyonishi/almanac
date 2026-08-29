@@ -409,6 +409,10 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
   const protectedStems=buildProtectedStems(pan.干支, yearsInput, needKey, zhifuStem);
   const hasProtected=protectedStems.size>0;
   const masterSummary=buildMasterSummary(pan, protectedStems, needKey, juType);
+  // 已經在師傅總結卡列出來過的宮，下面「解讀一」各張明細卡遇到同一個宮的資料時改用精簡格式，
+  // 避免整段解釋文字重複兩遍(2026-08-29 用戶要求：把重複說明的內容進行刪減)。
+  const hotspotGongs=new Set(masterSummary.hotspots.map(h=>h.gong));
+  const seenNote='<span style="opacity:.55;font-size:10px">（同上方師傅總結，此處從簡）</span>';
 
   /* 值符/值使宮判斷 (中宮值符寄坤) */
   const realZfGong=zfGong==='中'?'坤':zfGong;
@@ -637,7 +641,10 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
   <div class="section-label">解讀一・主流斷局法（跨門派共識，與下面荀爽老師體系是兩套不同來源）</div>
   ${gejuHits.length ? `<div class="geju-card">
     <div class="geju-title">命中的吉凶格局</div>
-    ${gejuHits.map(h=>`<div class="geju-item">
+    ${gejuHits.map(h=>hotspotGongs.has(h.gong)?`<div class="geju-item">
+      <span class="pill ${h.luck==='吉'?'pill-ji':'pill-xiong'}">${T2(h.luck)}格</span>
+      <b>${T2(h.gong)}宮　${T2(h.name)}</b>　（天盤${T2(h.sky)}／地盤${T2(h.earth)}）${seenNote}
+    </div>`:`<div class="geju-item">
       <span class="pill ${h.luck==='吉'?'pill-ji':'pill-xiong'}">${T2(h.luck)}格</span>
       <b>${T2(h.gong)}宮　${T2(h.name)}</b>　（天盤${T2(h.sky)}／地盤${T2(h.earth)}）<br>
       ${T2(h.desc)}${h.caveat?`<br><span style="opacity:.7">※ ${T2(h.caveat)}</span>`:''}
@@ -649,7 +656,10 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
   ${sanzhaWujiaHits.length ? `<div class="geju-card">
     <div class="geju-title">命中的三詐五假（謀略/隱蔽性質，不是單純吉凶判斷）</div>
     <div style="font-size:11px;opacity:.6;margin-bottom:6px">三詐五假判斷的是「這件事適不適合暗中謀劃、隱藏真實意圖」，古代常用在用兵/求謀/緝捕等場合，跟上面的吉凶格局是不同維度的判斷，不要混著看。</div>
-    ${sanzhaWujiaHits.map(h=>`<div class="geju-item">
+    ${sanzhaWujiaHits.map(h=>hotspotGongs.has(h.gong)?`<div class="geju-item">
+      <span class="pill pill-neutral">${T2(h.type)}格</span>
+      <b>${T2(h.gong)}宮　${T2(h.name)}</b>　（${T2(h.door)}門／天盤${T2(h.stem)}）${seenNote}
+    </div>`:`<div class="geju-item">
       <span class="pill pill-neutral">${T2(h.type)}格</span>
       <b>${T2(h.gong)}宮　${T2(h.name)}</b>　（${T2(h.door)}門／天盤${T2(h.stem)}）<br>
       ${T2(h.desc)}
@@ -660,7 +670,10 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     const withHit=diliHits.map(h=>({...h, isHit:protectedStems.has(h.stem)}));
     const jiHits=withHit.filter(h=>h.luck==='吉').sort((a,b)=>(b.isHit-a.isHit));
     const xiongHits=withHit.filter(h=>h.luck==='凶').sort((a,b)=>(b.isHit-a.isHit));
-    const rowHtml=h=>`<div class="ana-step"${h.isHit?'':' style="opacity:.5"'}>
+    const rowHtml=h=>hotspotGongs.has(h.gong)?`<div class="ana-step" style="opacity:.55">
+      ${T2(h.gong)}宮　${T2(h.panType)}${T2(h.stem)}(${T2(h.stage)})
+      <span class="hl-badge ${h.isHit?'hl-hit':'hl-bg'}">${h.isHit?'命中號令':'背景'}</span>${seenNote}
+    </div>`:`<div class="ana-step"${h.isHit?'':' style="opacity:.5"'}>
       ${T2(h.panType)}${T2(h.stem)}　落${T2(h.gong)}宮(${T2(h.branch)})——${T2(h.stage)}
       <span class="hl-badge ${h.isHit?'hl-hit':'hl-bg'}">${h.isHit?'命中號令':'背景'}</span>
     </div>`;
@@ -677,7 +690,10 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     const zhuHits=withHit.filter(h=>h.favor==='主').sort((a,b)=>(b.isHit-a.isHit));
     const keHits=withHit.filter(h=>h.favor==='客').sort((a,b)=>(b.isHit-a.isHit));
     const biheHits=withHit.filter(h=>h.favor==='平').sort((a,b)=>(b.isHit-a.isHit));
-    const rowHtml=h=>`<div class="ana-step"${h.isHit?'':' style="opacity:.5"'}>
+    const rowHtml=h=>hotspotGongs.has(h.gong)?`<div class="ana-step" style="opacity:.55">
+      ${T2(h.gong)}宮——${T2(h.relation)}
+      <span class="hl-badge ${h.isHit?'hl-hit':'hl-bg'}">${h.isHit?'命中號令':'背景'}</span>${seenNote}
+    </div>`:`<div class="ana-step"${h.isHit?'':' style="opacity:.5"'}>
       ${T2(h.gong)}宮　天盤${T2(h.skyStem)}(${T2(h.skyWx)})／地盤${T2(h.earthStem)}(${T2(h.earthWx)})——${T2(h.relation)}
       <span class="hl-badge ${h.isHit?'hl-hit':'hl-bg'}">${h.isHit?'命中號令':'背景'}</span>
     </div>`;
@@ -694,7 +710,10 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     const withHit=tianshiHits.map(h=>({...h, isHit:gongHitsProtected(h.gong,sky,earth,protectedStems)}));
     const jiHits=withHit.filter(h=>h.luck==='吉').sort((a,b)=>(b.isHit-a.isHit));
     const xiongHits=withHit.filter(h=>h.luck==='凶').sort((a,b)=>(b.isHit-a.isHit));
-    const rowHtml=h=>`<div class="ana-step"${h.isHit?'':' style="opacity:.5"'}>
+    const rowHtml=h=>hotspotGongs.has(h.gong)?`<div class="ana-step" style="opacity:.55">
+      ${T2(h.gong)}宮——${T2(h.state)}
+      <span class="hl-badge ${h.isHit?'hl-hit':'hl-bg'}">${h.isHit?'命中號令':'背景'}</span>${seenNote}
+    </div>`:`<div class="ana-step"${h.isHit?'':' style="opacity:.5"'}>
       ${T2(h.gong)}宮　${T2(LEX_DATA.stars[h.star].name)}(${T2(h.starWx)})——${T2(h.state)}
       <span class="hl-badge ${h.isHit?'hl-hit':'hl-bg'}">${h.isHit?'命中號令':'背景'}</span>
     </div>`;
@@ -711,7 +730,10 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     const jiHits=withHit.filter(h=>h.luck==='吉').sort((a,b)=>(b.isHit-a.isHit));
     const xiongHits=withHit.filter(h=>h.luck==='凶').sort((a,b)=>(b.isHit-a.isHit));
     const pingHits=withHit.filter(h=>h.luck==='平').sort((a,b)=>(b.isHit-a.isHit));
-    const rowHtml=h=>`<div class="ana-step"${h.isHit?'':' style="opacity:.5"'}>
+    const rowHtml=h=>hotspotGongs.has(h.gong)?`<div class="ana-step" style="opacity:.55">
+      ${T2(h.gong)}宮　${T2(h.door)}門——${T2(h.relation)}
+      <span class="hl-badge ${h.isHit?'hl-hit':'hl-bg'}">${h.isHit?'命中號令':'背景'}</span>${seenNote}
+    </div>`:`<div class="ana-step"${h.isHit?'':' style="opacity:.5"'}>
       ${T2(h.gong)}宮　${T2(h.door)}門(${T2(h.doorWx)})／宮(${T2(h.gongWx)})——${T2(h.relation)}
       <span class="hl-badge ${h.isHit?'hl-hit':'hl-bg'}">${h.isHit?'命中號令':'背景'}</span>
     </div>`;
