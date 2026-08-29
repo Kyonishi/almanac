@@ -961,12 +961,12 @@ const XIONG_STAR=new Set(['天內','天柱','天英']);
 const JI_GOD=new Set(['值符','太陰','六合','九天']);
 const XIONG_GOD=new Set(['螣蛇','白虎','玄武','九地','勾陳','朱雀']);
 // ── 財富七要 / 事業七要 報告渲染 (沿用 ana-block/ana-h/ana-item 既有樣式) ──
-function renderWealthCareerReport(pan, mode, industry){
+function renderWealthCareerReport(pan, mode, industry, targetWuxing){
   const T2=x=>t2(x||'');
   const zfzs=pan.值符值使;
   const isWealth=mode==='財富七要';
   const {items, crossHits}=isWealth
-    ? analyzeWealthSeven(pan, {industry, targetWuxing:null})
+    ? analyzeWealthSeven(pan, {industry, targetWuxing: targetWuxing||null})
     : analyzeCareerSeven(pan, zfzs, {industry});
 
   const itemsHtml=items.map(it=>{
@@ -1124,4 +1124,19 @@ function luckClass(v){
   if(['休','生','開','天輔','天任','天心','天蓬','值符','太陰','六合','九天'].includes(v))return 'pill-ji';
   if(['死','驚','傷','天內','天柱','天英','螣蛇','白虎','玄武','九地','勾陳','朱雀'].includes(v))return 'pill-xiong';
   return 'pill-neutral';
+}
+
+// 供 tests/regression.test.js 在 Node 環境下直接 require 這個檔案來測純邏輯函式/資料表，
+// 不用像瀏覽器一樣靠 <script> 順序共享全域作用域。瀏覽器裡 typeof module==='undefined'，
+// 這段不會執行，行為不變。
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    JIXING_TABLE, checkJiXing, RUMU_TABLE, checkRuMu, checkMenPo, checkGeng, checkBaiHu,
+    MAINSTREAM_GEJU, checkMainstreamGeju, SANZHA_DEFS, WUJIA_DEFS, checkSanzhaWujia,
+    SIMPLE_LOCATE_DEFS, analyzeSimpleLocate,
+    PEACH_TRINE, getPeachBranch, buildPeachBlossomLocates, yearToBranch, yearToStem,
+    locateStem, locateDoor, locateStar, locateGod, locateSymbol,
+    harmsAtGong, getCuresAtGong, parseGanzhi, GRID_ORDER, ZHI_TO_GONG,
+    monthRelation, analyzeWealthSeven,
+  };
 }

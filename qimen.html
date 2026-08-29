@@ -324,6 +324,12 @@ footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spa
     <input class="inp" type="time" id="iTime">
   </div>
   <div class="input-row">
+    <div class="input-label">經度</div>
+    <input class="inp" type="number" id="iLongitude" step="0.01" placeholder="留空＝不校正" value="104.06">
+  </div>
+  <div class="input-hint">真太陽時校正用：東經為正，成都約104.06(預設)。事局填「這件事發生地」的經度；
+    命局填「出生地」的經度，因人而異記得改。留空則完全不校正，跟原本行為一樣。</div>
+  <div class="input-row">
     <div class="input-label">生年</div>
     <input class="inp" type="text" id="iYears" placeholder="家中長住者生年,如 1990,1988,2015">
   </div>
@@ -353,6 +359,20 @@ footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spa
       <option value="">（先選大行業）</option>
     </select>
   </div>
+  <div class="input-row">
+    <div class="input-label">月令比較</div>
+    <select class="inp" id="iMonthTarget">
+      <option value="">（不比較，僅顯示月令本身——僅財富七要報告用到）</option>
+      <option value="木">木（比如比六合/生年財屬木時）</option>
+      <option value="火">火</option>
+      <option value="土">土（比如比戊/本錢，戊屬土）</option>
+      <option value="金">金</option>
+      <option value="水">水</option>
+    </select>
+  </div>
+  <div class="input-hint">「月令五種關係」沒有固定比較對象，要按這次具體問的是什麼來定——比如比
+    「戊(本錢)」就選土，比某個特定人/宮位就選那個對象的五行。不知道要比什麼就留空，只看月令
+    本身的季節氣候背景。</div>
   <div class="input-row">
     <div class="input-label">局類型</div>
     <select class="inp" id="iJuType" onchange="updateNeedHint()">
