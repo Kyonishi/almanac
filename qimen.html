@@ -250,8 +250,20 @@ header{
 .liuhai-title.kw .dot{background:#2E6FD9}
 .cure-line{margin-top:3px;padding:6px 8px;background:#FFF3F3;border-radius:6px;font-size:12px;line-height:1.6}
 .hl-badge{font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px;font-weight:700}
-.hl-hit{background:#FDE8E8;color:var(--red)}
-.hl-bg{background:#EFEFEF;color:#888}
+/* 「命中號令」比「背景」重要得多(直接壓在你自己身上)，視覺權重要拉開差距，
+   不能只靠顏色深淺讓人自己分辨(2026-08-29 用戶提出的檢視項目) */
+.hl-hit{background:var(--red);color:#fff;font-size:10.5px;padding:2px 8px;box-shadow:0 1px 3px rgba(198,58,58,.35)}
+.hl-bg{background:#EFEFEF;color:#999;font-weight:600;opacity:.8}
+
+/* 背景條目預設折疊：一個宮位常常大部分是「背景」、只有一兩個「命中號令」，
+   全部攤開反而讓真正要緊的訊號被淹沒，所以背景條目收進 <details> 預設收合，
+   命中號令跟師傅總結已挑出的熱點宮則永遠直接顯示，不受影響 */
+.bg-collapse{margin-top:2px}
+.bg-collapse>summary{cursor:pointer;font-size:11px;color:var(--sub);opacity:.75;padding-left:16px;list-style:none}
+.bg-collapse>summary::-webkit-details-marker{display:none}
+.bg-collapse>summary::before{content:'▸ ';display:inline-block}
+.bg-collapse[open]>summary::before{content:'▾ '}
+.bg-collapse[open]>summary{margin-bottom:4px}
 
 /* 師傅總結卡：擺在盤面正下方、解讀一之上，是給人看的第一站，金系跟其他卡都不同 */
 .master-card{background:#FFFBF0;border:1px solid #EEDCA8;border-radius:10px;
