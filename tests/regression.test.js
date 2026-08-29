@@ -484,5 +484,43 @@ function check(label, actual, expected) {
     summaryMingju.hotspots.map(h=>h.gong), summaryShiju.hotspots.map(h=>h.gong));
 }
 
+// ── 主流斷局法：驛馬 (2026-08-29 新增) ──
+// 傳統查法(申子辰馬在寅/寅午戌馬在申/巳酉丑馬在亥/亥卯未馬在巳)，2 個獨立來源交叉核對一致。
+// 年/月/日/時支分開起，跟本專案「空亡」用日空+時空分開算是同一個設計精神。
+{
+  console.log('\n── 驛馬 ──');
+  check('申子辰馬在寅', { 申:Rules.YIMA_TABLE['申'], 子:Rules.YIMA_TABLE['子'], 辰:Rules.YIMA_TABLE['辰'] },
+    { 申:'寅', 子:'寅', 辰:'寅' });
+  check('寅午戌馬在申', { 寅:Rules.YIMA_TABLE['寅'], 午:Rules.YIMA_TABLE['午'], 戌:Rules.YIMA_TABLE['戌'] },
+    { 寅:'申', 午:'申', 戌:'申' });
+  check('巳酉丑馬在亥', { 巳:Rules.YIMA_TABLE['巳'], 酉:Rules.YIMA_TABLE['酉'], 丑:Rules.YIMA_TABLE['丑'] },
+    { 巳:'亥', 酉:'亥', 丑:'亥' });
+  check('亥卯未馬在巳', { 亥:Rules.YIMA_TABLE['亥'], 卯:Rules.YIMA_TABLE['卯'], 未:Rules.YIMA_TABLE['未'] },
+    { 亥:'巳', 卯:'巳', 未:'巳' });
+
+  const panGolden = QimenJS.qimenChaibu(Solar, 2024, 2, 28, 18, 39);
+  check('案例一干支為 甲辰年丙寅月壬戌日己酉時', panGolden.干支, '甲辰年丙寅月壬戌日己酉時');
+  const protectedGolden = Rules.buildProtectedStems(panGolden.干支, '', '求財', null);
+  const yimaGolden = Rules.checkYima(panGolden, panGolden.天盤, protectedGolden);
+  check('案例一：年支辰(申子辰)驛馬落寅=艮宮', yimaGolden.find(h=>h.ref==='年'),
+    { ref:'年', refBranch:'辰', yimaBranch:'寅', gong:'艮', isHit:false });
+  check('案例一：月支寅(寅午戌)驛馬落申=坤宮', yimaGolden.find(h=>h.ref==='月'),
+    { ref:'月', refBranch:'寅', yimaBranch:'申', gong:'坤', isHit:false });
+  check('案例一：日支戌(寅午戌)驛馬落申=坤宮(跟月支同組)', yimaGolden.find(h=>h.ref==='日'),
+    { ref:'日', refBranch:'戌', yimaBranch:'申', gong:'坤', isHit:false });
+  check('案例一：時支酉(巳酉丑)驛馬落亥=乾宮，且乾宮天盤戊為護體天干，命中號令',
+    yimaGolden.find(h=>h.ref==='時'), { ref:'時', refBranch:'酉', yimaBranch:'亥', gong:'乾', isHit:true });
+  check('案例一：4個參照支各自獨立列出，不強行合併(共4筆)', yimaGolden.length, 4);
+
+  const panUser = QimenJS.qimenChaibu(Solar, 1988, 2, 23, 20, 45, 113.65);
+  const zfzsUser = panUser.值符值使;
+  const protectedUser = Rules.buildProtectedStems(panUser.干支, '', null, zfzsUser.值符天干?zfzsUser.值符天干[1]:null);
+  const yimaUser = Rules.checkYima(panUser, panUser.天盤, protectedUser);
+  check('用戶命局：年支辰與日支申都落艮/坤，但屬不同參照點，各自列出不合併(共4筆)',
+    yimaUser.length, 4);
+  check('用戶命局：年支辰、日支申的驛馬剛好落在同一組宮位(艮/坤)，是巧合不是同一件事',
+    yimaUser.map(h=>h.gong).sort(), ['艮','坤','艮','坤'].sort());
+}
+
 console.log(`\n══ 結果: ${pass} 通過, ${fail} 失敗 ══`);
 process.exit(fail > 0 ? 1 : 0);

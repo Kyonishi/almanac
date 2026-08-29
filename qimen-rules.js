@@ -180,6 +180,37 @@ function checkFuyinFanyin(starMap, doorMap){
   return hits;
 }
 
+// ══════════════════ 主流斷局法：驛馬 ══════════════════
+// 來源: 2026-08-29 兩個獨立線上命理資料源交叉核對一致的傳統查法(申子辰馬在寅／寅午戌馬在申／
+// 巳酉丑馬在亥／亥卯未馬在巳)，跨八字/紫微/奇門通用，非奇門特定流派內容。查證時發現「馬星」
+// 在奇門遁甲裡其實是三個不同的東西：驛馬(這裡做的，三合對沖查法)、天馬(另一套查法，要配合
+// 「用神」，本專案沒有通用的用神抽象，暫不收錄)、丁馬(也是另一套，配合旬首，同樣暫不收錄)，
+// 三個不能混在一起講。查證也發現驛馬傳統上可以分別用年支/月支/日支/時支四個參照點各自起一次
+// (不是固定用哪一個)，跟本專案「空亡」用日空+時空兩個參照點分開算是同一個設計精神，這裡沿用
+// 同樣的做法，四個參照點分開列，不強行合併成一個結論。
+const YIMA_TABLE={
+  '申':'寅','子':'寅','辰':'寅',
+  '寅':'申','午':'申','戌':'申',
+  '巳':'亥','酉':'亥','丑':'亥',
+  '亥':'巳','卯':'巳','未':'巳',
+};
+const YIMA_REF_LABEL={年支:'年', 月支:'月', 日支:'日', 時支:'時'};
+// pan: 完整的 pan 物件(用 pan.干支 取四個參照支)；sky: 天盤(用來判斷 isHit command)
+function checkYima(pan, sky, protectedStems){
+  const gz=parseGanzhi(pan.干支);
+  if(!gz)return [];
+  const hits=[];
+  Object.entries(YIMA_REF_LABEL).forEach(([field,label])=>{
+    const refBranch=gz[field];
+    const yimaBranch=YIMA_TABLE[refBranch];
+    if(!yimaBranch)return;
+    const gong=ZHI_TO_GONG[yimaBranch];
+    if(!gong)return;
+    hits.push({ref:label, refBranch, yimaBranch, gong, isHit:protectedStems.has(sky[gong])});
+  });
+  return hits;
+}
+
 // ══ 六仪擊刑 (固定查表, 與時間無關) ══
 // 來源: 多方獨立命理資料交叉核對 + 荀爽老師實測案例驗證 (1901-04-13, 2024-02-28 兩案例
 // 全部命中, 無一遺漏無一多報)
@@ -1451,6 +1482,10 @@ function buildMainstreamItems(gong, pan, protectedStems){
   if(renheHit)items.push({type:'人和', luck:renheHit.luck,
     isHit:gongHitsProtected(gong,sky,earth,protectedStems),
     text:`「${renheHit.door}」門與這個宮位是「${renheHit.relation}」——${RENHE_MEANING[renheHit.relation]}`});
+  // 驛馬沒有吉凶方向(主奔波走動，本身不是好事或壞事)，跟主客一樣不計入 tallyDirection 的吉凶統計
+  checkYima(pan, sky, protectedStems).filter(h=>h.gong===gong).forEach(h=>items.push({
+    type:'驛馬', ref:h.ref, isHit:h.isHit,
+    text:`${h.ref}支「${h.refBranch}」驛馬落在這裡（「${h.yimaBranch}」）——主奔波、走動、出行、搬家、轉職等移動相關的事`}));
   return items;
 }
 
@@ -1482,7 +1517,7 @@ function scoreProfile(profile){
 function tallyDirection(profile){
   let xiong=profile.xunlao.length, ji=0;
   profile.mainstream.forEach(it=>{
-    if(it.type==='主客')return;
+    if(it.type==='主客'||it.type==='驛馬')return;
     if(it.luck==='吉')ji++;
     else if(it.luck==='凶')xiong++;
   });
@@ -1529,6 +1564,7 @@ if (typeof module !== 'undefined' && module.exports) {
     BRANCH_WUXING, getNineStarState, checkTianshi,
     DOOR_WUXING, GONG_WUXING, KE_MAP, getMenGongRelation, checkRenhe,
     STAR_HOME, DOOR_HOME, checkFuyinFanyin,
+    YIMA_TABLE, checkYima,
     formatCureSteps, buildXunlaoItems, buildMainstreamItems, buildGongProfiles, MINGJU_CURE_NOTE,
     scoreProfile, tallyDirection, buildMasterSummary, buildProtectedStems, gongHitsProtected,
   };
