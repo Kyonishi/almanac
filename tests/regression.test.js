@@ -207,5 +207,18 @@ function check(label, actual, expected) {
     { monthWuxing: '木', relation: { rel: '月令克A', effect: '大虧+量小', rank: 5 } });
 }
 
+// ── 財富七要/事業七要「符號落中宮時誤顯示✓乾淨」的 bug (2026-08-29 發現並修正) ──
+// addLocated() 原本沒判斷 rows 是否為空，符號完全沒落在8個外宮(最常見是落中宮)時
+// bad 會算成 false(看起來"乾淨")，其實是根本沒查到，應該是 null(未定位)。
+{
+  console.log('\n── 財富七要「戊落中宮」不再誤判為乾淨 (2000-01-06 10:00) ──');
+  const panCenter = QimenJS.qimenChaibu(Solar, 2000, 1, 6, 10, 0);
+  check('戊落在中宮', panCenter.天盤['中'], '戊');
+  const wealthItems = Rules.analyzeWealthSeven(panCenter, { targetWuxing: null }).items;
+  const wuItem = wealthItems.find(it => it.key === '戊');
+  check('戊落中宮時 bad 應為 null(未定位)，不是 false(誤判乾淨)', wuItem.bad, null);
+  check('centerInfo 正確標記 inCenter', wuItem.centerInfo.inCenter, true);
+}
+
 console.log(`\n══ 結果: ${pass} 通過, ${fail} 失敗 ══`);
 process.exit(fail > 0 ? 1 : 0);
