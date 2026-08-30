@@ -1091,6 +1091,10 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
       ?`<span class="hl-badge hl-hit">命中號令</span>`
       :`<span class="hl-badge hl-bg">背景凶象</span>`;
     const rowClass=(isHit)=>isHit?'':' style="opacity:.45"';
+    // 命中號令的條目，上面「本局解讀」第二步已經逐條講過完整的灭象/布阵步驟(含合併同化解方式的
+    // 分組)，這裡沒有新資訊，只是把同一件事再列一次——改成精簡提示，不重複貼一次完整化解文字；
+    // 背景凶象(未命中)則是這張卡獨有的資訊(本局解讀只講命中的部分)，維持完整顯示不做精簡。
+    const dedupNote='<span style="opacity:.55;font-size:10px">（詳見上方「本局解讀」第二步，此處從簡）</span>';
 
     let html='<div class="liuhai-card">';
     if(hasProtected){
@@ -1105,7 +1109,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
         ${Object.entries(jixingHits).map(([g,st])=>{
           const isHit=protectedStems.has(st);
           const cure=getCureForJiXing(g,st);
-          return `<div${rowClass(isHit)}>· ${T2(g)}宮　天干${T2(st)}擊刑 ${hlTag(isHit)}${cureLine(cure)}</div>`;
+          return `<div${rowClass(isHit)}>· ${T2(g)}宮　天干${T2(st)}擊刑 ${hlTag(isHit)}${isHit?dedupNote:cureLine(cure)}</div>`;
         }).join('')}
       </div>`;
     }
@@ -1116,7 +1120,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
         ${Object.entries(rumuHits).map(([g,st])=>{
           const isHit=protectedStems.has(st);
           const cure=getCureForRuMu(g,st);
-          return `<div${rowClass(isHit)}>· ${T2(g)}宮　天干${T2(st)}入墓 ${hlTag(isHit)}${cureLine(cure)}</div>`;
+          return `<div${rowClass(isHit)}>· ${T2(g)}宮　天干${T2(st)}入墓 ${hlTag(isHit)}${isHit?dedupNote:cureLine(cure)}</div>`;
         }).join('')}
       </div>`;
     }
@@ -1127,7 +1131,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
         ${Object.entries(gengHits).map(([g,st])=>{
           const isHit=protectedStems.has('庚');
           const cure=getCureForGengOrHu(g,'庚');
-          return `<div${rowClass(isHit)}>· ${T2(g)}宮　天干庚 ${hlTag(isHit)}${cureLine(cure)}</div>`;
+          return `<div${rowClass(isHit)}>· ${T2(g)}宮　天干庚 ${hlTag(isHit)}${isHit?dedupNote:cureLine(cure)}</div>`;
         }).join('')}
       </div>`;
     }
@@ -1138,7 +1142,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
         ${Object.entries(baihuHits).map(([g,gd])=>{
           const isHit=gongHitsProtected(g,sky,earth,protectedStems);
           const cure=getCureForGengOrHu(g,'虎');
-          return `<div${rowClass(isHit)}>· ${T2(g)}宮　白虎 ${hlTag(isHit)}${cureLine(cure)}</div>`;
+          return `<div${rowClass(isHit)}>· ${T2(g)}宮　白虎 ${hlTag(isHit)}${isHit?dedupNote:cureLine(cure)}</div>`;
         }).join('')}
       </div>`;
     }
@@ -1154,7 +1158,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
             :'';
           const cureHtml=cure?`<div class="cure-line">→ 用合：擺放「${cure.doorsText}」門象、對應地支「${cure.branchesText}」<br>
             <span style="opacity:.85">地支形象：${branchDetail}</span></div>`:'';
-          return `<div${rowClass(isHit)}>· ${T2(g)}宮　${T2(dr)}門迫 ${hlTag(isHit)}${cureHtml}</div>`;
+          return `<div${rowClass(isHit)}>· ${T2(g)}宮　${T2(dr)}門迫 ${hlTag(isHit)}${isHit?dedupNote:cureHtml}</div>`;
         }).join('')}
       </div>`;
     }
@@ -1163,8 +1167,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
       html+=`<div class="liuhai-sec">
         <div class="liuhai-title kw"><span class="dot"></span><span class="lh-word lh-kong">空</span>（空亡，嚴重度最低，源自日時本身，布阵：缺啥補啥——目前所求「${needKey}」）</div>
         ${kongHitGongs.map(g=>{
-          const cure=getCureForKongWang(g,needKey);
-          return `<div>· ${T2(g)}宮　空亡（${kongGongMap[g].join('')}空）${hlTag(true)}${cureLine(cure)}</div>`;
+          return `<div>· ${T2(g)}宮　空亡（${kongGongMap[g].join('')}空）${hlTag(true)}${dedupNote}</div>`;
         }).join('')}
       </div>`;
     }
