@@ -237,6 +237,18 @@ header{
 .geju-item:last-child{margin-bottom:0}
 .section-label{font-size:10px;color:var(--sub);letter-spacing:1.5px;margin:2px 2px 6px;font-weight:600}
 
+/* 可信度分級徽章：把 README「來源可信度」+「爭議程度」兩軸分級視覺化，掛在每個判斷來源
+   區塊的標題旁。刻意用兩個獨立徽章而非合併成一色，因為這兩件事本來就是不同維度，合併會
+   丟失資訊(查證得很仔細的東西不代表跨門派共識，反之亦然，這正是本專案分級的核心原則)。
+   配色呼應各自區塊既有的主題色：來源B(交叉核對)呼應解讀一的紫、來源A(逐字驗證)呼應師傅
+   總結/財富七要的金、爭議X(跨門派共識)用中性的綠、爭議Y(單一體系)呼應解讀二六害卡的紅。 */
+.tier-badge{display:inline-block;font-size:9.5px;padding:2px 7px;border-radius:9px;
+  margin-left:5px;font-weight:600;vertical-align:middle;white-space:nowrap;letter-spacing:.5px}
+.tier-source-a{background:#FDF6E3;color:#9A7B2A;border:1px solid #EEDCA8}
+.tier-source-b{background:#F5F3FA;color:#5B3FA0;border:1px solid #DCD3EE}
+.tier-consensus-x{background:#EEF5EE;color:#2E5E2E;border:1px solid #CFE5CF}
+.tier-consensus-y{background:#FEF9F9;color:#8B1A1A;border:1px solid #F5D5D5}
+
 /* 六害說明卡 */
 .liuhai-card{background:#FEF9F9;border:1px solid #F5D5D5;border-radius:10px;
   padding:12px 14px;margin-bottom:10px;font-size:12px;color:#5C1010;line-height:1.7}

@@ -1286,7 +1286,7 @@ function renderWealthCareerReport(pan, mode, industry, targetWuxing){
   else verdict=`七要中有 ${badCount} 項命中六害，阻力比較全面，建議按嚴重度優先處理，或考慮這條路本身是否適合走。`;
 
   return `<div class="analysis-card">
-    <div class="ana-block"><div class="ana-h">${T2(mode)}・逐項檢視</div>${itemsHtml}</div>
+    <div class="ana-block"><div class="ana-h">${T2(mode)}・逐項檢視${BADGE_SOURCE_A}${BADGE_CONSENSUS_Y}</div>${itemsHtml}</div>
     ${crossRows?`<div class="ana-block"><div class="ana-h">要素之間的關聯（同宮/對宮，推導未經逐字驗證）</div>${crossRows}</div>`:''}
     <div class="ana-block"><div class="ana-h">整體怎麼樣</div><div>${verdict}</div></div>
     <div class="ana-block"><div class="ana-h">基礎原則提醒</div>
@@ -1461,6 +1461,23 @@ const MINGJU_CURE_NOTE='灭象布阵是荀爽老師針對「事局」(具體某�
 // 這句話提醒讀者這一項本質上是事局概念，不強行解讀成「你人生會發生這件事」。
 const MINGJU_SANZHA_NOTE='三詐五假判斷的是「這件事適不適合暗中謀劃、隱藏真實意圖」，前提是有一件具體的事在問；命局代表你天生的整體結構，不是在問一件事，這裡命中的格局僅供參考，不代表「你人生會發生這件事」。如果想真正問某件事適不適合暗中謀劃、隱瞞真實意圖，建議挑一件具體想問的事，重新起一個「事局」來問。';
 
+// ══ 可信度分級徽章 (2026-08-29 新增) ══
+// 背景：用戶朋友(ChatGPT)反饋建議把 README「功能與資料來源分級」裡已經寫好的兩軸分級，
+// 做成 UI 上每個判斷都看得到的徽章。這裡不新增任何分級判斷、不引入新的信心等級——只是把
+// README 既有的「來源可信度」(A/B 兩檔，本專案目前只用到這兩檔，C 檔 verified:false 的內容
+// 本來就沒有做成卡片呈現，不需要徽章)跟「爭議程度」(X/Y 兩檔，Z 檔已擱置的內容本來就沒收錄
+// 進 App)原樣視覺化。徽章掛在「解讀一/解讀二」這兩個既有的分類邊界上(section 層級)，不是
+// 每一張明細卡各自標一次——因為同一個 section 裡的判斷(例如解讀一底下的格局/三詐五假/地利/
+// 主客/天時/人和/伏吟反吟/驛馬)目前在 README 裡本來就被歸在同一格(來源可信度 B、爭議程度 X)，
+// 逐卡重複貼兩個一模一樣的徽章只會洗版、不會多給任何資訊；財富七要/事業七要是荀爽老師逐字
+// 轉錄的方法，跟六害/灭象布阵同一格(A/Y)，另外掛一次。至於 ChatGPT 建議的「地利/主客/三詐
+// 五假該不該從解讀一裡再細分出一個子等級」，那需要另外查證每個規則在更多門派間的地位，屬於
+// 全新的分類判斷，這次沒有做，避免沒查證就發明新等級。
+const BADGE_SOURCE_A='<span class="tier-badge tier-source-a" title="來源可信度：逐字轉錄自荀爽老師視頻，並有真實案例驗證">逐字驗證</span>';
+const BADGE_SOURCE_B='<span class="tier-badge tier-source-b" title="來源可信度：跨多個獨立命理資料源交叉核對一致，非單一教材獨有">交叉核對</span>';
+const BADGE_CONSENSUS_X='<span class="tier-badge tier-consensus-x" title="爭議程度：跨門派高共識，多個獨立來源都這麼講，相對通用">跨門派共識</span>';
+const BADGE_CONSENSUS_Y='<span class="tier-badge tier-consensus-y" title="爭議程度：單一門派/老師的特定體系，不宣稱是跨門派共識，只忠實呈現這位老師怎麼講">單一體系</span>';
+
 // 荀爽老師體系：某一宮命中的六害清單(刑/墓/庚/虎/迫/空)，每條帶白話說明 + 化解步驟
 // juType: '事局'(預設)給完整灭象布阵步驟；'命局'只講命中了什麼，不給具體操作指令(見上方註解)
 function buildXunlaoItems(gong, pan, protectedStems, needKey, juType){
@@ -1618,7 +1635,7 @@ if (typeof module !== 'undefined' && module.exports) {
     STAR_HOME, DOOR_HOME, checkFuyinFanyin,
     YIMA_TABLE, checkYima,
     formatCureSteps, buildXunlaoItems, buildMainstreamItems, buildGongProfiles, MINGJU_CURE_NOTE,
-    MINGJU_SANZHA_NOTE,
+    MINGJU_SANZHA_NOTE, BADGE_SOURCE_A, BADGE_SOURCE_B, BADGE_CONSENSUS_X, BADGE_CONSENSUS_Y,
     scoreProfile, tallyDirection, buildMasterSummary, buildProtectedStems, gongHitsProtected,
   };
 }

@@ -713,7 +713,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
 
   ${renderMasterSummary(masterSummary, juType)}
 
-  <div class="section-label">解讀一・主流斷局法（跨門派共識，與下面荀爽老師體系是兩套不同來源）</div>
+  <div class="section-label">解讀一・主流斷局法（跨門派共識，與下面荀爽老師體系是兩套不同來源）${BADGE_SOURCE_B}${BADGE_CONSENSUS_X}</div>
   ${gejuHits.length ? `<div class="geju-card">
     <div class="geju-title">命中的吉凶格局</div>
     ${gejuHits.map(h=>hotspotGongs.has(h.gong)?`<div class="geju-item">
@@ -856,7 +856,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     </div>`;
   })()}
 
-  <div class="section-label">解讀二・荀爽老師體系（六害：刑墓庚虎迫空 ＋ 灭象布阵化解）</div>
+  <div class="section-label">解讀二・荀爽老師體系（六害：刑墓庚虎迫空 ＋ 灭象布阵化解）${BADGE_SOURCE_A}${BADGE_CONSENSUS_Y}</div>
   ${(function(){
     /* ══ 本局解讀：把上面已經算好的號令/六害/灭象布阵資料，整合成白話的一段分析 ══
        這裡不新增任何判斷方法論——文字用詞(争執損耗/沉溺迷失/凶禍阻隔/快速危險/壓力脅迫/虛假不實)
