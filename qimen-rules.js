@@ -1454,6 +1454,13 @@ function formatCureSteps(cure){
 // 布阵操作指令，改用這句提示取代。
 const MINGJU_CURE_NOTE='灭象布阵是荀爽老師針對「事局」(具體某件事)設計的化解方法，命局代表你天生的整體結構，不是在問一件具體的事，這裡先不給出具體的擺放/方位指令，以免文不對題。如果想針對這個宮對應的問題找到對症的化解步驟，建議挑一件具體想問的事，重新起一個「事局」來問。';
 
+// 三詐五假判斷的是「這件事適不適合暗中謀劃、隱藏真實意圖」(古代常用在用兵/求謀/緝捕等場合)，
+// 前提是「有一件具體的事在問」；命局代表一個人天生的整體結構，不是在問一件事，套用「這件事
+// 適合不適合暗中謀劃」的框架會文不對題，跟灭象布阵在命局模式下的問題是同一種類型(用戶朋友
+// 幫忙做規則審計時指出這一點，查證後確認方向是對的)。命局模式下只講「命中了什麼」，額外用
+// 這句話提醒讀者這一項本質上是事局概念，不強行解讀成「你人生會發生這件事」。
+const MINGJU_SANZHA_NOTE='三詐五假判斷的是「這件事適不適合暗中謀劃、隱藏真實意圖」，前提是有一件具體的事在問；命局代表你天生的整體結構，不是在問一件事，這裡命中的格局僅供參考，不代表「你人生會發生這件事」。如果想真正問某件事適不適合暗中謀劃、隱瞞真實意圖，建議挑一件具體想問的事，重新起一個「事局」來問。';
+
 // 荀爽老師體系：某一宮命中的六害清單(刑/墓/庚/虎/迫/空)，每條帶白話說明 + 化解步驟
 // juType: '事局'(預設)給完整灭象布阵步驟；'命局'只講命中了什麼，不給具體操作指令(見上方註解)
 function buildXunlaoItems(gong, pan, protectedStems, needKey, juType){
@@ -1611,6 +1618,7 @@ if (typeof module !== 'undefined' && module.exports) {
     STAR_HOME, DOOR_HOME, checkFuyinFanyin,
     YIMA_TABLE, checkYima,
     formatCureSteps, buildXunlaoItems, buildMainstreamItems, buildGongProfiles, MINGJU_CURE_NOTE,
+    MINGJU_SANZHA_NOTE,
     scoreProfile, tallyDirection, buildMasterSummary, buildProtectedStems, gongHitsProtected,
   };
 }

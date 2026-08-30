@@ -734,6 +734,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
   ${sanzhaWujiaHits.length ? `<div class="geju-card">
     <div class="geju-title">命中的三詐五假（謀略/隱蔽性質，不是單純吉凶判斷）</div>
     <div style="font-size:11px;opacity:.6;margin-bottom:6px">三詐五假判斷的是「這件事適不適合暗中謀劃、隱藏真實意圖」，古代常用在用兵/求謀/緝捕等場合，跟上面的吉凶格局是不同維度的判斷，不要混著看。</div>
+    ${juType==='命局'?`<div style="font-size:11px;opacity:.7;margin-bottom:6px;padding:6px 8px;background:#F5F3FA;border-radius:6px">${T2(MINGJU_SANZHA_NOTE)}</div>`:''}
     ${sanzhaWujiaHits.map(h=>hotspotGongs.has(h.gong)?`<div class="geju-item">
       <span class="pill pill-neutral">${T2(h.type)}格</span>
       <b>${T2(h.gong)}宮　${T2(h.name)}</b>　（${T2(h.door)}門／天盤${T2(h.stem)}）${seenNote}
