@@ -12,10 +12,15 @@
   --ink:#1A1A2E;--red:#8B1A1A;--gold:#9A7B2A;--lgold:#FDF6E3;
   --grn:#2E5E2E;--lgrn:#EEF5EE;
   --bg:#F5F0E8;--card:#FFFDF7;--brd:#E2D9C8;--sub:#7A6A50;
+  --content-w:500px; /* 手機寬度，下面桌面斷點會加寬；.cross-nav/.sheet 都吃這個變數，改這裡就同步 */
 }
+/* 桌面/平板寬螢幕開啟時，原本卡片固定卡在畫面正中央 500px 窄欄裡，左右留白過多、看起來
+   像沒縮放好的手機版(用戶截圖回饋，2026-08-30)。這裡只加寬欄位本身，不改多欄式排版——
+   內部字級/間距都是照手機閱讀距離調的，欄位太寬反而會讓每行字太長不好讀，抓一個折衷值。 */
+@media (min-width:768px){ :root{ --content-w:720px; } }
 html,body{min-height:100%;background:var(--bg);
   font-family:-apple-system,'PingFang TC','Noto Sans TC',serif}
-body{max-width:500px;margin:0 auto;padding-bottom:32px}
+body{max-width:var(--content-w);margin:0 auto;padding-bottom:32px}
 
 /* HEADER */
 header{
@@ -300,7 +305,7 @@ header{
    回頂部是額外的小圓鈕，只在往下滑一段距離後才出現，平常不佔位置 */
 .cross-nav{
   position:fixed;bottom:20px;
-  right:max(16px, calc((100vw - 500px) / 2 + 16px));
+  right:max(16px, calc((100vw - var(--content-w)) / 2 + 16px));
   z-index:999;
   display:flex;flex-direction:column;gap:8px;align-items:flex-end
 }
@@ -330,7 +335,7 @@ header{
 .sheet-mask{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:990;
   opacity:0;pointer-events:none;transition:opacity .2s}
 .sheet-mask.show{opacity:1;pointer-events:auto}
-.sheet{position:fixed;left:0;right:0;bottom:0;max-width:500px;margin:0 auto;
+.sheet{position:fixed;left:0;right:0;bottom:0;max-width:var(--content-w);margin:0 auto;
   background:var(--card);border-radius:18px 18px 0 0;z-index:991;
   padding:8px 20px 28px;transform:translateY(100%);transition:transform .25s ease;
   box-shadow:0 -6px 24px rgba(0,0,0,.18);max-height:75vh;overflow-y:auto}

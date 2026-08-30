@@ -13,10 +13,13 @@
   --grn:#2E7D32;--lgrn:#EBF5EB;
   --txt:#2C2C2C;--sub:#8A8A8A;--brd:#EBEBEB;--bg:#F4F2ED;
   --gold:#B8860B;--lgold:#FFF8E1;
+  --content-w:480px; /* 手機寬度，下面桌面斷點會加寬；.sheet 也吃這個變數，改這裡就同步 */
 }
+/* 桌面/平板寬螢幕開啟時加寬欄位，不改多欄式排版，理由同 qimen.html(2026-08-30) */
+@media (min-width:768px){ :root{ --content-w:700px; } }
 html,body{height:100%;overscroll-behavior:none}
 body{font-family:-apple-system,'PingFang TC','Noto Sans TC','Microsoft JhengHei',sans-serif;
-  background:var(--bg);max-width:480px;margin:0 auto;min-height:100vh}
+  background:var(--bg);max-width:var(--content-w);margin:0 auto;min-height:100vh}
 
 header{background:linear-gradient(160deg,var(--red) 0%,var(--dred) 100%);color:#fff;
   padding:18px 16px 13px;display:flex;align-items:center;justify-content:space-between;
@@ -135,7 +138,7 @@ header{background:linear-gradient(160deg,var(--red) 0%,var(--dred) 100%);color:#
 /* cross-nav */
 .cross-nav{
   position:fixed;bottom:20px;
-  right:max(16px, calc((100vw - 480px) / 2 + 16px));
+  right:max(16px, calc((100vw - var(--content-w)) / 2 + 16px));
   z-index:999;
   display:flex;flex-direction:column;gap:8px;align-items:flex-end
 }
@@ -159,7 +162,7 @@ footer{text-align:center;font-size:10px;color:#CCC;padding:12px 16px 20px;letter
 .sheet-mask{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:90;
   opacity:0;pointer-events:none;transition:opacity .2s}
 .sheet-mask.show{opacity:1;pointer-events:auto}
-.sheet{position:fixed;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;
+.sheet{position:fixed;left:0;right:0;bottom:0;max-width:var(--content-w);margin:0 auto;
   background:#fff;border-radius:18px 18px 0 0;z-index:91;
   padding:8px 20px 28px;transform:translateY(100%);transition:transform .25s ease;
   box-shadow:0 -6px 24px rgba(0,0,0,.18)}
