@@ -458,6 +458,19 @@ function renderMasterSummary(summary, juType){
    這裡的每一句話，用的都是 buildMasterSummary() 已經算好、經過測試的 text/cureSteps 原始
    資料，只是換一種更順口的組裝方式(先講結論、用「另外」「不過」這類口語連接詞串起來、把「命中
    號令/背景」翻成白話)，絕不新增判斷、絕不把荀爽體系跟主流體系的結論揉在一起講。 */
+// 把 formatCureSteps() 的結構化化解步驟，組成一段順口的話，而不是條列的「灭象：xxx／布阵：xxx」。
+// 白話版的兩個渲染函式(逐宮版/命局故事版)共用同一份，用詞保持一致。
+function plainCureText(cs){
+  const T2=x=>t2(x||'');
+  if(!cs)return '化解方法這裡暫時沒查到明確的說法，需要人工再核對一下。';
+  const parts=[];
+  if(cs.miexiang)parts.push(`第一步先「灭象」：${T2(cs.miexiang.action)}${cs.miexiang.verified?'':'（這步視頻裡沒有明講，僅供參考）'}`);
+  if(cs.place)parts.push(`可以把化解用的東西放在家裡或辦公室「${T2(cs.place)}」這個方位角落——這是物品要擺哪裡，跟你本人要不要去這個方向沒有關係`);
+  if(cs.buzhen&&cs.buzhen.length)parts.push(`具體怎麼布：${cs.buzhen.map(b=>T2(b.text)).join('，')}`);
+  if(cs.note)parts.push(T2(cs.note));
+  if(cs.verified===false)parts.push('（這條化解方法是推導出來的，不是視頻原文逐字講的，僅供參考）');
+  return parts.join('；')+'。';
+}
 function renderMasterSummaryPlain(summary, juType){
   const T2=x=>t2(x||'');
   if(summary.quiet){
@@ -466,17 +479,7 @@ function renderMasterSummaryPlain(summary, juType){
       <div class="plain-p">這局整體挺平穩的——六害、格局、地利、主客、天時、人和，沒有哪個特別揪著你，可以按原計劃推進，不用特別緊張哪個方向。</div>
     </div>`;
   }
-  // 把 formatCureSteps() 的結構化化解步驟，組成一段順口的話，而不是條列的「灭象：xxx／布阵：xxx」
-  const plainCure=(cs)=>{
-    if(!cs)return '化解方法這裡暫時沒查到明確的說法，需要人工再核對一下。';
-    const parts=[];
-    if(cs.miexiang)parts.push(`第一步先「灭象」：${T2(cs.miexiang.action)}${cs.miexiang.verified?'':'（這步視頻裡沒有明講，僅供參考）'}`);
-    if(cs.place)parts.push(`可以把化解用的東西放在家裡或辦公室「${T2(cs.place)}」這個方位角落——這是物品要擺哪裡，跟你本人要不要去這個方向沒有關係`);
-    if(cs.buzhen&&cs.buzhen.length)parts.push(`具體怎麼布：${cs.buzhen.map(b=>T2(b.text)).join('，')}`);
-    if(cs.note)parts.push(T2(cs.note));
-    if(cs.verified===false)parts.push('（這條化解方法是推導出來的，不是視頻原文逐字講的，僅供參考）');
-    return parts.join('；')+'。';
-  };
+  const plainCure=plainCureText;
   const AGREEMENT_PLAIN={
     consistent_xiong:'這裡兩套不同的規則，各自獨立算出來，都覺得不太順——能對上號，比只看一套更值得留意。',
     consistent_ji:'這裡兩套規則都覺得還不錯。',
@@ -511,6 +514,134 @@ function renderMasterSummaryPlain(summary, juType){
     <div class="master-title">師傅總結</div>
     <div class="plain-p" style="margin-bottom:10px;opacity:.85">這局最值得注意的地方，挑出了 ${summary.hotspots.length} 個宮，主流斷局法跟荀爽老師體系的說法一律分開講，不會混在一起。「直接衝著你來的」代表這件事壓在你自己（日干/時干/值符/所求對應天干）身上，比較要緊；「背景」代表這局有這件事，但不是針對你，程度上輕一些。${mingjuIntro}</div>
     ${hotspotPlain}
+  </div>`;
+}
+
+/* ── 命局白話版・整篇故事(2026-08-30 新增) ──
+   用戶明確要求的結構：開頭一段「這個人大概是什麼樣」→ 性格 → 事業財運人脈 → 感情婚姻桃花 →
+   人生波動挫折(刑墓庚虎迫空) → 怎麼破 → 總結建議 → 一句話概括，像讀故事一樣一路看下去，
+   不再逐宮列表。這個結構本質上是在問「這個人整體是什麼樣」，只有命局模式(起局起的是某個人
+   的出生時刻)講得通——事局是在問一件具體的事，套這套「性格/財運/感情」全展開的結構會文不
+   對題，所以只在 juType==='命局' 時使用；事局模式的白話版仍用上面逐宮版的
+   renderMasterSummaryPlain(之後另外設計事局專屬的白話結構)。
+   用戶也明確同意這裡「荀爽體系／主流體系」不用像專業版一樣貼標籤分開，可以揉在一起講——
+   但仍然堅守「不腦補」這條線：每一句話都對應到 analyzeWealthSeven/analyzeCareerSeven/
+   analyzeSimpleLocate/六害偵測 這些已經測試過的函式輸出，「總結」「一句話概括」也是用命中
+   數量做比較，不會現編一個「這個人是什麼性格」的心理學結論——那正是核對過的 ChatGPT 那份
+   分析真正的問題所在(現編沒查證的規則，不是表達方式問題)，這裡刻意不重蹈覆轍。 */
+function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourStem, needKey, industry, targetWuxing, yearsInput, masterSummary){
+  const T2=x=>t2(x||'');
+
+  // ① 性格：日干＝內心，時干＝對外展現，直接用十天干取象詞典裡已經驗證過的描述，不新寫一套
+  const dInfo=dayStem?LEX_DATA.stems[dayStem]:null;
+  const hInfo=hourStem?LEX_DATA.stems[hourStem]:null;
+  let personality='';
+  if(dInfo)personality+=`往內心裡看，這個人骨子裡更接近「${T2(dInfo.name)}」這個字代表的東西：${T2(dInfo.desc)}`;
+  if(hInfo&&hourStem!==dayStem)personality+=` 而對外展現出來、別人看到的樣子，更接近「${T2(hInfo.name)}」：${T2(hInfo.desc)}`;
+  if(!personality)personality='這局缺少日干/時干資訊，性格這塊暫時看不出來。';
+
+  // ② 事業財運人脈：直接借用「財富七要」「事業七要」已經驗證過的方法，命局模式下不管
+  //    起局時選的所求是什麼，都跑一次這兩套分析——命局本來就是問整個人，不是問單一件事。
+  const wealth=analyzeWealthSeven(pan, {industry, targetWuxing: targetWuxing||null});
+  const career=analyzeCareerSeven(pan, zfzs, {industry});
+  const domainParagraph=(label, items)=>{
+    const positioned=items.filter(it=>it.rows&&it.rows.length);
+    const bad=positioned.filter(it=>it.bad===true);
+    const clean=positioned.filter(it=>it.bad===false);
+    if(!positioned.length)return {text:`${label}方面這局沒有明確的定位資訊，暫時看不出來。`, bad:[], total:0};
+    let text=`${label}方面，`;
+    if(bad.length===0){
+      text+=`「${clean.map(it=>T2(it.name)).join('」「')}」這幾個關鍵點位都還算乾淨，沒有明顯卡住的地方。`;
+    }else{
+      text+=`「${bad.map(it=>T2(it.name)).join('」「')}」這幾個點位命中了六害，需要留意`;
+      if(clean.length)text+=`；「${clean.map(it=>T2(it.name)).join('」「')}」倒是乾淨的`;
+      text+='。';
+    }
+    return {text, bad, total:positioned.length};
+  };
+  const wealthP=domainParagraph('財運', wealth.items);
+  const careerP=domainParagraph('事業', career.items);
+
+  // ③ 感情婚姻桃花：借用「求桃花」簡明定位讀法(六合/休門，跨資料源核對過)
+  const peach=analyzeSimpleLocate(pan, '求桃花', zfzs);
+  const peachP=peach?domainParagraph('感情婚姻', peach.items):{text:'感情婚姻這塊這次沒有算出來。', bad:[], total:0};
+
+  // ④ 人生波動挫折：師傅總結已經挑出的熱點宮，只取「命中號令」的六害條目(刑墓庚虎迫空)，
+  //    合併成一段話，不逐宮分段——這是用戶明確指定「揉在一起講」的地方。
+  const wanderHits=[];
+  masterSummary.hotspots.forEach(hp=>{
+    hp.xunlao.filter(x=>x.isHit).forEach(x=>wanderHits.push({...x, gong:hp.gong}));
+  });
+  const wanderText=wanderHits.length===0
+    ?'目前盤面上刑墓庚虎迫空這幾種波動，沒有直接命中你自己，算是比較平穩的一段時間。'
+    :'具體來看，容易讓你覺得卡住、不順的地方有：'+wanderHits.map(x=>`${T2(x.gong)}宮這邊，${T2(x.text)}`).join('；')+'。';
+
+  // ⑤ 怎麼破：財運/事業/感情裡好幾個符號常常同時落在同一宮(例如「生門」跟「干財」剛好都在
+  //    兌宮)，一開始按「每個符號」各自查一次化解，會把同一宮的同一份化解重複貼好幾遍——
+  //    改成先按「宮」去重，同一宮只講一次，不管有幾個符號落在那裡。
+  //    ④的刑墓庚虎迫空已經有 formatCureSteps 算好的完整步驟，優先用那份；②③命中六害但
+  //    不在④清單裡的宮，才另外用 getCuresAtGong 查。
+  const cureGongsDone=new Set();
+  const cureParts=[];
+  wanderHits.forEach(x=>{
+    if(x.cureSteps&&!cureGongsDone.has(x.gong)){
+      cureGongsDone.add(x.gong);
+      cureParts.push(`${T2(x.gong)}宮這條：${plainCureText(x.cureSteps)}`);
+    }
+  });
+  [...wealthP.bad, ...careerP.bad, ...(peachP.bad||[])].forEach(it=>{
+    (it.rows||[]).forEach(r=>{
+      if(r.harms&&r.harms.length&&!cureGongsDone.has(r.gong)){
+        cureGongsDone.add(r.gong);
+        getCuresAtGong(r.gong, pan).forEach(c=>{
+          const xiangTxt=c.xiang?.wu?`，${T2(c.xiang.wu)}`:'';
+          const placeTxt=c.place?`，放於${T2(c.place)}方位`:'';
+          cureParts.push(`${T2(r.gong)}宮這條：${T2(c.method||'')}${c.cureStem?'（用'+T2(c.cureStem)+'）':''}${xiangTxt}${placeTxt}${c.note?'　'+T2(c.note):''}`);
+        });
+      }
+    });
+  });
+  const cureText=cureParts.length?cureParts.join('　'):'目前沒有需要特別處理的地方，維持現狀就好。';
+
+  // ⑥ 總結建議：拿「乾淨度」比較幾個面向，不是現編性格結論——分母是這個面向的點位數，
+  //    分子是乾淨點位數，比例越高代表這個面向目前相對越順，純數字比較。
+  const domains=[
+    {label:'財運', ...wealthP},
+    {label:'事業', ...careerP},
+    {label:'感情婚姻', ...peachP},
+  ].filter(dm=>dm.total>0);
+  let overallText='';
+  if(domains.length){
+    const scored=domains.map(dm=>({label:dm.label, ratio:(dm.total-dm.bad.length)/dm.total}));
+    scored.sort((a,b)=>b.ratio-a.ratio);
+    const best=scored[0], worst=scored[scored.length-1];
+    overallText=(best.label===worst.label||best.ratio===worst.ratio)
+      ?'綜合來看，財運、事業、感情婚姻這幾個面向目前狀態差不多，沒有哪一塊特別突出或特別卡。'
+      :`綜合來看，「${best.label}」這塊目前相對最順；「${worst.label}」這塊命中六害的點位比例最高，如果最近要花心思，這塊可能更值得優先處理。`;
+  }
+  overallText+=wanderHits.length>0
+    ?` 另外，人生波動這塊（刑墓庚虎迫空）目前命中了 ${wanderHits.length} 處，具體處理方式看上面「怎麼破」那段。`
+    :' 人生波動這塊（刑墓庚虎迫空）目前沒有命中你自己，算是相對平穩。';
+
+  // ⑦ 一句話概括：純數字統計出來的一句話，不夾帶心理學式的性格判斷
+  const totalBad=domains.reduce((s,dm)=>s+dm.bad.length,0)+wanderHits.length;
+  const totalAll=domains.reduce((s,dm)=>s+dm.total,0)+wanderHits.length;
+  const oneLiner=totalAll===0
+    ?'這局資訊不足，暫時無法給出一句話概括。'
+    :(totalBad===0
+      ?'一句話概括：目前掃過的幾個面向都還算乾淨，沒有特別需要緊張的地方。'
+      :`一句話概括：這局命中六害的訊號集中在${domains.filter(dm=>dm.bad.length>0).map(dm=>dm.label).join('、')||'人生波動'}這幾塊，其餘部分相對平穩，具體怎麼處理可以看上面「怎麼破」那段。`);
+
+  return `<div class="master-card">
+    <div class="master-title">師傅總結</div>
+    <div class="plain-p" style="opacity:.7;margin-bottom:10px">下面是把這局拆成幾個生活面向來講的白話版——性格、財運事業、感情婚姻、容易波動的地方，一路讀下去就好，不用先懂術語。這裡主流斷局法跟荀爽老師體系的判斷不特別分開標註，兩邊揉在一起講；如果想看兩套體系嚴格分開、逐宮完整的版本，切到「專業版」。</div>
+    <div class="plain-block"><div class="plain-gong">這個人大概是什麼樣</div><div class="plain-p">${personality}</div></div>
+    <div class="plain-block"><div class="plain-gong">事業財運人脈</div><div class="plain-p">${wealthP.text}</div><div class="plain-p">${careerP.text}</div></div>
+    <div class="plain-block"><div class="plain-gong">感情婚姻桃花</div><div class="plain-p">${peachP.text}</div></div>
+    <div class="plain-block"><div class="plain-gong">容易出現的波動、挫折</div><div class="plain-p">${wanderText}</div></div>
+    <div class="plain-block"><div class="plain-gong">怎麼破</div><div class="plain-p">${cureText}</div></div>
+    <div class="plain-block"><div class="plain-gong">總結建議</div><div class="plain-p">${overallText}</div></div>
+    <div class="plain-block" style="border-bottom:none"><div class="plain-p" style="font-weight:700">${oneLiner}</div></div>
   </div>`;
 }
 
@@ -789,7 +920,11 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     <button class="mt-btn mt-active" data-mode="plain" onclick="setMasterMode(this,'plain')">白話版</button>
     <button class="mt-btn" data-mode="pro" onclick="setMasterMode(this,'pro')">專業版</button>
   </div>
-  <div class="master-mode master-mode-plain">${renderMasterSummaryPlain(masterSummary, juType)}</div>
+  <div class="master-mode master-mode-plain">${
+    juType==='命局'
+      ?renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourStem, needKey, industry, targetWuxing, yearsInput, masterSummary)
+      :renderMasterSummaryPlain(masterSummary, juType)
+  }</div>
   <div class="master-mode master-mode-pro" style="display:none">${renderMasterSummary(masterSummary, juType)}</div>
 
   <div class="section-label">解讀一・主流斷局法（跨門派共識，與下面荀爽老師體系是兩套不同來源）${BADGE_SOURCE_B}${BADGE_CONSENSUS_X}</div>
