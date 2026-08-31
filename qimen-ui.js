@@ -529,7 +529,7 @@ function renderMasterSummaryPlain(summary, juType){
    analyzeSimpleLocate/六害偵測 這些已經測試過的函式輸出，「總結」「一句話概括」也是用命中
    數量做比較，不會現編一個「這個人是什麼性格」的心理學結論——那正是核對過的 ChatGPT 那份
    分析真正的問題所在(現編沒查證的規則，不是表達方式問題)，這裡刻意不重蹈覆轍。 */
-function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourStem, needKey, industry, targetWuxing, yearsInput, masterSummary){
+function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourStem, needKey, industry, targetWuxing, yearsInput, masterSummary, marriageInfo, kongHitGongs, fuyinFanyinHits){
   const T2=x=>t2(x||'');
 
   // ① 性格：日干＝內心，時干＝對外展現，直接用十天干取象詞典裡已經驗證過的描述，不新寫一套
@@ -562,9 +562,21 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
   const wealthP=domainParagraph('財運', wealth.items);
   const careerP=domainParagraph('事業', career.items);
 
-  // ③ 感情婚姻桃花：借用「求桃花」簡明定位讀法(六合/休門，跨資料源核對過)
+  // ③ 感情婚姻桃花：借用「求桃花」簡明定位讀法(六合/休門，跨資料源核對過)——這個回答的是
+  //    「有沒有機會/桃花旺不旺」；下面再補一段「婚姻用神」(天盤乙／庚落宮生克)，回答的是
+  //    「已經有對象/已婚的話，兩人相處的方向」，兩者問的問題不一樣，都留著、講清楚各自在回答什麼。
   const peach=analyzeSimpleLocate(pan, '求桃花', zfzs);
   const peachP=peach?domainParagraph('感情婚姻', peach.items):{text:'感情婚姻這塊這次沒有算出來。', bad:[], total:0};
+  let marriageText='';
+  if(marriageInfo){
+    const {yiGong, gengGong, favor, isJi}=marriageInfo;
+    const yiKong=(kongHitGongs||[]).includes(yiGong), gengKong=(kongHitGongs||[]).includes(gengGong);
+    const hasFuyinFanyin=(fuyinFanyinHits||[]).length>0;
+    marriageText=`另外，如果是看已經有對象或已婚的相處狀況（奇門固定用天盤乙代表女方、庚代表男方，這跟上面桃花旺不旺是兩件事）：目前${T2(favor)}${isJi?'，方向上偏和睦':'，方向上要多留意磨合'}。`;
+    if(yiKong)marriageText+='女方這一側還逢旬空，感情或婚姻容易有虛浮不實的感覺。';
+    if(gengKong)marriageText+='男方這一側還逢旬空，感情或婚姻容易有虛浮不實的感覺。';
+    if(hasFuyinFanyin)marriageText+='這局整體還逢伏吟反吟，變動性也要一併考慮。';
+  }
 
   // ④ 人生波動挫折：師傅總結已經挑出的熱點宮，只取「命中號令」的六害條目(刑墓庚虎迫空)，
   //    合併成一段話，不逐宮分段——這是用戶明確指定「揉在一起講」的地方。
@@ -637,7 +649,7 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
     <div class="plain-p" style="opacity:.7;margin-bottom:10px">下面是把這局拆成幾個生活面向來講的白話版——性格、財運事業、感情婚姻、容易波動的地方，一路讀下去就好，不用先懂術語。這裡主流斷局法跟荀爽老師體系的判斷不特別分開標註，兩邊揉在一起講；如果想看兩套體系嚴格分開、逐宮完整的版本，切到「專業版」。</div>
     <div class="plain-block"><div class="plain-gong">這個人大概是什麼樣</div><div class="plain-p">${personality}</div></div>
     <div class="plain-block"><div class="plain-gong">事業財運人脈</div><div class="plain-p">${wealthP.text}</div><div class="plain-p">${careerP.text}</div></div>
-    <div class="plain-block"><div class="plain-gong">感情婚姻桃花</div><div class="plain-p">${peachP.text}</div></div>
+    <div class="plain-block"><div class="plain-gong">感情婚姻桃花</div><div class="plain-p">${peachP.text}</div>${marriageText?`<div class="plain-p">${marriageText}</div>`:''}</div>
     <div class="plain-block"><div class="plain-gong">容易出現的波動、挫折</div><div class="plain-p">${wanderText}</div></div>
     <div class="plain-block"><div class="plain-gong">怎麼破</div><div class="plain-p">${cureText}</div></div>
     <div class="plain-block"><div class="plain-gong">總結建議</div><div class="plain-p">${overallText}</div></div>
@@ -674,6 +686,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
   const tianshiHits=checkTianshi(star, gzForTianshi && gzForTianshi.月支);
   const renheHits=checkRenhe(door);
   const fuyinFanyinHits=checkFuyinFanyin(star, door);
+  const marriageInfo=checkYiGengMarriage(sky, door, star, god);
 
   /* 號令: 日時/生年/意象/符使 四要素合併的保護天干集合 */
   const zhifuStem=zfzs.值符天干?zfzs.值符天干[1]:null;
@@ -922,7 +935,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
   </div>
   <div class="master-mode master-mode-plain">${
     juType==='命局'
-      ?renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourStem, needKey, industry, targetWuxing, yearsInput, masterSummary)
+      ?renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourStem, needKey, industry, targetWuxing, yearsInput, masterSummary, marriageInfo, kongHitGongs, fuyinFanyinHits)
       :renderMasterSummaryPlain(masterSummary, juType)
   }</div>
   <div class="master-mode master-mode-pro" style="display:none">${renderMasterSummary(masterSummary, juType)}</div>
@@ -996,6 +1009,24 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
       ${zhuHits.length?`<div class="ana-step" style="font-weight:700;color:var(--grn);margin-top:4px">利主</div>${renderWithBgCollapse(zhuHits,rowHtml)}`:''}
       ${keHits.length?`<div class="ana-step" style="font-weight:700;color:var(--red);margin-top:4px">利客</div>${renderWithBgCollapse(keHits,rowHtml)}`:''}
       ${biheHits.length?`<div class="ana-step" style="font-weight:700;opacity:.7;margin-top:4px">比和(主客同心)</div>${renderWithBgCollapse(biheHits,rowHtml)}`:''}
+    </div>`;
+  })()}
+  ${(function(){
+    if(!marriageInfo)return '';
+    const {yiGong, gengGong, yiWx, gengWx, relation, favor, isJi}=marriageInfo;
+    const yiKong=kongHitGongs.includes(yiGong), gengKong=kongHitGongs.includes(gengGong);
+    const hasFuyinFanyin=fuyinFanyinHits.length>0;
+    const goodOverall=isJi && !yiKong && !gengKong && !hasFuyinFanyin;
+    return `<div class="geju-card">
+      <div class="geju-title">主流斷局法：婚姻用神（天盤乙／庚落宮生克）</div>
+      <div style="font-size:11px;opacity:.6;margin-bottom:6px">天盤乙代表女方，庚代表男方(奇門固定符號，跟八字「日干克我者為官殺/夫星」是不同體系，不要混用)。比較的是乙、庚「各自落宮」的五行生克關係(不是乙庚天干本身——乙庚天干本來就相合)：相生/比和感情較好，相克感情較差；任一方落空亡、或整局逢星/門伏吟反吟，都不利。「三奇入墓」等更細節的判法本專案查證後仍有疑義，暫不收錄，跟六害/格局/地利/主客/天時/人和是完全獨立的另一個維度。</div>
+      <div class="ana-step" style="font-weight:700;${goodOverall?'color:var(--grn)':(isJi?'':'color:var(--red)')};margin-top:4px">
+        ${T2(yiGong)}宮乙(${T2(yiWx)})／${T2(gengGong)}宮庚(${T2(gengWx)})——${T2(relation)}，${T2(favor)}
+      </div>
+      ${yiKong?`<div class="ana-step" style="opacity:.75">乙落${T2(yiGong)}宮逢旬空——女方這一側虛浮不實，感情或婚姻容易不穩</div>`:''}
+      ${gengKong?`<div class="ana-step" style="opacity:.75">庚落${T2(gengGong)}宮逢旬空——男方這一側虛浮不實，感情或婚姻容易不穩</div>`:''}
+      ${hasFuyinFanyin?`<div class="ana-step" style="opacity:.75">整局逢伏吟反吟——感情/婚姻的變動性要一併考慮，不是單純好壞</div>`:''}
+      ${(!isJi&&!yiKong&&!gengKong&&!hasFuyinFanyin)?`<div class="ana-step" style="opacity:.6">單就乙庚落宮生克來看偏不利，但沒有旬空或伏吟反吟加重，程度上不算太嚴重</div>`:''}
     </div>`;
   })()}
   ${(function(){
