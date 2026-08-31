@@ -267,6 +267,14 @@ function saveReview(id){
   renderHistoryPanel();
 }
 window.saveReview=saveReview;
+// 師傅總結「白話版／專業版」切換：兩種都已經渲染好放在 DOM 裡，純粹是顯示/隱藏，
+// 不重新計算、不重新排局——切換不會漏掉任何一套內容，兩邊資料來源完全相同。
+window.setMasterMode=function(btn,mode){
+  const scope=btn.parentElement.parentElement; // .master-toggle 的父層(#result)，同時包住兩種模式的內容
+  scope.querySelectorAll('.mt-btn').forEach(b=>b.classList.toggle('mt-active', b.dataset.mode===mode));
+  scope.querySelector('.master-mode-plain').style.display = mode==='plain'?'':'none';
+  scope.querySelector('.master-mode-pro').style.display = mode==='pro'?'':'none';
+};
 window.toggleHistory=function(){
   const p=document.getElementById('historyPanel');
   if(p.style.display==='none'){
@@ -437,6 +445,72 @@ function renderMasterSummary(summary, juType){
     <div class="master-title">師傅總結</div>
     <div class="ana-step" style="margin-bottom:10px">下面依「這局最該注意的程度」排出最多 3 個宮，每個宮都把主流斷局法跟荀爽老師體系的判斷分開列出，絕不混在一起講。「命中號令」代表這件事直接壓在你自己（日干/時干/值符/所求對應天干）身上，比較要緊；「背景」代表這件事存在於這局，但不是直接衝著你來，程度上輕一些——如果想看完整的逐宮明細，往下滑可以看到兩套體系各自完整的判斷卡片。${mingjuIntro}</div>
     ${hotspotHtml}
+  </div>`;
+}
+
+/* ── 師傅總結・白話版(2026-08-30 新增) ──
+   背景：用戶覺得現有輸出「得有奇門遁甲基礎才看得懂」，拿一份 ChatGPT 生成的命盤分析做對比，
+   覺得那種「像真人講話」的口吻、先給結論再展開的段落節奏很好讀。核對過那份分析後發現：它的
+   「好讀」是純粹的表達技巧(分段、口語連接詞、類比)，但內容本身有真實問題——用五行生克算反的
+   邏輯選「夫星」、把「用神定宮看意象」跟「方位擇吉」混為一談、套用來源不明的坊間標籤(如「丁壬
+   合＝淫蕩之合」)、拿單一宮位代表整體財運、後段大量脫離盤面的通用建議(巴納姆效應)。這些問題
+   都是「現編了沒查證的規則」，不是表達方式的問題——所以白話版只學表達，不學內容生成方式：
+   這裡的每一句話，用的都是 buildMasterSummary() 已經算好、經過測試的 text/cureSteps 原始
+   資料，只是換一種更順口的組裝方式(先講結論、用「另外」「不過」這類口語連接詞串起來、把「命中
+   號令/背景」翻成白話)，絕不新增判斷、絕不把荀爽體系跟主流體系的結論揉在一起講。 */
+function renderMasterSummaryPlain(summary, juType){
+  const T2=x=>t2(x||'');
+  if(summary.quiet){
+    return `<div class="master-card">
+      <div class="master-title">師傅總結</div>
+      <div class="plain-p">這局整體挺平穩的——六害、格局、地利、主客、天時、人和，沒有哪個特別揪著你，可以按原計劃推進，不用特別緊張哪個方向。</div>
+    </div>`;
+  }
+  // 把 formatCureSteps() 的結構化化解步驟，組成一段順口的話，而不是條列的「灭象：xxx／布阵：xxx」
+  const plainCure=(cs)=>{
+    if(!cs)return '化解方法這裡暫時沒查到明確的說法，需要人工再核對一下。';
+    const parts=[];
+    if(cs.miexiang)parts.push(`第一步先「灭象」：${T2(cs.miexiang.action)}${cs.miexiang.verified?'':'（這步視頻裡沒有明講，僅供參考）'}`);
+    if(cs.place)parts.push(`可以把化解用的東西放在家裡或辦公室「${T2(cs.place)}」這個方位角落——這是物品要擺哪裡，跟你本人要不要去這個方向沒有關係`);
+    if(cs.buzhen&&cs.buzhen.length)parts.push(`具體怎麼布：${cs.buzhen.map(b=>T2(b.text)).join('，')}`);
+    if(cs.note)parts.push(T2(cs.note));
+    if(cs.verified===false)parts.push('（這條化解方法是推導出來的，不是視頻原文逐字講的，僅供參考）');
+    return parts.join('；')+'。';
+  };
+  const AGREEMENT_PLAIN={
+    consistent_xiong:'這裡兩套不同的規則，各自獨立算出來，都覺得不太順——能對上號，比只看一套更值得留意。',
+    consistent_ji:'這裡兩套規則都覺得還不錯。',
+    mixed:'這裡兩套規則不太一樣，一個偏順一個偏不順——這不是矛盾，是這個位置本來就有的複雜面，你自己感受哪個更準就好，不用強行調成一個結論。',
+    none:'',
+  };
+  const hotspotPlain=summary.hotspots.map((h,idx)=>{
+    const mingjuNote=h.xunlao.find(x=>x.cureNote)?.cureNote;
+    const xunlaoPara=h.xunlao.length?h.xunlao.map((x,i)=>{
+      const lead=i===0?'從刑墓庚虎迫空這套細緻的規則來看：':'另外，';
+      const hitTail=x.isHit?'——這條是直接衝著你來的。':'——不過這條只是盤面背景，不是直接針對你。';
+      const cureLine=x.cureNote?'':`　${plainCure(x.cureSteps)}`;
+      return `${lead}${T2(x.text)}${hitTail}${cureLine}`;
+    }).join(' '):'';
+    const mainstreamPara=h.mainstream.length?h.mainstream.map((x,i)=>{
+      const lead=i===0?'從大家比較公認的說法來看：':'另外，';
+      const hitTail=x.isHit?'——這條也是直接衝著你來的。':'——這條是背景，不是直接針對你。';
+      return `${lead}${T2(x.text)}${hitTail}`;
+    }).join(' ')+'　（這套目前沒有對應的化解方法，想知道具體怎麼處理，可以參考上面那段。）':'';
+    return `<div class="plain-block">
+      <div class="plain-gong">來看<b>${T2(h.gong)}宮</b>這邊${idx===0?'——這是這局最需要注意的地方':''}。</div>
+      ${AGREEMENT_PLAIN[h.agreement]?`<div class="plain-p" style="opacity:.8">${AGREEMENT_PLAIN[h.agreement]}</div>`:''}
+      ${xunlaoPara?`<div class="plain-p"><span class="plain-tag plain-tag-xunlao">荀爽老師這套</span>${xunlaoPara}</div>`:''}
+      ${mingjuNote?`<div class="plain-p" style="opacity:.75">${T2(mingjuNote)}</div>`:''}
+      ${mainstreamPara?`<div class="plain-p"><span class="plain-tag plain-tag-mainstream">大家比較公認的說法</span>${mainstreamPara}</div>`:''}
+    </div>`;
+  }).join('');
+  const mingjuIntro=juType==='命局'
+    ?'這是命局模式，「命中了什麼」照樣講給你聽，但荀爽老師這套灭象布阵的具體擺放指令這次先不給——那是針對「事局」(問一件具體的事)設計的方法，命局是你天生的整體結構，硬套具體操作會文不對題，遇到下面這些麻煩時，建議另外起一個事局來問。'
+    :'';
+  return `<div class="master-card">
+    <div class="master-title">師傅總結</div>
+    <div class="plain-p" style="margin-bottom:10px;opacity:.85">這局最值得注意的地方，挑出了 ${summary.hotspots.length} 個宮，主流斷局法跟荀爽老師體系的說法一律分開講，不會混在一起。「直接衝著你來的」代表這件事壓在你自己（日干/時干/值符/所求對應天干）身上，比較要緊；「背景」代表這局有這件事，但不是針對你，程度上輕一些。${mingjuIntro}</div>
+    ${hotspotPlain}
   </div>`;
 }
 
@@ -711,7 +785,12 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     <div class="pan-grid">${gridHTML}</div>
   </div>
 
-  ${renderMasterSummary(masterSummary, juType)}
+  <div class="master-toggle">
+    <button class="mt-btn mt-active" data-mode="plain" onclick="setMasterMode(this,'plain')">白話版</button>
+    <button class="mt-btn" data-mode="pro" onclick="setMasterMode(this,'pro')">專業版</button>
+  </div>
+  <div class="master-mode master-mode-plain">${renderMasterSummaryPlain(masterSummary, juType)}</div>
+  <div class="master-mode master-mode-pro" style="display:none">${renderMasterSummary(masterSummary, juType)}</div>
 
   <div class="section-label">解讀一・主流斷局法（跨門派共識，與下面荀爽老師體系是兩套不同來源）${BADGE_SOURCE_B}${BADGE_CONSENSUS_X}</div>
   ${gejuHits.length ? `<div class="geju-card">
