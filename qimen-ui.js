@@ -532,13 +532,22 @@ function renderMasterSummaryPlain(summary, juType){
 function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourStem, needKey, industry, targetWuxing, yearsInput, masterSummary, marriageInfo, kongHitGongs, fuyinFanyinHits){
   const T2=x=>t2(x||'');
 
+  // 三層結構＋置信度標籤：標示每一段話是「查表就有的事實」(rule)、「把幾個已驗證符號的
+  // 意思兜在一起講」(combo)、還是「跨好幾個面向比出來的推論」(infer/weak)。標籤只是老實
+  // 講清楚這句話怎麼來的，不是免責聲明——寫的時候還是要對內容本身負責，不能拿標籤當藉口
+  // 亂寫。四個等級對應 ChatGPT 建議的【規則】【組合取象】【綜合推導】【弱推斷】，
+  // 【禁止輸出】那一級不會出現在畫面上，是「這種話本來就不該寫」的內部提醒。
+  const CONF_TAG={rule:['plain-tag-rule','規則'], combo:['plain-tag-combo','組合取象'],
+    infer:['plain-tag-infer','綜合推導'], weak:['plain-tag-weak','弱推斷']};
+  const confTag=tier=>{const [cls,label]=CONF_TAG[tier]||CONF_TAG.rule; return `<span class="plain-tag ${cls}">${label}</span>`;};
+
   // ① 性格：日干＝內心，時干＝對外展現，直接用十天干取象詞典裡已經驗證過的描述，不新寫一套
   const dInfo=dayStem?LEX_DATA.stems[dayStem]:null;
   const hInfo=hourStem?LEX_DATA.stems[hourStem]:null;
-  let personality='';
+  let personality='', personalityTier='rule';
   if(dInfo)personality+=`往內心裡看，這個人骨子裡更接近「${T2(dInfo.name)}」這個字代表的東西：${T2(dInfo.desc)}`;
   if(hInfo&&hourStem!==dayStem)personality+=` 而對外展現出來、別人看到的樣子，更接近「${T2(hInfo.name)}」：${T2(hInfo.desc)}`;
-  if(!personality)personality='這局缺少日干/時干資訊，性格這塊暫時看不出來。';
+  if(!personality){personality='這局缺少日干/時干資訊，性格這塊暫時看不出來。'; personalityTier='weak';}
 
   // ② 事業財運人脈：直接借用「財富七要」「事業七要」已經驗證過的方法，命局模式下不管
   //    起局時選的所求是什麼，都跑一次這兩套分析——命局本來就是問整個人，不是問單一件事。
@@ -548,7 +557,7 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
     const positioned=items.filter(it=>it.rows&&it.rows.length);
     const bad=positioned.filter(it=>it.bad===true);
     const clean=positioned.filter(it=>it.bad===false);
-    if(!positioned.length)return {text:`${label}方面這局沒有明確的定位資訊，暫時看不出來。`, bad:[], total:0};
+    if(!positioned.length)return {text:`${label}方面這局沒有明確的定位資訊，暫時看不出來。`, bad:[], total:0, tier:'weak'};
     let text=`${label}方面，`;
     if(bad.length===0){
       text+=`「${clean.map(it=>T2(it.name)).join('」「')}」這幾個關鍵點位都還算乾淨，沒有明顯卡住的地方。`;
@@ -557,7 +566,9 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
       if(clean.length)text+=`；「${clean.map(it=>T2(it.name)).join('」「')}」倒是乾淨的`;
       text+='。';
     }
-    return {text, bad, total:positioned.length};
+    // combo：財富七要/事業七要/簡明定位讀法都是把好幾個已驗證的單點符號兜在一起才推出
+    // 這個生活面向的結論，不是單一查表事實，所以標「組合取象」而不是「規則」。
+    return {text, bad, total:positioned.length, tier:'combo'};
   };
   const wealthP=domainParagraph('財運', wealth.items);
   const careerP=domainParagraph('事業', career.items);
@@ -567,7 +578,7 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
   //    「已經有對象/已婚的話，兩人相處的方向」，兩者問的問題不一樣，都留著、講清楚各自在回答什麼。
   const peach=analyzeSimpleLocate(pan, '求桃花', zfzs);
   const peachP=peach?domainParagraph('感情婚姻', peach.items):{text:'感情婚姻這塊這次沒有算出來。', bad:[], total:0};
-  let marriageText='';
+  let marriageText='', marriageTier='combo'; // 把乙庚落宮生克+空亡+伏吟反吟三項已驗證判斷兜在一起講
   if(marriageInfo){
     const {yiGong, gengGong, favor, isJi}=marriageInfo;
     const yiKong=(kongHitGongs||[]).includes(yiGong), gengKong=(kongHitGongs||[]).includes(gengGong);
@@ -587,6 +598,7 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
   const wanderText=wanderHits.length===0
     ?'目前盤面上刑墓庚虎迫空這幾種波動，沒有直接命中你自己，算是比較平穩的一段時間。'
     :'具體來看，容易讓你覺得卡住、不順的地方有：'+wanderHits.map(x=>`${T2(x.gong)}宮這邊，${T2(x.text)}`).join('；')+'。';
+  const wanderTier='rule'; // 直接列出「命中號令」的六害條目，沒有額外組合或推論
 
   // ⑤ 怎麼破：財運/事業/感情裡好幾個符號常常同時落在同一宮(例如「生門」跟「干財」剛好都在
   //    兌宮)，一開始按「每個符號」各自查一次化解，會把同一宮的同一份化解重複貼好幾遍——
@@ -614,6 +626,7 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
     });
   });
   const cureText=cureParts.length?cureParts.join('　'):'目前沒有需要特別處理的地方，維持現狀就好。';
+  const cureTier='combo'; // 把好幾個命中六害的宮各自對應的化解方法兜在一起，不是單一查表事實
 
   // ⑥ 總結建議：拿「乾淨度」比較幾個面向，不是現編性格結論——分母是這個面向的點位數，
   //    分子是乾淨點位數，比例越高代表這個面向目前相對越順，純數字比較。
@@ -634,10 +647,14 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
   overallText+=wanderHits.length>0
     ?` 另外，人生波動這塊（刑墓庚虎迫空）目前命中了 ${wanderHits.length} 處，具體處理方式看上面「怎麼破」那段。`
     :' 人生波動這塊（刑墓庚虎迫空）目前沒有命中你自己，算是相對平穩。';
+  const overallTier='infer'; // 拿財運/事業/感情婚姻的乾淨度比例互相比較，是跨面向的相對判斷，
+  // 不是單一查表事實，程度上比「組合取象」再往上一層——比較結果會隨盤面變化，只是現在
+  // 相對哪塊更該注意，不是說哪塊「不好」或「一定會怎樣」。
 
   // ⑦ 一句話概括：純數字統計出來的一句話，不夾帶心理學式的性格判斷
   const totalBad=domains.reduce((s,dm)=>s+dm.bad.length,0)+wanderHits.length;
   const totalAll=domains.reduce((s,dm)=>s+dm.total,0)+wanderHits.length;
+  const oneLinerTier=totalAll===0?'weak':'infer';
   const oneLiner=totalAll===0
     ?'這局資訊不足，暫時無法給出一句話概括。'
     :(totalBad===0
@@ -646,14 +663,15 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
 
   return `<div class="master-card">
     <div class="master-title">師傅總結</div>
-    <div class="plain-p" style="opacity:.7;margin-bottom:10px">下面是把這局拆成幾個生活面向來講的白話版——性格、財運事業、感情婚姻、容易波動的地方，一路讀下去就好，不用先懂術語。這裡主流斷局法跟荀爽老師體系的判斷不特別分開標註，兩邊揉在一起講；如果想看兩套體系嚴格分開、逐宮完整的版本，切到「專業版」。</div>
-    <div class="plain-block"><div class="plain-gong">這個人大概是什麼樣</div><div class="plain-p">${personality}</div></div>
-    <div class="plain-block"><div class="plain-gong">事業財運人脈</div><div class="plain-p">${wealthP.text}</div><div class="plain-p">${careerP.text}</div></div>
-    <div class="plain-block"><div class="plain-gong">感情婚姻桃花</div><div class="plain-p">${peachP.text}</div>${marriageText?`<div class="plain-p">${marriageText}</div>`:''}</div>
-    <div class="plain-block"><div class="plain-gong">容易出現的波動、挫折</div><div class="plain-p">${wanderText}</div></div>
-    <div class="plain-block"><div class="plain-gong">怎麼破</div><div class="plain-p">${cureText}</div></div>
-    <div class="plain-block"><div class="plain-gong">總結建議</div><div class="plain-p">${overallText}</div></div>
-    <div class="plain-block" style="border-bottom:none"><div class="plain-p" style="font-weight:700">${oneLiner}</div></div>
+    <div class="plain-p" style="opacity:.7;margin-bottom:4px">下面是把這局拆成幾個生活面向來講的白話版——性格、財運事業、感情婚姻、容易波動的地方，一路讀下去就好，不用先懂術語。這裡主流斷局法跟荀爽老師體系的判斷不特別分開標註，兩邊揉在一起講；如果想看兩套體系嚴格分開、逐宮完整的版本，切到「專業版」。</div>
+    <div class="plain-p" style="opacity:.55;font-size:12px;margin-bottom:10px">每段話前面的小標籤是老實告訴你這句話怎麼來的：${confTag('rule')}查表就有的事實、${confTag('combo')}把幾個已驗證的符號兜在一起講、${confTag('infer')}跨好幾個面向比出來的相對判斷(不是鐵律)、${confTag('weak')}資訊不足只能先這樣講。標籤不是免責聲明，只是讓你自己判斷要多當真。</div>
+    <div class="plain-block"><div class="plain-gong">這個人大概是什麼樣</div><div class="plain-p">${confTag(personalityTier)}${personality}</div></div>
+    <div class="plain-block"><div class="plain-gong">事業財運人脈</div><div class="plain-p">${confTag(wealthP.tier)}${wealthP.text}</div><div class="plain-p">${confTag(careerP.tier)}${careerP.text}</div></div>
+    <div class="plain-block"><div class="plain-gong">感情婚姻桃花</div><div class="plain-p">${confTag(peachP.tier)}${peachP.text}</div>${marriageText?`<div class="plain-p">${confTag(marriageTier)}${marriageText}</div>`:''}</div>
+    <div class="plain-block"><div class="plain-gong">容易出現的波動、挫折</div><div class="plain-p">${confTag(wanderTier)}${wanderText}</div></div>
+    <div class="plain-block"><div class="plain-gong">怎麼破</div><div class="plain-p">${confTag(cureTier)}${cureText}</div></div>
+    <div class="plain-block"><div class="plain-gong">總結建議</div><div class="plain-p">${confTag(overallTier)}${overallText}</div></div>
+    <div class="plain-block" style="border-bottom:none"><div class="plain-p" style="font-weight:700">${confTag(oneLinerTier)}${oneLiner}</div></div>
   </div>`;
 }
 
