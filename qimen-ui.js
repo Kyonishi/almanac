@@ -612,6 +612,12 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
   //    起局時選的所求是什麼，都跑一次這兩套分析——命局本來就是問整個人，不是問單一件事。
   const wealth=analyzeWealthSeven(pan, {industry, targetWuxing: targetWuxing||null});
   const career=analyzeCareerSeven(pan, zfzs, {industry});
+  // 財富七要/事業七要的每個項目本來就帶 role 欄位(如「庚虎」的 role 是「困難」、「諸干」是
+  // 「角色」)——這是已經驗證過的白話對照，不是這裡臨時發明的術語表。原本這裡只顯示原始符號
+  // 名(如「庚虎」「諸干」)，小白看了不知道是什麼意思；改成「白話(原符號)」的形式，第一次
+  // 出現就帶原詞，不需要另外查術語表也看得懂，也不影響可溯源(原符號還在，只是加了已驗證的
+  // 白話說明)。(ChatGPT 建議「首次短釋義」，這裡直接用既有 role 欄位做到，不是新造內容。)
+  const glossItem=it=>(it.role&&it.role!==it.name)?`${T2(it.role)}(${T2(it.name)})`:T2(it.name);
   const domainParagraph=(label, items)=>{
     const positioned=items.filter(it=>it.rows&&it.rows.length);
     const bad=positioned.filter(it=>it.bad===true);
@@ -619,10 +625,10 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
     if(!positioned.length)return {text:`${label}方面這局沒有明確的定位資訊，暫時看不出來。`, bad:[], total:0, tier:'weak'};
     let text=`${label}方面，`;
     if(bad.length===0){
-      text+=`「${clean.map(it=>T2(it.name)).join('」「')}」這幾個關鍵點位都還算乾淨，沒有明顯卡住的地方。`;
+      text+=`「${clean.map(glossItem).join('」「')}」這幾個關鍵點位都還算乾淨，沒有明顯卡住的地方。`;
     }else{
-      text+=`「${bad.map(it=>T2(it.name)).join('」「')}」這幾個點位命中了六害，需要留意`;
-      if(clean.length)text+=`；「${clean.map(it=>T2(it.name)).join('」「')}」倒是乾淨的`;
+      text+=`「${bad.map(glossItem).join('」「')}」這幾個點位命中了六害，需要留意`;
+      if(clean.length)text+=`；「${clean.map(glossItem).join('」「')}」倒是乾淨的`;
       text+='。';
     }
     // combo：財富七要/事業七要/簡明定位讀法都是把好幾個已驗證的單點符號兜在一起才推出
@@ -659,33 +665,24 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
     :'具體來看，容易讓你覺得卡住、不順的地方有：'+wanderHits.map(x=>`${T2(x.gong)}宮這邊，${T2(x.text)}`).join('；')+'。';
   const wanderTier='rule'; // 直接列出「命中號令」的六害條目，沒有額外組合或推論
 
-  // ⑤ 怎麼破：財運/事業/感情裡好幾個符號常常同時落在同一宮(例如「生門」跟「干財」剛好都在
-  //    兌宮)，一開始按「每個符號」各自查一次化解，會把同一宮的同一份化解重複貼好幾遍——
-  //    改成先按「宮」去重，同一宮只講一次，不管有幾個符號落在那裡。
-  //    ④的刑墓庚虎迫空已經有 formatCureSteps 算好的完整步驟，優先用那份；②③命中六害但
-  //    不在④清單裡的宮，才另外用 getCuresAtGong 查。
-  const cureGongsDone=new Set();
-  const cureParts=[];
-  wanderHits.forEach(x=>{
-    if(x.cureSteps&&!cureGongsDone.has(x.gong)){
-      cureGongsDone.add(x.gong);
-      cureParts.push(`${T2(x.gong)}宮這條：${plainCureText(x.cureSteps)}`);
-    }
-  });
+  // ⑤ 怎麼破：這裡原本會呼叫 getCuresAtGong() 直接印出灭象布阵的具體擺放/方位指令，但
+  // 2026-09-05 覆查時發現這其實是一個沒被注意到的不一致——專業版師傅總結卡(renderMasterSummary)
+  // 早就正確做到「命局模式不給灭象布阵具體操作指令，只統一講一次原因」(MINGJU_CURE_NOTE，
+  // 因為 buildXunlaoItems 在 juType='命局' 時會把 cureSteps 強制設成 null)，但這裡的②③
+  // 財富七要/事業七要/簡明定位讀法命中六害的項目，是另外直接呼叫 getCuresAtGong() 拿原始
+  // 化解物件、自己兜文字，完全繞過了這個判斷，導致命局模式下依然會印出「無腦法: 用乙（用乙）」
+  // 這種具體操作指令，跟專業版的規則互相矛盾。這裡改成兩邊統一：命局模式一律不給具體擺放/
+  // 方位指令，只統計「命中了幾個宮」+ 統一講一次事局才有具體化解步驟——這樣「無腦法：用乙
+  // （用乙）」這種重複字眼也隨著具體指令一起拿掉了，不需要額外的術語表去特別處理這個詞。
+  const cureGongs=new Set();
+  wanderHits.forEach(x=>cureGongs.add(x.gong));
   [...wealthP.bad, ...careerP.bad, ...(peachP.bad||[])].forEach(it=>{
-    (it.rows||[]).forEach(r=>{
-      if(r.harms&&r.harms.length&&!cureGongsDone.has(r.gong)){
-        cureGongsDone.add(r.gong);
-        getCuresAtGong(r.gong, pan).forEach(c=>{
-          const xiangTxt=c.xiang?.wu?`，${T2(c.xiang.wu)}`:'';
-          const placeTxt=c.place?`，放於${T2(c.place)}方位`:'';
-          cureParts.push(`${T2(r.gong)}宮這條：${T2(c.method||'')}${c.cureStem?'（用'+T2(c.cureStem)+'）':''}${xiangTxt}${placeTxt}${c.note?'　'+T2(c.note):''}`);
-        });
-      }
-    });
+    (it.rows||[]).forEach(r=>{ if(r.harms&&r.harms.length)cureGongs.add(r.gong); });
   });
-  const cureText=cureParts.length?cureParts.join('　'):'目前沒有需要特別處理的地方，維持現狀就好。';
-  const cureTier='combo'; // 把好幾個命中六害的宮各自對應的化解方法兜在一起，不是單一查表事實
+  const cureTier='rule'; // 只是統計命中宮位數量+統一講一次事局提示，沒有新的組合或推論
+  const cureText=cureGongs.size===0
+    ?'目前沒有需要特別處理的地方，維持現狀就好。'
+    :`這局在${[...cureGongs].map(T2).join('、')}宮命中了需要處理的訊號，共 ${cureGongs.size} 處。荀爽老師體系對應的化解方法(灭象布阵：具體要擺什麼、放哪個方位)是針對「事局」——也就是問一件具體的事——設計的；命局代表你天生的整體結構，不是在問一件具體的事，這裡先不給出擺放/方位這類具體操作指令，以免文不對題。如果想針對某個具體的困擾找到對症的化解步驟，建議挑一件具體想問的事，重新起一個「事局」來問。`;
 
   // ⑥ 總結建議：拿「乾淨度」比較幾個面向，不是現編性格結論——分母是這個面向的點位數，
   //    分子是乾淨點位數，比例越高代表這個面向目前相對越順，純數字比較。
