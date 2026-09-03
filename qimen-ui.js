@@ -834,8 +834,15 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
      的 jixingHits/rumuHits/gengHits/baihuHits/menpoHits/kongGongMap/gejuHits 重新組織一次。 */
   const HAI_WORD_CLASS={刑:'lh-xing',墓:'lh-mu',庚:'lh-geng',虎:'lh-hu',迫:'lh-po',空:'lh-kong'};
   const HAI_MEANING={刑:'爭執損耗',墓:'沉溺迷失',庚:'凶禍阻隔',虎:'快速危險',迫:'壓力脅迫',空:'虛假不實'};
+  // 用戶朋友(ChatGPT)覆核 2026-09-06 批次2 修正時抓到的漏改：點符號彈窗(openSheet，資料來源
+  // 就是這裡的 cureBrief/menpoBrief)當時完全沒檢查 juType，命局模式下彈窗仍會印出「灭象後
+  // 放到...方位」「用「乙」，放高處」這類具體事局才該有的操作指令，跟同一批已經改好的六害
+  // 說明卡/財富七要報告/本局解讀narrative不一致——這裡補上同一條規則：命局模式不給具體
+  // 化解文字，改成每個彈窗區塊統一補一次 MINGJU_CURE_NOTE。
+  const isMingju=juType==='命局';
   // 精簡版化解摘要，措辭跟下面完整六害說明卡的 cureLine 對齊，只是縮成一行，方便塞進彈窗
   function cureBrief(cure){
+    if(isMingju)return '';
     if(!cure)return '';
     const isKong=cure.hai==='空';
     const placeLine=cure.place
@@ -849,6 +856,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     return `化解：${placeLine?placeLine+'；':''}${detail}${noteTxt}`;
   }
   function menpoBrief(cure){
+    if(isMingju)return '';
     if(!cure)return '';
     return `化解：用合，擺放「${cure.doorsText}」門象、對應地支「${cure.branchesText}」`;
   }
@@ -892,6 +900,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     const renderParts=(rel)=>{
       const list=rel?parts.filter(p=>p.rel.includes(rel)):parts;
       if(!list.length)return '';
+      const hasHaiType=list.some(p=>p.type!=='格');
       return `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #E5D5A8">
         <div style="font-size:10px;color:var(--sub);margin-bottom:4px;letter-spacing:1px">這一宮這局命中</div>
         ${list.map(p=>p.type==='格'
@@ -906,6 +915,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
               ${p.cureHtml?`<div style="margin-top:3px">${p.cureHtml}</div>`:''}
             </div>`
         ).join('')}
+        ${isMingju&&hasHaiType?`<div class="cure-line" style="margin-top:6px;opacity:.7;font-size:11px">${T2(MINGJU_CURE_NOTE)}</div>`:''}
       </div>`;
     };
     gongHitHtml[gua]={all:renderParts(null),sky:renderParts('sky'),earth:renderParts('earth'),
@@ -1461,7 +1471,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
 
     if(Object.keys(jixingHits).length){
       html+=`<div class="liuhai-sec">
-        <div class="liuhai-title jx"><span class="dot"></span><span class="lh-word lh-xing">刑</span>（嚴重度最高，灭象：${MIEXIANG_RULE['刑'].action}，布阵：用合）</div>
+        <div class="liuhai-title jx"><span class="dot"></span><span class="lh-word lh-xing">刑</span>${isMingju?`（嚴重度最高，${HAI_MEANING['刑']}）`:`（嚴重度最高，灭象：${MIEXIANG_RULE['刑'].action}，布阵：用合）`}</div>
         ${Object.entries(jixingHits).map(([g,st])=>{
           const isHit=protectedStems.has(st);
           const cure=getCureForJiXing(g,st);
@@ -1472,7 +1482,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
 
     if(Object.keys(rumuHits).length){
       html+=`<div class="liuhai-sec">
-        <div class="liuhai-title rm"><span class="dot"></span><span class="lh-word lh-mu">墓</span>（灭象：${MIEXIANG_RULE['墓'].action}，布阵：用冲）</div>
+        <div class="liuhai-title rm"><span class="dot"></span><span class="lh-word lh-mu">墓</span>${isMingju?`（${HAI_MEANING['墓']}）`:`（灭象：${MIEXIANG_RULE['墓'].action}，布阵：用冲）`}</div>
         ${Object.entries(rumuHits).map(([g,st])=>{
           const isHit=protectedStems.has(st);
           const cure=getCureForRuMu(g,st);
@@ -1483,7 +1493,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
 
     if(Object.keys(gengHits).length){
       html+=`<div class="liuhai-sec">
-        <div class="liuhai-title mp"><span class="dot"></span><span class="lh-word lh-geng">庚</span>（灭象：${MIEXIANG_RULE['庚'].action}，布阵：無腦用乙）</div>
+        <div class="liuhai-title mp"><span class="dot"></span><span class="lh-word lh-geng">庚</span>${isMingju?`（${HAI_MEANING['庚']}）`:`（灭象：${MIEXIANG_RULE['庚'].action}，布阵：無腦用乙）`}</div>
         ${Object.entries(gengHits).map(([g,st])=>{
           const isHit=protectedStems.has('庚');
           const cure=getCureForGengOrHu(g,'庚');
@@ -1494,7 +1504,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
 
     if(Object.keys(baihuHits).length){
       html+=`<div class="liuhai-sec">
-        <div class="liuhai-title mp"><span class="dot"></span><span class="lh-word lh-hu">虎</span>（白虎，布阵：無腦用乙；灭象動作暫沿用「刑」的通用規則，未經視頻明確驗證）</div>
+        <div class="liuhai-title mp"><span class="dot"></span><span class="lh-word lh-hu">虎</span>${isMingju?`（白虎，${HAI_MEANING['虎']}）`:'（白虎，布阵：無腦用乙；灭象動作暫沿用「刑」的通用規則，未經視頻明確驗證）'}</div>
         ${Object.entries(baihuHits).map(([g,gd])=>{
           const isHit=gongHitsProtected(g,sky,earth,protectedStems);
           const cure=getCureForGengOrHu(g,'虎');
@@ -1505,7 +1515,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
 
     if(Object.keys(menpoHits).length){
       html+=`<div class="liuhai-sec">
-        <div class="liuhai-title po"><span class="dot"></span><span class="lh-word lh-po">迫</span>（門迫，壓力脅迫，門克宮；布阵：用合）</div>
+        <div class="liuhai-title po"><span class="dot"></span><span class="lh-word lh-po">迫</span>${isMingju?`（門迫，${HAI_MEANING['迫']}，門克宮）`:'（門迫，壓力脅迫，門克宮；布阵：用合）'}</div>
         ${Object.entries(menpoHits).map(([g,dr])=>{
           const isHit=gongHitsProtected(g,sky,earth,protectedStems)||dr===zfzs.值使門宮?.[0];
           const cure=getCureForMenPo(g);
@@ -1521,7 +1531,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
 
     if(kongHitGongs.length){
       html+=`<div class="liuhai-sec">
-        <div class="liuhai-title kw"><span class="dot"></span><span class="lh-word lh-kong">空</span>（空亡，嚴重度最低，源自日時本身，布阵：缺啥補啥——目前所求「${needKey}」）</div>
+        <div class="liuhai-title kw"><span class="dot"></span><span class="lh-word lh-kong">空</span>${isMingju?`（空亡，嚴重度最低，源自日時本身，${HAI_MEANING['空']}）`:`（空亡，嚴重度最低，源自日時本身，布阵：缺啥補啥——目前所求「${needKey}」）`}</div>
         ${kongHitGongs.map(g=>{
           return `<div>· ${T2(g)}宮　空亡（${kongGongMap[g].join('')}空）${hlTag(true)}${dedupNote}</div>`;
         }).join('')}
