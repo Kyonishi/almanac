@@ -155,6 +155,17 @@ function clearHistoryAll(){
   saveHistoryList([]);
   renderHistoryPanel();
 }
+// 還原「大行業/小行業」下拉：小行業的值格式是 "大行業::小行業"(一般行業)或單純
+// key(INDUSTRY_MAP 的常見行業)，要先選對大行業、觸發選項重新產生，才能把小行業設回去，
+// 不能直接對小行業下拉設值(這時候小行業清單可能還是「先選大行業」的預設空清單)。
+function restoreIndustrySelect(industry){
+  const bigSel=document.getElementById('iIndustryBig'), smallSel=document.getElementById('iIndustrySmall');
+  if(!bigSel||!smallSel)return;
+  if(!industry){ bigSel.value=''; updateSmallIndustryOptions(); return; }
+  bigSel.value = industry.includes('::') ? industry.split('::')[0] : '__FLAT__';
+  updateSmallIndustryOptions();
+  smallSel.value=industry;
+}
 function reloadHistoryRecord(id){
   const rec=loadHistory().find(r=>r.id===id);
   if(!rec)return;
@@ -163,10 +174,16 @@ function reloadHistoryRecord(id){
   document.getElementById('iNeed').value=rec.needKey||'求財';
   document.getElementById('iYears').value=rec.yearsInput||'';
   document.getElementById('iJuType').value=rec.juType||'事局';
+  // longitudeInput/industry/targetWuxing 是這次(2026-09-03)才開始存的欄位，舊記錄沒有這幾
+  // 個欄位時一律還原成空值(=不校正/不選行業/不比較月令)，誠實反映「這筆舊記錄本來就沒存
+  // 這項資訊」，不是隨便留著畫面上原本的值繼續用。
+  document.getElementById('iLongitude').value=rec.longitudeInput!==undefined?rec.longitudeInput:'';
+  restoreIndustrySelect(rec.industry||'');
+  document.getElementById('iMonthTarget').value=rec.targetWuxing||'';
   updateNeedHint();
   document.getElementById('ritualPanel').style.display='none';
   document.getElementById('historyPanel').style.display='none';
-  calc();
+  calc(true); // 只是回看舊記錄，不是新起一局，不該再往歷史清單多推一筆
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function exportHistoryJson(){
@@ -178,6 +195,36 @@ function exportHistoryJson(){
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+// 嚴格校驗匯入備份裡每一筆記錄的形狀，只留下欄位型別正確的部分，其餘一律丟棄或轉成安全的
+// 空值——不是只檢查「這是不是陣列」就整包收下(Codex code review 2026-09-03 抓到的問題：
+// 原本沒做這層校驗，dateStr/needKey/prediction 文字、id 等欄位會直接被拼進 innerHTML/
+// onclick，被竄改過或來路不明的備份檔案可以藉此在瀏覽器裡跑任意腳本)。這裡只負責「型別
+// 正確」，畫面顯示時 renderHistoryPanel()/renderPredictionSnapshot() 仍然會對所有文字做
+// escHtml，雙層防護不互相取代。
+function sanitizeHistoryRecord(r){
+  if(!r||typeof r!=='object')return null;
+  const id=Number(r.id);
+  if(!Number.isFinite(id))return null;
+  const str=v=>typeof v==='string'?v:'';
+  const sanitizeItems=arr=>Array.isArray(arr)
+    ?arr.filter(x=>x&&typeof x==='object').map(x=>({text:str(x.text), isHit:x.isHit===true}))
+    :[];
+  const prediction=Array.isArray(r.prediction)
+    ?r.prediction.filter(hp=>hp&&typeof hp==='object').map(hp=>({
+        gong:str(hp.gong), agreement:str(hp.agreement),
+        xunlao:sanitizeItems(hp.xunlao), mainstream:sanitizeItems(hp.mainstream),
+      }))
+    :undefined; // undefined 保留「這筆記錄建立於功能上線前，沒有快照」的既有語意
+  const reviewedAt=Number(r.reviewedAt);
+  return {
+    id, dateStr:str(r.dateStr), timeStr:str(r.timeStr), needKey:str(r.needKey),
+    yearsInput:str(r.yearsInput), juType:str(r.juType), juLabel:str(r.juLabel), gz:str(r.gz),
+    hitsSummary:str(r.hitsSummary), longitudeInput:str(r.longitudeInput),
+    industry:str(r.industry), targetWuxing:str(r.targetWuxing), review:str(r.review),
+    reviewedAt:Number.isFinite(reviewedAt)?reviewedAt:undefined,
+    prediction,
+  };
+}
 function importHistoryJson(fileInput){
   const file=fileInput.files&&fileInput.files[0];
   if(!file)return;
@@ -186,13 +233,15 @@ function importHistoryJson(fileInput){
     try{
       const imported=JSON.parse(e.target.result);
       if(!Array.isArray(imported))throw new Error('格式不對');
+      const sanitized=imported.map(sanitizeHistoryRecord).filter(Boolean);
       const existing=loadHistory();
       const existingIds=new Set(existing.map(r=>r.id));
-      const merged=existing.concat(imported.filter(r=>r&&r.id&&!existingIds.has(r.id)));
+      const merged=existing.concat(sanitized.filter(r=>!existingIds.has(r.id)));
       merged.sort((a,b)=>b.id-a.id);
       saveHistoryList(merged.slice(0,HISTORY_MAX));
       renderHistoryPanel();
-      alert(`已匯入，目前共有 ${merged.length} 筆歷史記錄`);
+      const skipped=imported.length-sanitized.length;
+      alert(`已匯入，目前共有 ${merged.length} 筆歷史記錄${skipped>0?`（${skipped} 筆格式不正確已略過）`:''}`);
     }catch(err){ alert('匯入失敗：檔案格式不正確'); }
   };
   reader.readAsText(file);
@@ -214,10 +263,12 @@ function renderPredictionSnapshot(r){
     return '<div class="h-pred-note">起局當下判斷：這局整體沒有特別突出的宮位，算是比較平穩的一局。</div>';
   }
   const badge=x=>`<span class="h-badge ${x.isHit?'h-badge-hit':'h-badge-bg'}">${x.isHit?'命中號令':'背景'}</span>`;
+  // 這裡的文字全部經過 escHtml：預註冊快照理論上是本專案自己算出來的內容，但也是匯入備份
+  // 可以覆蓋的欄位，不能假設它一定乾淨(Codex code review 2026-09-03)。
   const body=r.prediction.map((hp,idx)=>`
-    <div class="h-pred-gong">${idx+1}. ${t2(hp.gong)}宮</div>
-    ${hp.xunlao.map(x=>`<div class="h-pred-line">［荀爽］${t2(x.text)}${badge(x)}</div>`).join('')}
-    ${hp.mainstream.map(x=>`<div class="h-pred-line">［主流］${t2(x.text)}${badge(x)}</div>`).join('')}
+    <div class="h-pred-gong">${idx+1}. ${escHtml(t2(hp.gong))}宮</div>
+    ${hp.xunlao.map(x=>`<div class="h-pred-line">［荀爽］${escHtml(t2(x.text))}${badge(x)}</div>`).join('')}
+    ${hp.mainstream.map(x=>`<div class="h-pred-line">［主流］${escHtml(t2(x.text))}${badge(x)}</div>`).join('')}
   `).join('');
   return `<details class="h-pred"><summary>起局當下的判斷（預註冊，鎖定不可改，共 ${r.prediction.length} 個熱點宮）</summary>${body}</details>`;
 }
@@ -226,22 +277,27 @@ function renderHistoryPanel(){
   const list=loadHistory();
   const rows=list.map(r=>{
     const reviewed=r.review&&r.review.trim();
+    // safeId：只接受有限整數，直接嵌進 onclick="...(${safeId})" 屬性裡不加引號，如果 id
+    // 不是乾淨的數字，惡意字串可以直接跳出屬性、插入任意腳本(Codex code review
+    // 2026-09-03)。所有其餘文字欄位也都經過 escHtml，雙層防護，不管 sanitizeHistoryRecord
+    // 這層有沒有漏網之魚，畫面渲染這一層自己也要對每個欄位負責。
+    const safeId=Number.isFinite(Number(r.id))?Number(r.id):0;
     return `
     <div class="h-row">
       <div class="h-row-top">
-        <div class="h-row-main" onclick="reloadHistoryRecord(${r.id})">
-          <div class="h-row-date">${r.dateStr} ${r.timeStr}
+        <div class="h-row-main" onclick="reloadHistoryRecord(${safeId})">
+          <div class="h-row-date">${escHtml(r.dateStr)} ${escHtml(r.timeStr)}
             <span class="h-badge ${reviewed?'h-badge-done':'h-badge-todo'}">${reviewed?'已復盤':'未復盤'}</span>
           </div>
-          <div class="h-row-info">${t2(r.juLabel||'')} · ${t2(r.gz||'')}${r.needKey?(' · 所求：'+r.needKey):''}</div>
-          ${r.hitsSummary?`<div class="h-row-hits">${t2(r.hitsSummary)}</div>`:''}
+          <div class="h-row-info">${escHtml(t2(r.juLabel||''))} · ${escHtml(t2(r.gz||''))}${r.needKey?(' · 所求：'+escHtml(r.needKey)):''}</div>
+          ${r.hitsSummary?`<div class="h-row-hits">${escHtml(t2(r.hitsSummary))}</div>`:''}
         </div>
-        <button class="h-row-del" onclick="deleteHistoryRecord(${r.id})" title="刪除">✕</button>
+        <button class="h-row-del" onclick="deleteHistoryRecord(${safeId})" title="刪除">✕</button>
       </div>
       ${renderPredictionSnapshot(r)}
       <div class="h-review">
-        <textarea class="h-review-input" id="review_${r.id}" placeholder="事後回看：這局準不準？實際發生了什麼？（用來校對方法論）">${r.review?escHtml(r.review):''}</textarea>
-        <button class="h-btn" onclick="saveReview(${r.id})">保存復盤</button>
+        <textarea class="h-review-input" id="review_${safeId}" placeholder="事後回看：這局準不準？實際發生了什麼？（用來校對方法論）">${r.review?escHtml(r.review):''}</textarea>
+        <button class="h-btn" onclick="saveReview(${safeId})">保存復盤</button>
       </div>
     </div>`;
   }).join('');
@@ -361,8 +417,11 @@ function updHeader(){
 }
 updHeader();setInterval(updHeader,30000);
 
-/* ── 起局 ── */
-function calc(){
+/* ── 起局 ──
+   skipHistory：從歷史記錄「重新載入」時傳 true，代表這不是一次新的起局，只是回看舊記錄，
+   不應該再往歷史清單裡多推一筆——不然每點開一筆舊記錄就會多出一筆一模一樣的新記錄，
+   長期會把清單洗版、擠掉真正的舊資料(Codex code review 2026-09-03 抓到的問題)。 */
+function calc(skipHistory){
   const dv=document.getElementById('iDate').value;
   const tv=document.getElementById('iTime').value;
   if(!dv||!tv){alert('請輸入日期和時間');return;}
@@ -377,7 +436,7 @@ function calc(){
   const longitude=lonRaw===''||lonRaw===undefined?undefined:Number(lonRaw);
   try{
     const pan=QimenJS.qimenChaibu(Solar,y,m,d,h,mi,longitude);
-    renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxing);
+    renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxing,lonRaw,skipHistory);
   }catch(e){
     document.getElementById('result').innerHTML=
       `<div class="empty"><div class="big">⚠</div>起局失敗：${e.message}</div>`;
@@ -676,7 +735,7 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
 }
 
 /* ── 渲染盤面 ── */
-function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxing){
+function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxing,longitudeInput,skipHistory){
   needKey=needKey||'求財';
   juType=juType||'事局';
   const sky=pan.天盤||{}, earth=pan.地盤||{};
@@ -1481,18 +1540,28 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     xunlao: hp.xunlao.map(x=>({text:x.text, isHit:x.isHit})),
     mainstream: hp.mainstream.map(x=>({text:x.text, isHit:x.isHit})),
   }));
-  pushHistoryRecord({
-    id: Date.now(),
-    dateStr: `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`,
-    timeStr: `${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}`,
-    needKey,
-    yearsInput: yearsInput||'',
-    juType,
-    juLabel,
-    gz,
-    hitsSummary: hitLabels.length?`六害命中：${hitLabels.join('、')}`:'六害：無命中',
-    prediction: predictionSnapshot,
-  });
+  // skipHistory：從歷史記錄重新載入時不重複推入新記錄(見 calc() 註解)。
+  // longitudeInput/industry/targetWuxing：Codex code review 2026-09-03 抓到的問題——
+  // 原本沒有存這三個欄位，「重新載入」舊記錄時會直接沿用畫面上目前的值，經度會影響真太陽時
+  // 校正甚至時柱本身，同一筆歷史記錄重新排出來的盤可能因此跟起局當下不一樣，失去「回看」
+  // 的意義，所以這三項也要原封不動存進記錄、重新載入時原封不動還原。
+  if(!skipHistory){
+    pushHistoryRecord({
+      id: Date.now(),
+      dateStr: `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`,
+      timeStr: `${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}`,
+      needKey,
+      yearsInput: yearsInput||'',
+      juType,
+      juLabel,
+      gz,
+      hitsSummary: hitLabels.length?`六害命中：${hitLabels.join('、')}`:'六害：無命中',
+      prediction: predictionSnapshot,
+      longitudeInput: longitudeInput||'',
+      industry: industry||'',
+      targetWuxing: targetWuxing||'',
+    });
+  }
 }
 
 /* ── 初始化 ── */
