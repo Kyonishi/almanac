@@ -1221,6 +1221,51 @@ function buildPeachBlossomLocates(pan, branchEntries){
   });
 }
 
+// ══════════════════ 桃花：沐浴位 (十二長生第二階段，第三種經典查法) ══════════════════
+// 來源: 2026-09 查證，兩個獨立資料源交叉核對一致：(1) 163.com「奇門遁甲教你抓住桃花」文章
+// 給出具體案例(日干/時干戊落震宮，震宮地支卯，戊的沐浴恰好是卯，判定「有桃花」)；(2) imlht.com
+// 「十二長生」文章給出完整十天干沐浴地支對照表(甲子/乙巳/丙卯/丁申/戊卯/己申/庚午/辛亥/壬酉/
+// 癸寅)。這份完整表逐一跟本專案既有 CHANGSHENG_START／YANG_STEMS／getTwelveStage() 十二
+// 長生引擎(原本是給地利用的)重新算過，十個天干完全一致，等於用兩個獨立來源反向驗證了既有
+// 引擎沒有算錯，這裡直接沿用既有引擎算沐浴地支，不新建一份表。另外查到第三個來源(sina.cn
+// 「催桃花實操」)給的是按五行合併的簡化表(甲乙同查子、丙丁同查卯...)，拿去跟上面兩個來源
+// 精確比對後發現對陰干(乙丁己辛癸)算錯了(如乙寫成跟甲一樣的子，正確該是巳)，判斷是網路
+// 簡化流傳的謬誤版本，不採用，以精確表為準。
+// 用法查證：163.com 提到兩個參照點——日干沐浴看「這個字現在實際落在哪個宮，該宮地支是否
+// 剛好等於這個字的沐浴地支」(動態，取決於這次起局結果，跟地利判斷是同一種「是否命中」的
+// 邏輯)；生年干沐浴則是查詢者生年天干固定算出來的地支，跟「生肖固定桃花位」一樣是個人固定
+// 位置、跟這次起局的盤面無關。sina.cn 只展示日干這一項，沒有否定生年干，只是它自己選的
+// 方法沒收這一項，跟本專案既有驛馬「年/月/日/時支各自獨立列出，不強行合併」是同一種處理
+// 方式，這裡也把兩個參照點分開列，不合併成一個結論。
+function getMuyuBranch(stem){
+  const start=CHANGSHENG_START[stem];
+  if(!start)return null;
+  const startIdx=BRANCH_ORDER.indexOf(start);
+  const isYang=YANG_STEMS.has(stem);
+  const branchIdx=isYang?(startIdx+1)%12:(startIdx-1+12)%12; // 沐浴＝十二長生第二階段(index 1)
+  return BRANCH_ORDER[branchIdx];
+}
+// 給定一組(標籤,天干)清單(如生年干)，算出各自沐浴地支固定對應的宮位，跟生肖固定桃花位
+// 一樣是個人固定位置、不看這次起局的盤面。
+function buildMuyuPeachLocates(pan, stemEntries){
+  return stemEntries.map(({label, stem})=>{
+    const muyuBranch=getMuyuBranch(stem);
+    const gong=muyuBranch?ZHI_TO_GONG[muyuBranch]:null;
+    return {label, stem, muyuBranch, gong,
+      harms: gong?harmsAtGong(gong,pan):[],
+      bad: gong?harmsAtGong(gong,pan).length>0:null};
+  });
+}
+// 日干沐浴是動態判斷：看日干「現在」實際落在哪個宮(這次起局的盤面結果)，該宮的地支是否
+// 剛好等於日干自己的沐浴地支——跟 checkDili() 判斷「這個天干現在的宮位是不是長生/帝旺」是
+// 同一種邏輯，只是這裡只查沐浴這一個階段、只查日干這一個天干，直接沿用 getTwelveStagesAtGong()。
+function checkDayStemMuyu(sky, dayStem){
+  const gong=locateStem(sky, dayStem)[0];
+  if(!gong)return null;
+  const hit=getTwelveStagesAtGong(dayStem, gong).some(s=>s.stage==='沐浴');
+  return {stem:dayStem, gong, hit};
+}
+
 // ══════════════════ 號令: 日時/生年/意象/符使 四要素 ══════════════════
 // 來源: 荀爽視頻「保護各干」截圖逐字轉錄
 // 生年天干對照表 (西元年尾數 → 天干): 0庚 1辛 2壬 3癸 4甲 5乙 6丙 7丁 8戊 9己
@@ -1438,6 +1483,48 @@ function renderSimpleLocateReport(pan, needKey, yearsInput, juType){
       peachHtml=`<div class="ana-block"><div class="ana-h">桃花的第二種查法・生肖固定桃花位</div>
         <div style="font-size:11px;opacity:.6;margin-bottom:6px">口訣：申子辰(猴鼠龍)桃花在酉、亥卯未(豬兔羊)桃花在子、寅午戌(虎馬狗)桃花在卯、巳酉丑(蛇雞牛)桃花在午——命理基礎共識口訣，非單一教材獨有；用生年地支查是每人固定的桃花位，日支則是這次起局當下附帶算出的參考。</div>
         ${rowsHtml}
+      </div>`;
+    }
+
+    // 桃花的第三種查法・沐浴位(2026-09-06 新增，兩個獨立來源交叉核對一致，見 getMuyuBranch()
+    // 上方註解)：生年干固定沐浴位(跟生肖固定桃花位一樣是個人固定位置)+日干動態沐浴命中
+    // (這次起局日干實際落宮是否剛好等於自己的沐浴地支)，兩個參照點各自列出、不強行合併。
+    const muyuStemEntries=[];
+    String(yearsInput||'').split(/[,，、\s]+/).map(s=>s.trim()).filter(Boolean).forEach(y=>{
+      const st=yearToStem(y);
+      if(st)muyuStemEntries.push({label:`生年${y}（${T2(st)}）`, stem:st});
+    });
+    const muyuLocates=buildMuyuPeachLocates(pan, muyuStemEntries);
+    const dayStemMuyu=gz&&gz.日干?checkDayStemMuyu(pan.天盤, gz.日干):null;
+    if(muyuLocates.length||dayStemMuyu){
+      const muyuRows=muyuLocates.map(l=>{
+        if(!l.gong)return `<div class="ana-item">${l.label}——地支對照找不到宮位，暫無法定位</div>`;
+        const badgeTxt=l.bad?'⚠ 有六害':'✓ 乾淨';
+        const badgeCls=l.bad?'pill-xiong':'pill-ji';
+        if(l.bad&&isMingju)anyCureHidden=true;
+        const curesHtml=(l.bad&&!isMingju)
+          ? getCuresAtGong(l.gong,pan).map(c=>{
+              const xiangTxt=c.xiang?.wu ? `，${T2(c.xiang.wu)}` : '';
+              const placeTxt=c.place?`，放於${T2(c.place)}方位`:'';
+              return `<div class="ana-step" style="opacity:.8">　→ ${T2(c.hai)}：${T2(c.method||'')}${c.cureStem?'（用'+T2(c.cureStem)+'）':''}${xiangTxt}${placeTxt}${c.note?'　'+T2(c.note):''}</div>`;
+            }).join('')
+          : '';
+        return `<div class="ana-item">
+          <span class="pill ${badgeCls}">${badgeTxt}</span>
+          ${l.label}的沐浴位在「${T2(l.muyuBranch)}」，對應<b>${T2(l.gong)}宮</b>
+          <div class="ana-step">${l.harms.length?`命中：${l.harms.join('、')}`:'乾淨'}</div>
+          ${curesHtml}
+        </div>`;
+      }).join('');
+      const dayStemHtml=dayStemMuyu
+        ? `<div class="ana-item">
+            <span class="pill ${dayStemMuyu.hit?'pill-ji':'pill-neutral'}">${dayStemMuyu.hit?'✓ 命中沐浴':'未命中'}</span>
+            日干「${T2(dayStemMuyu.stem)}」目前落在<b>${T2(dayStemMuyu.gong)}宮</b>——${dayStemMuyu.hit?'剛好是自己的沐浴地支，這次起局當下有桃花':'不是自己的沐浴地支，這次起局當下沒有這一項桃花'}
+          </div>`
+        : '';
+      peachHtml+=`<div class="ana-block"><div class="ana-h">桃花的第三種查法・沐浴位</div>
+        <div style="font-size:11px;opacity:.6;margin-bottom:6px">十二長生第二階段「沐浴」，兩個獨立來源交叉核對一致；生年干沐浴是個人固定位置(跟上面生肖固定桃花位一樣不看這次起局)，日干沐浴是動態判斷(看日干這次實際落在哪個宮，是否剛好命中自己的沐浴地支)，兩個參照點各自列出、不強行合併成一個結論。</div>
+        ${dayStemHtml}${muyuRows}
       </div>`;
     }
   }
@@ -1745,6 +1832,7 @@ if (typeof module !== 'undefined' && module.exports) {
     MAINSTREAM_GEJU, checkMainstreamGeju, SANZHA_DEFS, WUJIA_DEFS, checkSanzhaWujia,
     SIMPLE_LOCATE_DEFS, analyzeSimpleLocate,
     PEACH_TRINE, getPeachBranch, buildPeachBlossomLocates, yearToBranch, yearToStem,
+    getMuyuBranch, buildMuyuPeachLocates, checkDayStemMuyu,
     locateStem, locateDoor, locateStar, locateGod, locateSymbol,
     harmsAtGong, getCuresAtGong, parseGanzhi, GRID_ORDER, ZHI_TO_GONG,
     monthRelation, analyzeWealthSeven,

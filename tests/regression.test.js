@@ -232,6 +232,33 @@ function check(label, actual, expected) {
   check('卯對應震宮', Rules.ZHI_TO_GONG['卯'], '震');
 }
 
+// ── 桃花第三種查法：沐浴位 (2026-09-06 新增) ──
+// 十天干沐浴地支表：兩個獨立來源(163.com具體案例、imlht.com完整對照表)交叉核對一致，
+// 逐一鎖定，同時反向驗證既有 CHANGSHENG_START/getTwelveStage() 十二長生引擎沒有算錯。
+{
+  console.log('\n── 桃花第三種查法：沐浴位 ──');
+  check('十天干沐浴地支完整對照(甲子/乙巳/丙卯/丁申/戊卯/己申/庚午/辛亥/壬酉/癸寅)',
+    ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'].map(Rules.getMuyuBranch),
+    ['子','巳','卯','申','卯','申','午','亥','酉','寅']);
+
+  // buildMuyuPeachLocates：生年干固定沐浴位，跟生肖固定桃花位一樣是個人固定位置，
+  // 不看這次起局的盤面——用案例一(2024-02-28 18:39)驗證六害命中判斷正確接上既有引擎。
+  const pan1 = QimenJS.qimenChaibu(Solar, 2024, 2, 28, 18, 39);
+  const [wuLocate] = Rules.buildMuyuPeachLocates(pan1, [{label:'測試(戊)', stem:'戊'}]);
+  check('戊的沐浴位是卯，對應震宮', {muyuBranch:wuLocate.muyuBranch, gong:wuLocate.gong}, {muyuBranch:'卯', gong:'震'});
+  check('震宮六害命中狀況跟 harmsAtGong 直接查一致',
+    wuLocate.bad, Rules.harmsAtGong('震', pan1).length>0);
+
+  // checkDayStemMuyu：日干沐浴是動態判斷(163.com案例：日干戊落震宮，震宮地支卯剛好是
+  // 戊的沐浴地支，判定命中)——這裡用合成 sky 而非真實案例，直接鎖定 163.com 給的具體案例。
+  check('163.com案例：日干戊落震宮，震宮地支卯=戊的沐浴地支，命中',
+    Rules.checkDayStemMuyu({震:'戊'}, '戊'), {stem:'戊', gong:'震', hit:true});
+  check('日干壬落巽宮，巽宮地支(辰/巳)不含壬的沐浴地支(酉)，不命中',
+    Rules.checkDayStemMuyu({巽:'壬'}, '壬'), {stem:'壬', gong:'巽', hit:false});
+  check('日干不在天盤上(如落中宮或查無)：回傳 null',
+    Rules.checkDayStemMuyu({中:'甲'}, '甲'), null);
+}
+
 // ── 真太陽時校正 (2026-08-29 新增)：確認不傳經度時行為完全不變，且成都經度校正
 //    真的能把時柱算成不同的時辰 (17:30 己酉時 → 校正後 16:26 戊申時) ──
 {
