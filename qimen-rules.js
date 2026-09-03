@@ -1648,9 +1648,26 @@ function buildMasterSummary(pan, protectedStems, needKey, juType, opts={}){
   return {hotspots, quiet:hotspots.length===0, allProfiles:scored};
 }
 
+// 2026-09-06 修正(用戶朋友(ChatGPT)第四輪反饋+ Claude 自行覆核抓到的更嚴重問題)：這個函式
+// 原本星/神兩類的判斷陣列寫的是「天輔」「天任」「天蓬」「值符」「太陰」這種完整兩字名稱，
+// 但盤面(pan.星/pan.神)實際存的是單字代碼(「輔」「任」「蓬」「符」「陰」)——字串完全對不上，
+// `.includes(v)` 永遠不會命中，代表星/神兩類判斷從一開始就是死代碼，不管實際是哪個星/神，
+// 一律回傳中性(pill-neutral)，而且完全不會報錯，是純視覺的九宮格「吉凶速覽」跟
+// checkYiGengMarriage() 的 hasLuckySymbol 判斷都受影響(hasLuckySymbol 因此其實只有看得到
+// 門的吉凶，星、神從來沒真的參與判斷過)。門的判斷本身格式對得上(盤面門也是單字)，這裡繼續
+// 沿用；星/神則改成直接查 LEX_DATA.stars/LEX_DATA.gods 的 luck 欄位——這張表本來就有文件
+// 說明「多個獨立命理資料來源交叉比對整理」(qimen-lexicon.js 開頭註解)，且鍵值本來就是跟
+// 盤面一致的單字代碼，不需要另外維護一份格式不同、沒有來源說明、還跟 LEX_DATA 部分互相矛盾
+// 的清單(例如原本這裡把天蓬列吉、天英列凶、九地列凶，但 LEX_DATA 分別記錄成凶/中平/吉，
+// 兩邊互相矛盾，以 LEX_DATA 為準，不再重複維護第二份判斷)。LEX_DATA 的「次吉」「中平」暫時
+// 都歸類為中性(跟原本沒被任何一個陣列收錄的門一樣，不強行二分成純吉或純凶)。
 function luckClass(v){
-  if(['休','生','開','天輔','天任','天心','天蓬','值符','太陰','六合','九天'].includes(v))return 'pill-ji';
-  if(['死','驚','傷','天內','天柱','天英','螣蛇','白虎','玄武','九地','勾陳','朱雀'].includes(v))return 'pill-xiong';
+  if(['休','生','開'].includes(v))return 'pill-ji';
+  if(['死','驚','傷'].includes(v))return 'pill-xiong';
+  const luck=(LEX_DATA.stars&&LEX_DATA.stars[v]&&LEX_DATA.stars[v].luck)
+    ||(LEX_DATA.gods&&LEX_DATA.gods[v]&&LEX_DATA.gods[v].luck);
+  if(luck==='吉')return 'pill-ji';
+  if(luck==='凶')return 'pill-xiong';
   return 'pill-neutral';
 }
 
@@ -1675,5 +1692,6 @@ if (typeof module !== 'undefined' && module.exports) {
     formatCureSteps, buildXunlaoItems, buildMainstreamItems, buildGongProfiles, MINGJU_CURE_NOTE,
     MINGJU_SANZHA_NOTE, BADGE_SOURCE_A, BADGE_SOURCE_B, BADGE_CONSENSUS_X, BADGE_CONSENSUS_Y,
     scoreProfile, tallyDirection, buildMasterSummary, buildProtectedStems, gongHitsProtected,
+    luckClass,
   };
 }
