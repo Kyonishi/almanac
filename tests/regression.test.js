@@ -259,6 +259,35 @@ function check(label, actual, expected) {
     Rules.checkDayStemMuyu({中:'甲'}, '甲'), null);
 }
 
+// ── escHtml (2026-09-06 新增，用戶朋友(ChatGPT)覆核抓到的 P1 安全問題) ──
+// 「生年」輸入框(<input type="text">，格式不限制)拼進桃花報告 label 跟主結果卡「生年」欄位時
+// 原本沒有轉義，只有 T2()(純繁簡轉換)，可以用「1988<img/src=x/onerror=alert(1)>」這種字串
+// 注入任意 HTML——parseInt 仍會從中解析出合法年份 1988，所以還是會產生一筆桃花定位結果，
+// label 裡卻完整保留原始字串。不只是使用者自己手填會踩到，被竄改過的「起局歷史記錄」備份
+// 檔案(sanitizeHistoryRecord() 只檢查型別、不檢查內容)在使用者點開該筆記錄時會走同一條
+// calc()→renderPan() 路徑觸發。escHtml() 從 qimen-ui.js 搬到這裡(純函式)供兩邊共用。
+{
+  console.log('\n── escHtml (HTML 轉義) ──');
+  const payload='1988<img/src=x/onerror=alert(1)>';
+  check('惡意生年輸入轉義後不再含有效的 <img 標籤',
+    Rules.escHtml(payload),
+    '1988&lt;img/src=x/onerror=alert(1)&gt;');
+  check('轉義後的字串裡沒有裸露的 < 或 >(不會被瀏覽器當成標籤解析)',
+    /[<>]/.test(Rules.escHtml(payload)), false);
+  check('& " \' 也一併轉義(避免屬性值裡的字串跳脫)',
+    Rules.escHtml(`&<>"'`), '&amp;&lt;&gt;&quot;&#39;');
+  check('null/undefined/數字安全轉字串處理，不拋錯',
+    [Rules.escHtml(null), Rules.escHtml(undefined), Rules.escHtml(1988)],
+    ['', '', '1988']);
+
+  // 確認 parseInt 式的寬鬆年份解析(既有行為，非這次修正範圍)仍然會從惡意字串裡抓出合法
+  // 年份、產生一筆桃花定位結果——這正是為什麼「轉義」而不是「直接丟棄整個 token」才是對的
+  // 修法：合法的年份資訊要保留、只是顯示時不能讓夾帶的標籤被當成真正的 HTML 執行。
+  check('惡意字串仍能被 yearToBranch/yearToStem 解析出合法年份(1988→辰/戊)，不是被整個丟棄',
+    { branch: Rules.yearToBranch(payload), stem: Rules.yearToStem(payload) },
+    { branch: Rules.yearToBranch('1988'), stem: Rules.yearToStem('1988') });
+}
+
 // ── 真太陽時校正 (2026-08-29 新增)：確認不傳經度時行為完全不變，且成都經度校正
 //    真的能把時柱算成不同的時辰 (17:30 己酉時 → 校正後 16:26 戊申時) ──
 {
@@ -660,10 +689,42 @@ function check(label, actual, expected) {
       Rules.scoreProfile(p([],[{type:'地利',isHit:false},{type:'地利',isHit:false}])), 0.3);
     check('scoreProfile：格局/三詐五假/天時/驛馬背景態不受這次修正影響，維持原本0.3分',
       Rules.scoreProfile(p([],[{type:'格局',isHit:false,luck:'凶'}])), 0.3);
-    check('scoreProfile：一個宮完全沒有任何命中(六害乾淨+主客人和背景不算分+沒有地利/格局等背景條目)得0分，quiet:true現在真的可達',
+    check('scoreProfile：一個宮完全沒有任何命中(六害乾淨+主客人和背景不算分+沒有地利/格局等背景條目)得0分——這只證明「主客/人和不再墊底分」這個機制修好了，不代表真實排盤能讓全部8宮都變成這種情況(見下方用真實排盤驗證的說明)',
       Rules.scoreProfile(p([], [
         {type:'主客',isHit:false,favor:'平'}, {type:'人和',isHit:false,luck:'平'},
       ])), 0);
+  }
+
+  // 2026-09-06 用戶朋友(ChatGPT)覆核第五輪修正時再次抓到問題(查證屬實)：上面的合成 profile
+  // 測試只證明了 scoreProfile() 這個計分函式本身沒有「不管命中與否都墊底分」的機制性 bug，
+  // 但沒有證明真實排盤真的能讓 buildMasterSummary() 回傳 quiet:true——實測掃過 2000～2029
+  // 三十年、每小時一次(共 262800 種組合，見開發時用的一次性腳本，這裡固定用其中兩個真實
+  // 案例鎖住結論)，quiet:true 一次都沒出現，`hotspots.length` 最少也是 3(等於 maxHotspots
+  // 上限，代表至少 3 個宮的分數都大於 0)。原因不是新 bug，是空亡(荀爽六害之一)的
+  // `isHit` 在 `buildXunlaoItems()` 裡固定寫死 `true`(不像刑/墓/庚/迫/虎要另外判斷是否
+  // 命中護體天干)——這是有意的既有設計(空亡的日空/時空定義上就是跟日干/時干直接綁定，日干
+  // 時干永遠在保護天干集合裡，所以空亡永遠算「命中你自己」，不是隨機背景)，也已經有一條更早
+  // 的既有測試鎖住這個行為(見上方「艮宮荀爽體系...空亡isHit永遠true」)，不是這次修正的範圍、
+  // 不應該去動。而空亡幾乎每一局都會命中1~2個宮，每個空亡命中固定貢獻2分(遠高於0分門檻)，
+  // 所以「quiet:true」在現有「score>0 即入選熱點」的規則下，對任何有空亡的真實排盤(等於幾乎
+  // 每一局)實際上都達不到——這是空亡本身的設計語意造成的，不是 scoreProfile() 計分機制的
+  // bug，上面的修正(主客/人和背景不算分、地利去重)解決的是另一個獨立問題(不相關維度的
+  // 背景分不該讓每個宮都墊底)，兩者不要混為一談。這裡固定鎖住這個真實觀察結果，避免未來
+  // 又誤以為「quiet:true 現在對任何盤面都可達」。
+  {
+    const pan1=QimenJS.qimenChaibu(Solar, 2000, 1, 1, 0, 0);
+    const ps1=Rules.buildProtectedStems(pan1.干支, '', null, null);
+    const s1=Rules.buildMasterSummary(pan1, ps1, null);
+    check('真實排盤(2000-01-01 00:00)：quiet 仍是 false，這局有空亡命中，score>0 的宮不會是0個',
+      s1.quiet, false);
+    check('真實排盤(2000-01-01 00:00)：hotspots 剛好卡在 maxHotspots 上限(3)，不代表全盤只有3宮及格，只是預設只挑前3個',
+      s1.hotspots.length, 3);
+
+    const pan2=QimenJS.qimenChaibu(Solar, 2024, 2, 28, 18, 39);
+    const ps2=Rules.buildProtectedStems(pan2.干支, '', '求財', null);
+    const s2=Rules.buildMasterSummary(pan2, ps2, '求財');
+    check('真實排盤(黃金案例2024-02-28 18:39)：quiet 仍是 false(同上，空亡命中是常態不是例外)',
+      s2.quiet, false);
   }
 
   const gz1 = Rules.parseGanzhi('戊辰年甲寅月戊申日壬戌時');
