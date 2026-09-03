@@ -1639,15 +1639,32 @@ function buildGongProfiles(pan, protectedStems, needKey, juType){
   }));
 }
 
-// 排序用權重：命中號令的信號權重較高，主客/人和的中性狀態(比和/平)權重打折，
-// 純粹用來決定「這一宮值不值得特別拉出來講」，不代表吉凶方向。
+// 排序用權重：命中號令的信號權重較高，純粹用來決定「這一宮值不值得特別拉出來講」，
+// 不代表吉凶方向。
+// 2026-09-06 修正(用戶朋友(ChatGPT)第五輪反饋，查證屬實)：原本主客/人和不管命中與否都會
+// 貢獻分數(背景態只是打折成 0.3*0.4=0.12，不是 0)，但主客(checkZhuke)跟人和(checkRenhe)
+// 是「任兩個五行必定落入某種生克/比和關係」的結構事實，八個外宮每一宮永遠都會有一條，不會
+// 因為這一宮本身有沒有問題而缺席——結果是每一宮的 score 恒大於 0，`buildMasterSummary()`
+// 的 `quiet:true`(沒有特別突出的宮位)在現有邏輯下變成永遠不可達的狀態，即使全局根本沒有
+// 命中任何號令，也會被迫選出 3 個「熱點」。改成主客/人和只有「命中號令」時才計分，背景態
+// 完全不貢獻分數(不影響這兩項在完整明細卡片裡照樣顯示背景資訊，只是不讓它們墊底分)。
+// 同一輪還發現地利(十二長生)另一個問題：艮/巽/坤/乾四角宮各對應兩個地支、`checkDili` 最多
+// 推出兩條，其餘坎/離/震/兌四正宮只有一條——這是資料結構(四角宮固定對應兩支)造成的條目
+// 數量差，不是術理上四角宮天生更重要，逐條加總會讓四角宮系統性地比四正宮多算分。改成同一宮
+// 地利最多只計一次分數，兩條裡有命中號令就按命中算，都沒有才按背景算，不逐條疊加。
 function scoreProfile(profile){
   let score=0;
   profile.xunlao.forEach(it=>{ score+=it.isHit?2:0.5; });
+  const diliItems=[];
   profile.mainstream.forEach(it=>{
-    const neutral=(it.type==='主客'&&it.favor==='平')||(it.type==='人和'&&it.luck==='平');
-    score+=(it.isHit?1.5:0.3)*(neutral?0.4:1);
+    if(it.type==='主客'||it.type==='人和'){
+      if(it.isHit)score+=1.5;
+      return;
+    }
+    if(it.type==='地利'){ diliItems.push(it); return; }
+    score+=it.isHit?1.5:0.3;
   });
+  if(diliItems.length)score+=diliItems.some(it=>it.isHit)?1.5:0.3;
   return score;
 }
 
