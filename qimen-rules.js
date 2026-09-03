@@ -2,6 +2,22 @@
 // 桃花生肖位等「純邏輯」層：只讀 pan 物件、回傳資料或 HTML 字串，不直接碰 DOM。
 // 2026-08-27 從 qimen.html 內嵌 <script> 拆分而來 (純搬移，未改動任何邏輯)。
 // 依賴: qimen-lexicon.js (LEX_DATA)。
+
+// 2026-09-06 修正(用戶朋友(ChatGPT)覆核抓到的 P1 安全問題，查證屬實)：escHtml() 原本只
+// 定義在 qimen-ui.js，只用來轉義「起局歷史記錄」面板本身的顯示文字；但「生年」輸入框
+// (`<input type="text">`，格式完全不限制)拼進桃花報告的 label(見下方 buildPeachBlossomLocates/
+// buildMuyuPeachLocates 呼叫端)、以及 qimen-ui.js 主結果卡「生年」欄位時，兩處都沒有經過
+// escHtml，是`T2()`(只做繁簡轉換，不轉義)。用戶直接手打「1988<img/src=x/onerror=alert(1)>」
+// 這種字串會被 parseInt 解析出合法年份 1988(所以還是會產生一筆桃花定位結果)，但 label 裡
+// 完整保留原始字串，插入 innerHTML 時就會執行——不只是使用者自己手填才會踩到，被竄改過的
+// 「起局歷史記錄」備份檔案(`sanitizeHistoryRecord()` 只檢查 yearsInput 是不是字串型別，
+// 不檢查內容)在使用者點開該筆記錄時會走同一條 `calc()→renderPan()` 路徑觸發。搬到這裡
+// (純函式、不碰 DOM)方便 qimen-rules.js 自己組 label 時直接呼叫，qimen-ui.js 沿用同一個
+// 全域函式，不重複定義兩份。
+function escHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 /* ── 資料常量 ── */
 const EIGHT_GUA_ORDER=['坎','坤','震','巽','中','乾','兌','艮','離']; // 一~九
 // 九宮在螢幕上的位置 (3×3, 行0上→行2下, 列0左→列2右)
@@ -1457,7 +1473,7 @@ function renderSimpleLocateReport(pan, needKey, yearsInput, juType){
     if(gz&&gz.日支)entries.push({label:`日支「${T2(gz.日支)}」`, branch:gz.日支});
     String(yearsInput||'').split(/[,，、\s]+/).map(s=>s.trim()).filter(Boolean).forEach(y=>{
       const b=yearToBranch(y);
-      if(b)entries.push({label:`生年${y}（${T2(b)}）`, branch:b});
+      if(b)entries.push({label:`生年${escHtml(y)}（${T2(b)}）`, branch:b});
     });
     const locates=buildPeachBlossomLocates(pan, entries);
     if(locates.length){
@@ -1492,7 +1508,7 @@ function renderSimpleLocateReport(pan, needKey, yearsInput, juType){
     const muyuStemEntries=[];
     String(yearsInput||'').split(/[,，、\s]+/).map(s=>s.trim()).filter(Boolean).forEach(y=>{
       const st=yearToStem(y);
-      if(st)muyuStemEntries.push({label:`生年${y}（${T2(st)}）`, stem:st});
+      if(st)muyuStemEntries.push({label:`生年${escHtml(y)}（${T2(st)}）`, stem:st});
     });
     const muyuLocates=buildMuyuPeachLocates(pan, muyuStemEntries);
     const dayStemMuyu=gz&&gz.日干?checkDayStemMuyu(pan.天盤, gz.日干):null;
@@ -1754,6 +1770,16 @@ function buildGongProfiles(pan, protectedStems, needKey, juType){
 // 推出兩條，其餘坎/離/震/兌四正宮只有一條——這是資料結構(四角宮固定對應兩支)造成的條目
 // 數量差，不是術理上四角宮天生更重要，逐條加總會讓四角宮系統性地比四正宮多算分。改成同一宮
 // 地利最多只計一次分數，兩條裡有命中號令就按命中算，都沒有才按背景算，不逐條疊加。
+// 2026-09-06 用戶朋友(ChatGPT)覆核再次抓到問題(查證屬實，補充說明避免誤解)：上面修好的是
+// 「主客/人和/地利不該讓每一宮都墊底分」這個機制性 bug，不代表真實排盤現在就能讓
+// `buildMasterSummary()` 回傳 `quiet:true`——實測掃過 2000～2029 三十年每小時一次，一次
+// 都沒出現過，`hotspots.length` 最少也卡在 `maxHotspots` 上限(3)。原因是`buildXunlaoItems()`
+// 裡空亡(荀爽六害之一)的 `isHit` 固定寫死 `true`，這是有意的既有設計(空亡的日空/時空
+// 定義上就跟日干/時干直接綁定，日干時干永遠在保護天干集合裡，空亡永遠算「命中你自己」，
+// 不是隨機背景)，也已經有更早的既有測試鎖住這個行為，不屬於這次修正範圍。而空亡幾乎每一局
+// 都會命中1~2個宮、每次命中固定貢獻2分——所以「quiet:true」對任何有空亡的真實排盤(等於
+// 幾乎每一局)實際上都達不到，這是空亡本身的設計語意造成的結果，不是這裡計分機制殘留的
+// bug，兩件事不要混為一談(下方 tests/regression.test.js 用真實排盤鎖住這個觀察結果)。
 function scoreProfile(profile){
   let score=0;
   profile.xunlao.forEach(it=>{ score+=it.isHit?2:0.5; });
@@ -1832,7 +1858,7 @@ if (typeof module !== 'undefined' && module.exports) {
     MAINSTREAM_GEJU, checkMainstreamGeju, SANZHA_DEFS, WUJIA_DEFS, checkSanzhaWujia,
     SIMPLE_LOCATE_DEFS, analyzeSimpleLocate,
     PEACH_TRINE, getPeachBranch, buildPeachBlossomLocates, yearToBranch, yearToStem,
-    getMuyuBranch, buildMuyuPeachLocates, checkDayStemMuyu,
+    getMuyuBranch, buildMuyuPeachLocates, checkDayStemMuyu, escHtml,
     locateStem, locateDoor, locateStar, locateGod, locateSymbol,
     harmsAtGong, getCuresAtGong, parseGanzhi, GRID_ORDER, ZHI_TO_GONG,
     monthRelation, analyzeWealthSeven,

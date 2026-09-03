@@ -247,10 +247,8 @@ function importHistoryJson(fileInput){
   reader.readAsText(file);
   fileInput.value='';
 }
-/* 簡易 HTML 轉義, 避免復盤文字裡的 < > 等符號破壞畫面結構 */
-function escHtml(s){
-  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
+// escHtml() 2026-09-06 搬到 qimen-rules.js(純函式，不碰 DOM，Node 測試也需要用到)，
+// 這裡繼續沿用同一個全域函式，不重複定義第二份。
 // 預註冊式驗證日誌：把起局當下鎖定的 prediction 快照渲染成唯讀文字，跟下面可編輯的
 // 「事後回看」欄位並排放，方便對照「起局時真的判斷了什麼」vs「後來實際發生了什麼」。
 // r.prediction 是 undefined 代表這筆記錄建立於功能上線前，沒有快照可看；是空陣列代表
@@ -649,10 +647,16 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
     if(gengWords.length)marriageText+=`男方這一側額外還有${gengWords.join('、')}，算是加分項，但不直接等於婚姻整體變好。`;
   }
 
-  // ④ 人生波動挫折：師傅總結已經挑出的熱點宮，只取「命中號令」的六害條目(刑墓庚虎迫空)，
-  //    合併成一段話，不逐宮分段——這是用戶明確指定「揉在一起講」的地方。
+  // ④ 人生波動挫折：取全部 8 個外宮「命中號令」的六害條目(刑墓庚虎迫空)，合併成一段話，
+  //    不逐宮分段——這是用戶明確指定「揉在一起講」的地方。2026-09-06 修正(用戶朋友(ChatGPT)
+  //    覆核抓到的問題，查證屬實)：原本只掃 masterSummary.hotspots(師傅總結只挑最值得注意
+  //    的前3個宮)，但這裡的文案「目前盤面上...」講的是全盤結論，用「前3熱點」的子集當「全部
+  //    命中」會漏掉沒排進前3、但確實命中六害的宮(熱點排序是綜合天時/驛馬/主客/人和/地利等
+  //    好幾個維度的總分，六害之外的維度分數夠高就能把真正命中六害的宮擠出前3名)。改成掃
+  //    masterSummary.allProfiles(全部8宮)，「前3熱點」只用於師傅總結卡片本身要不要特別
+  //    拉出來講，不能拿來當這裡「全盤六害命中」統計的資料來源。
   const wanderHits=[];
-  masterSummary.hotspots.forEach(hp=>{
+  masterSummary.allProfiles.forEach(hp=>{
     hp.xunlao.filter(x=>x.isHit).forEach(x=>wanderHits.push({...x, gong:hp.gong}));
   });
   const wanderText=wanderHits.length===0
@@ -769,7 +773,7 @@ function renderShijuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSte
     if(!stem)return '';
     const g=locateStemGong(stem);
     if(!g)return `${label}干「${T2(stem)}」在天盤上沒有直接找到對應宮位（如果是「甲」，因為甲永遠藏在值符背後、不直接現於天盤，這是正常的，看值符落宮即可）。`;
-    if(g==='中')return `${label}干「${T2(stem)}」落在中宮——中宮本身不單獨排門/星/神(禽星寄坤)，可以直接參考坤宮。`;
+    if(g==='中')return `${label}干「${T2(stem)}」落在中宮——中宮本身不單獨排門/星/神，中五寄宮規則各派不同、本專案尚未確認查清楚(跟 checkDili/checkYiGengMarriage 等其他模組遇到中宮時的處理方式一致)，這裡不代替你猜是哪一宮，需要人工判斷。`;
     const dr=door[g], st=star[g], gd=god[g];
     const doorInfo=LEX_DATA.doors[dr], starInfo=LEX_DATA.stars[st], godInfo=LEX_DATA.gods[gd];
     const names=[doorInfo?.name, starInfo?.name, godInfo?.name].filter(Boolean).map(T2).join('、');
@@ -812,9 +816,12 @@ function renderShijuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSte
     if(gengWords.length)marriageText+=`男方這一側額外還有${gengWords.join('、')}，算是加分項，但不直接等於婚姻整體變好。`;
   }
 
-  // ③ 有沒有踩到雷：跟命局④同一段邏輯，只取「命中號令」的六害條目，合併成一段話不逐宮分段。
+  // ③ 有沒有踩到雷：跟命局④同一段邏輯，取全部8個外宮「命中號令」的六害條目，合併成一段話
+  // 不逐宮分段。2026-09-06 修正(同命局④，用戶朋友(ChatGPT)覆核抓到)：改成掃
+  // masterSummary.allProfiles(全部8宮)，不能只看 hotspots(前3熱點)，否則會漏掉沒排進
+  // 前3、但確實命中六害的宮，「怎麼破」也會跟著漏掉對應的化解步驟。
   const wanderHits=[];
-  masterSummary.hotspots.forEach(hp=>{
+  masterSummary.allProfiles.forEach(hp=>{
     hp.xunlao.filter(x=>x.isHit).forEach(x=>wanderHits.push({...x, gong:hp.gong}));
   });
   const wanderText=wanderHits.length===0
@@ -1113,7 +1120,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
       </div>
       <div class="meta-item">
         <div class="meta-k">生年</div>
-        <div class="meta-v">${yearsInput?T2(yearsInput):'—'}</div>
+        <div class="meta-v">${yearsInput?escHtml(T2(yearsInput)):'—'}</div>
       </div>
       <div class="meta-item">
         <div class="meta-k">值符星宮</div>
@@ -1442,7 +1449,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
         return `<div>${label}干「${T2(stem)}」在天盤上沒有直接找到對應宮位（如果是「甲」，因為甲永遠藏在值符背後、不直接現於天盤，這是正常的，看值符落宮即可）。</div>`;
       }
       if(g==='中'){
-        return `<div>${label}干「${T2(stem)}」落在<b>中宮</b>——中宮本身不單獨排門/星/神(禽星寄坤)，可以直接參考坤宮。</div>`;
+        return `<div>${label}干「${T2(stem)}」落在<b>中宮</b>——中宮本身不單獨排門/星/神，中五寄宮規則各派不同、本專案尚未確認查清楚(跟 checkDili/checkYiGengMarriage 等其他模組遇到中宮時的處理方式一致)，這裡不代替你猜是哪一宮，需要人工判斷。</div>`;
       }
       const dr=door[g], st=star[g], gd=god[g];
       const doorInfo=LEX_DATA.doors[dr], starInfo=LEX_DATA.stars[st], godInfo=LEX_DATA.gods[gd];
