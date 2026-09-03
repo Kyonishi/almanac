@@ -495,9 +495,6 @@ function checkSanzhaWujia(sky, door, god){
 const HE_TABLE={'甲':'己','己':'甲','乙':'庚','庚':'乙','丙':'辛','辛':'丙','丁':'壬','壬':'丁','戊':'癸','癸':'戊'};
 // 十二地支六冲 (墓→用冲): 子午冲, 丑未冲, 寅申冲, 卯酉冲, 辰戌冲, 巳亥冲
 const CHONG_TABLE={'子':'午','午':'子','丑':'未','未':'丑','寅':'申','申':'寅','卯':'酉','酉':'卯','辰':'戌','戌':'辰','巳':'亥','亥':'巳'};
-// 布阵無腦安全位: 遍查擊刑/入墓方位表, 正西(兌)、正北(坎)從未出現, 可作預設推薦
-const SAFE_BUZHEN_GONG=['兌','坎'];
-
 // 灭象規則 (刑/墓/庚三者必須灭象; 目前只有刑墓的具體動作已由荀爽視頻明確給出)
 const MIEXIANG_RULE={
   '刑':{action:'可移、可扔、可送', verified:true},
@@ -508,7 +505,9 @@ const MIEXIANG_RULE={
   '空':{action:'不做灭象，直接布阵「缺啥補啥」', verified:true},
 };
 
-// 依「字/物/意/行」四維，用 LEX_DATA 的顏色材質生成布阵化解物描述 (物維度可自動生成, 字/意/行為五行通用推導)
+// 依「字/物/意/行」四維，用 LEX_DATA 的顏色材質生成布阵化解物描述——字/物沿用上層 cure 選定的
+// 天干本身的可信度(字只是複述天干、物是 LEX_DATA 顏色材質)，意/行則固定是 WUXING_YI_XING
+// 的五行通用推導，可信度是獨立的一層，見 formatCureSteps() 內的說明
 const WUXING_YI_XING={ // 五行對應的通用「意/行」提示 (非逐字視頻原文, 為五行常理推導, 供参考)
   '木':{yi:'學習成長型知識(如植物、規劃、教育)', xing:'伸展類運動(如瑜伽、太極)'},
   '火':{yi:'學習表達/展示型知識(如演講、藝術)', xing:'有氧/爆發類運動(如跑步、拳擊)'},
@@ -525,11 +524,17 @@ function stemWuxing(stem){
 // 取其六冲地支，再反查回天干 —— 此邏輯與「刑用合(五合)」的推導方式一致(同屬天干地支
 // 生克化解框架)，但非逐字視頻畫面讀出，標記 verified:false 供覆核
 const STEM_TO_BRANCH={'甲':'寅','乙':'卯','丙':'午','丁':'巳','戊':'辰','己':'丑','庚':'申','辛':'酉','壬':'子','癸':'亥'};
-// 灭象後的「布阵方位」無腦法 —— 來源: 荀爽老師視頻「六儀擊刑/三奇入墓」方位對照九宮圖 + 「無腦法」截圖逐字轉錄:
-// 圖中列出每個天干各自「絕對不能放」的方位(乙丙→不能放西北, 丁→不能放東北, 戊→不能放正東,
-// 庚丁→不能放東北, 己甲→不能放西南, 壬癸→不能放東南, 辛→不能放正南)，唯獨正西、正北兩個方位，
-// 對照圖裡完全沒有任何天干的禁區落在這兩處。所以「無腦法」給的標準答案就是：
-// 灭象後，不用一個個記天干的禁區，統一把要布的天干放到正西或正北，兩個方位都可以。
+// 灭象後的「布阵方位」無腦法 —— 2026-09-06 覆核措辭(用戶朋友(ChatGPT)第四輪反饋)：原本這裡
+// 跟一個叫 SAFE_BUZHEN_GONG 的常數(遍查表格、找出從未被列為禁區的方位、專案自行推導)寫在
+// 相鄰位置，容易讓人誤以為這裡的「正西或正北」也是同一種「表格裡沒出現就當預設」的推導方式；
+// 已刪除那個常數(整個專案沒有任何地方真的用到它，是早期探索階段留下的死代碼)，只留下面這條
+// 實際被使用的來源說明，避免兩種不同性質的依據混在一起看：這裡的「正西或正北」**是荀爽老師
+// 視頻「無腦法」畫面本身直接給出的答案(逐字轉錄)**，不是專案自己反推出來的——老師的「無腦法」
+// 畫面同時展示了兩張圖：(1) 每個天干各自「絕對不能放」的方位(乙丙→不能放西北, 丁→不能放
+// 東北, 戊→不能放正東, 庚丁→不能放東北, 己甲→不能放西南, 壬癸→不能放東南, 辛→不能放正南)，
+// (2) 老師接著在畫面上直接講「正西或正北」是不用個別記天干禁區的統一安全答案——(1) 是老師
+// 用來佐證(2)這個答案為什麼成立的輔助圖表，(2) 才是「無腦法」實際要記住、要用的結論，兩者都
+// 來自同一段視頻畫面，不是專案事後對照表格反推出來的。
 const WUNAOFA_DEST='正西或正北';
 
 function getCureForRuMu(gua, stem){
@@ -1461,6 +1466,22 @@ const RENHE_MEANING={
 
 // 把 getCureFor*() 系列函式回傳的 cure 物件，轉成統一的「灭象/布阵」結構化步驟，
 // 供白話總結跟渲染層共用；不含任何新判斷，純粹重新整理既有欄位。
+// 2026-09-06 修正(用戶朋友(ChatGPT)第四輪反饋，化解步驟可信度粒度)：這個函式原本只給整條
+// 化解步驟一個總的 verified 狀態，但「字/物/意/行」四維其實不是同一個來源——字(寫哪個天干的
+// 字)只是把上層 cure 已經決定好的 cureStem 原樣複述一次，物(顏色材質)來自 LEX_DATA(已標明
+// 跨來源交叉核對)，兩者都可以沿用上層 cure 本身的可信度；意/行兩維則固定來自 WUXING_YI_XING
+// 這張表，該表明確標註「非逐字視頻原文，為五行常理推導」，不管上層 cure 本身是不是逐字驗證
+// (例如「刑用合」的合天干選擇確實是視頻原文)，意/行都是額外疊加上去的推導內容，可信度不會
+// 因為上層驗證過就跟著提高——原本整條只給一個 verified，會把這兩種不同可信度的內容混在一起，
+// 讓「意/行」這種明確標記過的推導內容看起來跟「合天干」一樣是逐字驗證的。現在意/行兩條各自
+// 帶自己的 verified:false；「物」「物(地支)」兩維雖然沒有到「非視頻原文」那麼弱，但也不是
+// 沿用上層 cure 可信度就足夠——它們的顏色材質/生肖形象具體查的是 LEX_DATA(跨資料源交叉核對，
+// 即使上層 cure 本身是逐字視頻驗證，「用哪個天干/地支化解」是一回事，「這個天干/地支對應
+// 什麼顏色材質」是另一件事，來自不同的查證過程，不能讓「物」這維默默繼承「逐字驗證」的標籤，
+// 讀者看不出這裡其實換了一個來源)，所以額外標 crossSource:true，跟意/行的 verified:false
+// 用不同的呈現方式區分(crossSource 不是「不可信」，只是「來源不同，且是跨資料源交叉核對，
+// 不是這一步專屬的逐字視頻畫面」)。門象/字這兩維才是真的跟上層 cure 同一個來源(門象來自
+// MENPO_CURE_TABLE 的視頻截圖；字只是原樣複述上層已經選定的天干)，維持沿用上層 verified。
 function formatCureSteps(cure){
   if(!cure)return null;
   const rule=MIEXIANG_RULE[cure.hai];
@@ -1469,14 +1490,14 @@ function formatCureSteps(cure){
   if(cure.doorsText){
     buzhen.push({dimension:'門象', text:`擺放「${cure.doorsText}」門象`});
     (cure.branchXiangs||[]).forEach(bx=>{
-      buzhen.push({dimension:'物(地支)', text:`「${bx.branch}」（${bx.zodiac}）：${bx.wu}，放${bx.placement}`});
+      buzhen.push({dimension:'物(地支)', text:`「${bx.branch}」（${bx.zodiac}）：${bx.wu}，放${bx.placement}`, crossSource:true});
     });
   }else if(cure.xiang){
     const x=cure.xiang;
     buzhen.push({dimension:'字', text:`寫「${x.stem}」字，放${x.placement||'高處'}`});
-    buzhen.push({dimension:'物', text:`${x.wu}，放${x.placement||'高處'}`});
-    if(x.yi)buzhen.push({dimension:'意', text:x.yi});
-    if(x.xing)buzhen.push({dimension:'行', text:x.xing});
+    buzhen.push({dimension:'物', text:`${x.wu}，放${x.placement||'高處'}`, crossSource:true});
+    if(x.yi)buzhen.push({dimension:'意', text:x.yi, verified:false});
+    if(x.xing)buzhen.push({dimension:'行', text:x.xing, verified:false});
   }
   return {
     hai:cure.hai, miexiang, buzhen,
@@ -1648,9 +1669,26 @@ function buildMasterSummary(pan, protectedStems, needKey, juType, opts={}){
   return {hotspots, quiet:hotspots.length===0, allProfiles:scored};
 }
 
+// 2026-09-06 修正(用戶朋友(ChatGPT)第四輪反饋+ Claude 自行覆核抓到的更嚴重問題)：這個函式
+// 原本星/神兩類的判斷陣列寫的是「天輔」「天任」「天蓬」「值符」「太陰」這種完整兩字名稱，
+// 但盤面(pan.星/pan.神)實際存的是單字代碼(「輔」「任」「蓬」「符」「陰」)——字串完全對不上，
+// `.includes(v)` 永遠不會命中，代表星/神兩類判斷從一開始就是死代碼，不管實際是哪個星/神，
+// 一律回傳中性(pill-neutral)，而且完全不會報錯，是純視覺的九宮格「吉凶速覽」跟
+// checkYiGengMarriage() 的 hasLuckySymbol 判斷都受影響(hasLuckySymbol 因此其實只有看得到
+// 門的吉凶，星、神從來沒真的參與判斷過)。門的判斷本身格式對得上(盤面門也是單字)，這裡繼續
+// 沿用；星/神則改成直接查 LEX_DATA.stars/LEX_DATA.gods 的 luck 欄位——這張表本來就有文件
+// 說明「多個獨立命理資料來源交叉比對整理」(qimen-lexicon.js 開頭註解)，且鍵值本來就是跟
+// 盤面一致的單字代碼，不需要另外維護一份格式不同、沒有來源說明、還跟 LEX_DATA 部分互相矛盾
+// 的清單(例如原本這裡把天蓬列吉、天英列凶、九地列凶，但 LEX_DATA 分別記錄成凶/中平/吉，
+// 兩邊互相矛盾，以 LEX_DATA 為準，不再重複維護第二份判斷)。LEX_DATA 的「次吉」「中平」暫時
+// 都歸類為中性(跟原本沒被任何一個陣列收錄的門一樣，不強行二分成純吉或純凶)。
 function luckClass(v){
-  if(['休','生','開','天輔','天任','天心','天蓬','值符','太陰','六合','九天'].includes(v))return 'pill-ji';
-  if(['死','驚','傷','天內','天柱','天英','螣蛇','白虎','玄武','九地','勾陳','朱雀'].includes(v))return 'pill-xiong';
+  if(['休','生','開'].includes(v))return 'pill-ji';
+  if(['死','驚','傷'].includes(v))return 'pill-xiong';
+  const luck=(LEX_DATA.stars&&LEX_DATA.stars[v]&&LEX_DATA.stars[v].luck)
+    ||(LEX_DATA.gods&&LEX_DATA.gods[v]&&LEX_DATA.gods[v].luck);
+  if(luck==='吉')return 'pill-ji';
+  if(luck==='凶')return 'pill-xiong';
   return 'pill-neutral';
 }
 
@@ -1675,5 +1713,6 @@ if (typeof module !== 'undefined' && module.exports) {
     formatCureSteps, buildXunlaoItems, buildMainstreamItems, buildGongProfiles, MINGJU_CURE_NOTE,
     MINGJU_SANZHA_NOTE, BADGE_SOURCE_A, BADGE_SOURCE_B, BADGE_CONSENSUS_X, BADGE_CONSENSUS_Y,
     scoreProfile, tallyDirection, buildMasterSummary, buildProtectedStems, gongHitsProtected,
+    luckClass,
   };
 }

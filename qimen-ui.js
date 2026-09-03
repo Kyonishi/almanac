@@ -458,7 +458,16 @@ function renderMasterSummary(summary, juType){
   const renderCureSteps=(cs)=>{
     if(!cs)return '<div class="ana-step" style="opacity:.7">（化解方法暫缺，需人工覆核）</div>';
     const mx=cs.miexiang?`<div class="ana-step">灭象：${T2(cs.miexiang.action)}${cs.miexiang.verified?'':'（此步驟未見視頻原文明確說明，建議自行覆核）'}</div>`:'';
-    const bz=(cs.buzhen||[]).map(b=>`<div class="ana-step">布阵（${T2(b.dimension)}）：${T2(b.text)}</div>`).join('');
+    // b.verified===false(目前只有「意」「行」兩維會這樣標)代表這一維是 WUXING_YI_XING 的
+    // 五行通用推導，不是逐字視頻原文，即使 cs.verified 整體是 true 也要單獨標出來，不能被
+    // 上層的驗證狀態蓋過去；b.crossSource(目前是「物」「物(地支)」兩維)代表這一維查的是
+    // LEX_DATA(跨資料源交叉核對)，跟上層 cure 選定天干/地支所在的來源不是同一件事，也不能
+    // 默默繼承上層「逐字驗證」的標籤(2026-09-06 修正，化解步驟可信度粒度)。
+    const bz=(cs.buzhen||[]).map(b=>{
+      const note=b.verified===false?'（五行常理推導，非視頻原文，僅供參考）'
+        :b.crossSource?'（顏色材質/生肖形象參考跨資料源整理，非此步驟專屬的逐字視頻畫面）':'';
+      return `<div class="ana-step">布阵（${T2(b.dimension)}）：${T2(b.text)}${note?`<span style="opacity:.7">${note}</span>`:''}</div>`;
+    }).join('');
     // 這裡的「方位」指的是布阵物品/文字實際要擺放的位置(家裡或辦公室的哪個方向角落)，
     // 跟「你本人現實中該不該去這個方向」是兩件不相干的事，容易被誤讀成後者，所以講清楚。
     const placeLine=cs.place?`<div class="ana-step">擺放位置：把布阵的物品/文字放在家裡或辦公室的「${T2(cs.place)}」方位角落——這是物品要擺哪裡，跟你本人要不要去這個方向沒有關係。</div>`:'';
@@ -525,7 +534,14 @@ function plainCureText(cs){
   const parts=[];
   if(cs.miexiang)parts.push(`第一步先「灭象」：${T2(cs.miexiang.action)}${cs.miexiang.verified?'':'（這步視頻裡沒有明講，僅供參考）'}`);
   if(cs.place)parts.push(`可以把化解用的東西放在家裡或辦公室「${T2(cs.place)}」這個方位角落——這是物品要擺哪裡，跟你本人要不要去這個方向沒有關係`);
-  if(cs.buzhen&&cs.buzhen.length)parts.push(`具體怎麼布：${cs.buzhen.map(b=>T2(b.text)).join('，')}`);
+  // b.verified===false 是「意」「行」這兩維專屬的標記(五行通用推導，非逐字視頻)；
+  // b.crossSource 是「物」「物(地支)」專屬的標記(查的是 LEX_DATA 跨資料源整理，跟上層
+  // cure 選定天干/地支的來源不是同一件事)——兩者即使整條 cs.verified 是 true 也要單獨標出來，
+  // 見 formatCureSteps() 的說明。
+  if(cs.buzhen&&cs.buzhen.length)parts.push(`具體怎麼布：${cs.buzhen.map(b=>{
+    const note=b.verified===false?'(此項為五行常理推導，僅供參考)':b.crossSource?'(此項顏色材質參考跨資料源整理)':'';
+    return `${T2(b.text)}${note}`;
+  }).join('，')}`);
   if(cs.note)parts.push(T2(cs.note));
   if(cs.verified===false)parts.push('（這條化解方法是推導出來的，不是視頻原文逐字講的，僅供參考）');
   return parts.join('；')+'。';
@@ -1013,6 +1029,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     <div class="pan-grid">${gridHTML}</div>
   </div>
 
+  <div class="ana-step" style="opacity:.6;margin-bottom:8px">下面不管切到白話版還是專業版，格局/六害的描述都沿用傳統典籍/教材的原始意象用詞，部分措辭較重(如「百事皆凶」「車禍意外」)，是傳統文字上的比喻性/警示性描述，不是斷定你現實生活一定會發生這些事；尤其涉及健康、意外等字眼，請勿當作醫療或安全判斷依據。</div>
   <div class="master-toggle">
     <button class="mt-btn mt-active" data-mode="plain" onclick="setMasterMode(this,'plain')">白話版</button>
     <button class="mt-btn" data-mode="pro" onclick="setMasterMode(this,'pro')">專業版</button>
