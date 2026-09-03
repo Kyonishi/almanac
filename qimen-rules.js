@@ -1474,8 +1474,14 @@ const RENHE_MEANING={
 // (例如「刑用合」的合天干選擇確實是視頻原文)，意/行都是額外疊加上去的推導內容，可信度不會
 // 因為上層驗證過就跟著提高——原本整條只給一個 verified，會把這兩種不同可信度的內容混在一起，
 // 讓「意/行」這種明確標記過的推導內容看起來跟「合天干」一樣是逐字驗證的。現在意/行兩條各自
-// 帶自己的 verified:false，門象/物(地支)/字/物這幾維沒有另外標記，沿用整條 cure 的
-// verified 狀態即可(它們本來就跟 cure 本身選定的天干/地支是同一個來源)。
+// 帶自己的 verified:false；「物」「物(地支)」兩維雖然沒有到「非視頻原文」那麼弱，但也不是
+// 沿用上層 cure 可信度就足夠——它們的顏色材質/生肖形象具體查的是 LEX_DATA(跨資料源交叉核對，
+// 即使上層 cure 本身是逐字視頻驗證，「用哪個天干/地支化解」是一回事，「這個天干/地支對應
+// 什麼顏色材質」是另一件事，來自不同的查證過程，不能讓「物」這維默默繼承「逐字驗證」的標籤，
+// 讀者看不出這裡其實換了一個來源)，所以額外標 crossSource:true，跟意/行的 verified:false
+// 用不同的呈現方式區分(crossSource 不是「不可信」，只是「來源不同，且是跨資料源交叉核對，
+// 不是這一步專屬的逐字視頻畫面」)。門象/字這兩維才是真的跟上層 cure 同一個來源(門象來自
+// MENPO_CURE_TABLE 的視頻截圖；字只是原樣複述上層已經選定的天干)，維持沿用上層 verified。
 function formatCureSteps(cure){
   if(!cure)return null;
   const rule=MIEXIANG_RULE[cure.hai];
@@ -1484,12 +1490,12 @@ function formatCureSteps(cure){
   if(cure.doorsText){
     buzhen.push({dimension:'門象', text:`擺放「${cure.doorsText}」門象`});
     (cure.branchXiangs||[]).forEach(bx=>{
-      buzhen.push({dimension:'物(地支)', text:`「${bx.branch}」（${bx.zodiac}）：${bx.wu}，放${bx.placement}`});
+      buzhen.push({dimension:'物(地支)', text:`「${bx.branch}」（${bx.zodiac}）：${bx.wu}，放${bx.placement}`, crossSource:true});
     });
   }else if(cure.xiang){
     const x=cure.xiang;
     buzhen.push({dimension:'字', text:`寫「${x.stem}」字，放${x.placement||'高處'}`});
-    buzhen.push({dimension:'物', text:`${x.wu}，放${x.placement||'高處'}`});
+    buzhen.push({dimension:'物', text:`${x.wu}，放${x.placement||'高處'}`, crossSource:true});
     if(x.yi)buzhen.push({dimension:'意', text:x.yi, verified:false});
     if(x.xing)buzhen.push({dimension:'行', text:x.xing, verified:false});
   }

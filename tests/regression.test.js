@@ -573,6 +573,15 @@ function check(label, actual, expected) {
     check('formatCureSteps 字/物兩維不額外標記(沿用整條 verified)', {字:byDim['字'], 物:byDim['物']},
       {字:undefined, 物:undefined});
     check('formatCureSteps 整條 cure 本身仍是 verified:true', cs.verified, true);
+    // 2026-09-06 補(ChatGPT review)：「物」維雖然沒有到 verified:false 那麼弱，但查的是
+    // LEX_DATA(跨資料源)，跟上層 cure 選定天干的來源不是同一件事，不能讓它默默繼承上層的
+    // verified:true，變成看起來像是這一步驟專屬的逐字視頻內容——所以額外標 crossSource:true
+    // (不是「不可信」，只是「來源不同」)，「字」維只是複述上層已選定的天干，不需要這個標記。
+    const byCross=Object.fromEntries(cs.buzhen.map(b=>[b.dimension,b.crossSource]));
+    check('formatCureSteps 物維標 crossSource:true(來源是 LEX_DATA，不是這步驟專屬視頻)',
+      byCross['物'], true);
+    check('formatCureSteps 字維不標 crossSource(只是複述上層已選定的天干)',
+      byCross['字'], undefined);
   }
   {
     // 反例：即使整條 cure 是 verified:false(如「墓」用冲推導)，意/行還是各自獨立標 false，
@@ -582,8 +591,21 @@ function check(label, actual, expected) {
       place:'正西或正北', method:'用冲(地支六冲，推導未驗證)', verified:false});
     check('整條verified:false時，意/行仍各自標 verified:false',
       cs2.buzhen.filter(b=>b.dimension==='意'||b.dimension==='行').every(b=>b.verified===false), true);
-    check('整條verified:false時，字/物不額外標記',
+    check('整條verified:false時，字/物不額外標記verified',
       cs2.buzhen.filter(b=>b.dimension==='字'||b.dimension==='物').every(b=>b.verified===undefined), true);
+    check('整條verified:false時，物維仍獨立標 crossSource:true',
+      cs2.buzhen.find(b=>b.dimension==='物').crossSource, true);
+  }
+  {
+    // 門迫化解(doorsText 分支)：物(地支) 維查的是 getBranchXiang()(LEX_DATA.branches)，
+    // 同樣是跨資料源，門象維(doorsText 本身)來自 MENPO_CURE_TABLE(視頻截圖)，沿用整條可信度。
+    const cs3=Rules.formatCureSteps({hai:'迫', doorsText:'驚門、開門',
+      branchXiangs:[{branch:'辰',zodiac:'龍',wu:'擺放暗黃容器類物品',placement:'低處'}],
+      verified:true});
+    const byCross3=Object.fromEntries(cs3.buzhen.map(b=>[b.dimension,b.crossSource]));
+    check('formatCureSteps 物(地支)維標 crossSource:true', byCross3['物(地支)'], true);
+    check('formatCureSteps 門象維不標 crossSource(來源是視頻截圖 MENPO_CURE_TABLE)',
+      byCross3['門象'], undefined);
   }
 
   const gz1 = Rules.parseGanzhi('戊辰年甲寅月戊申日壬戌時');
