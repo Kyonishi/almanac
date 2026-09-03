@@ -546,12 +546,38 @@ function plainCureText(cs){
   if(cs.verified===false)parts.push('（這條化解方法是推導出來的，不是視頻原文逐字講的，僅供參考）');
   return parts.join('；')+'。';
 }
-// 置信度標籤(命局故事卡專用，2026-09-01 新增；2026-09-06 降視覺權重)：標示每一段話是
-// 「查表就有的事實」(rule)、「把幾個已驗證符號的意思兜在一起講」(combo)、還是「跨好幾個
-// 面向比出來的推論」(infer/weak)。標籤只是老實講清楚這句話怎麼來的，不是免責聲明。原本用
-// 常駐顯示的彩色文字徽章，視覺權重跟段落內容差不多重(用戶朋友(ChatGPT)反饋)；改成預設只
-// 顯示一個小圓點，hover 有 tooltip 顯示完整說明，點一下/點按才展開成文字標籤——手機沒有
-// hover，點擊才是主要互動方式。CSS 對應 qimen.html 的 .conf-tag/.conf-dot/.conf-label。
+// glossItem/domainParagraph 原本只給命局故事卡用，2026-09-06 改造事局白話版(見下方
+// renderShijuStoryPlain)時抽成共用——兩邊都是「把財富七要/事業七要/簡明定位讀法裡已驗證的
+// 單點符號兜成一段生活面向描述」的同一種組裝方式，不應該各自維護一份重複邏輯。
+const glossItem=it=>{const T2=x=>t2(x||''); return (it.role&&it.role!==it.name)?`${T2(it.role)}(${T2(it.name)})`:T2(it.name);};
+function domainParagraph(label, items){
+  const T2=x=>t2(x||'');
+  const positioned=items.filter(it=>it.rows&&it.rows.length);
+  const bad=positioned.filter(it=>it.bad===true);
+  const clean=positioned.filter(it=>it.bad===false);
+  if(!positioned.length)return {text:`${label}方面這局沒有明確的定位資訊，暫時看不出來。`, bad:[], total:0, tier:'weak'};
+  let text=`${label}方面，`;
+  if(bad.length===0){
+    text+=`「${clean.map(glossItem).join('」「')}」這幾個關鍵點位都還算乾淨，沒有明顯卡住的地方。`;
+  }else{
+    text+=`「${bad.map(glossItem).join('」「')}」這幾個點位命中了六害，需要留意`;
+    if(clean.length)text+=`；「${clean.map(glossItem).join('」「')}」倒是乾淨的`;
+    text+='。';
+  }
+  // combo：財富七要/事業七要/簡明定位讀法都是把好幾個已驗證的單點符號兜在一起才推出
+  // 這個生活面向的結論，不是單一查表事實，所以標「組合取象」而不是「規則」。
+  return {text, bad, total:positioned.length, tier:'combo'};
+}
+// 三層結構＋置信度標籤：標示每一段話是「查表就有的事實」(rule)、「把幾個已驗證符號的
+// 意思兜在一起講」(combo)、還是「跨好幾個面向比出來的推論」(infer/weak)。標籤只是老實
+// 講清楚這句話怎麼來的，不是免責聲明——寫的時候還是要對內容本身負責，不能拿標籤當藉口
+// 亂寫。四個等級對應 ChatGPT 建議的【規則】【組合取象】【綜合推導】【弱推斷】，
+// 【禁止輸出】那一級不會出現在畫面上，是「這種話本來就不該寫」的內部提醒。命局/事局
+// 故事卡共用同一份，不各自維護一份重複標籤表。
+// 2026-09-06 降視覺權重(用戶朋友(ChatGPT)反饋)：原本每段話都掛一個常駐顯示的彩色文字
+// 徽章，視覺權重跟段落內容差不多重；改成預設只顯示一個小圓點(顏色沿用既有分級配色)，
+// hover 有 title tooltip 顯示完整說明，點一下/點按才展開成文字標籤——手機沒有 hover，
+// 點擊才是主要互動方式。CSS 對應 qimen.html 的 .conf-tag/.conf-dot/.conf-label。
 const CONF_TAG={
   rule:['conf-tag-rule','規則','查表就有的事實'],
   combo:['conf-tag-combo','組合取象','把幾個已驗證的符號兜在一起講'],
@@ -563,59 +589,14 @@ function confTag(tier){
   return `<span class="conf-tag ${cls}" onclick="toggleConfTag(this)" title="${label}：${desc}"><span class="conf-dot"></span><span class="conf-label">${label}</span></span>`;
 }
 function toggleConfTag(el){ el.classList.toggle('conf-open'); }
-function renderMasterSummaryPlain(summary, juType){
-  const T2=x=>t2(x||'');
-  if(summary.quiet){
-    return `<div class="master-card">
-      <div class="master-title">師傅總結</div>
-      <div class="plain-p">這局整體挺平穩的——六害、格局、地利、主客、天時、人和，沒有哪個特別揪著你，可以按原計劃推進，不用特別緊張哪個方向。</div>
-    </div>`;
-  }
-  const plainCure=plainCureText;
-  const AGREEMENT_PLAIN={
-    consistent_xiong:'這裡兩套不同的規則，各自獨立算出來，都覺得不太順——能對上號，比只看一套更值得留意。',
-    consistent_ji:'這裡兩套規則都覺得還不錯。',
-    mixed:'這裡兩套規則不太一樣，一個偏順一個偏不順——這不是矛盾，是這個位置本來就有的複雜面，你自己感受哪個更準就好，不用強行調成一個結論。',
-    none:'',
-  };
-  const hotspotPlain=summary.hotspots.map((h,idx)=>{
-    const mingjuNote=h.xunlao.find(x=>x.cureNote)?.cureNote;
-    const xunlaoPara=h.xunlao.length?h.xunlao.map((x,i)=>{
-      const lead=i===0?'從刑墓庚虎迫空這套細緻的規則來看：':'另外，';
-      const hitTail=x.isHit?'——這條是直接衝著你來的。':'——不過這條只是盤面背景，不是直接針對你。';
-      const cureLine=x.cureNote?'':`　${plainCure(x.cureSteps)}`;
-      return `${lead}${T2(x.text)}${hitTail}${cureLine}`;
-    }).join(' '):'';
-    const mainstreamPara=h.mainstream.length?h.mainstream.map((x,i)=>{
-      const lead=i===0?'從大家比較公認的說法來看：':'另外，';
-      const hitTail=x.isHit?'——這條也是直接衝著你來的。':'——這條是背景，不是直接針對你。';
-      return `${lead}${T2(x.text)}${hitTail}`;
-    }).join(' ')+'　（這套目前沒有對應的化解方法，想知道具體怎麼處理，可以參考上面那段。）':'';
-    return `<div class="plain-block">
-      <div class="plain-gong">來看<b>${T2(h.gong)}宮</b>這邊${idx===0?'——這是這局最需要注意的地方':''}。</div>
-      ${AGREEMENT_PLAIN[h.agreement]?`<div class="plain-p" style="opacity:.8">${AGREEMENT_PLAIN[h.agreement]}</div>`:''}
-      ${xunlaoPara?`<div class="plain-p"><span class="plain-tag plain-tag-xunlao">荀爽老師這套</span>${xunlaoPara}</div>`:''}
-      ${mingjuNote?`<div class="plain-p" style="opacity:.75">${T2(mingjuNote)}</div>`:''}
-      ${mainstreamPara?`<div class="plain-p"><span class="plain-tag plain-tag-mainstream">大家比較公認的說法</span>${mainstreamPara}</div>`:''}
-    </div>`;
-  }).join('');
-  const mingjuIntro=juType==='命局'
-    ?'這是命局模式，「命中了什麼」照樣講給你聽，但荀爽老師這套灭象布阵的具體擺放指令這次先不給——那是針對「事局」(問一件具體的事)設計的方法，命局是你天生的整體結構，硬套具體操作會文不對題，遇到下面這些麻煩時，建議另外起一個事局來問。'
-    :'';
-  return `<div class="master-card">
-    <div class="master-title">師傅總結</div>
-    <div class="plain-p" style="margin-bottom:10px;opacity:.85">這局最值得注意的地方，挑出了 ${summary.hotspots.length} 個宮，主流斷局法跟荀爽老師體系的說法一律分開講，不會混在一起。「直接衝著你來的」代表這件事壓在你自己（日干/時干/值符/所求對應天干）身上，比較要緊；「背景」代表這局有這件事，但不是針對你，程度上輕一些。${mingjuIntro}</div>
-    ${hotspotPlain}
-  </div>`;
-}
 
 /* ── 命局白話版・整篇故事(2026-08-30 新增) ──
    用戶明確要求的結構：開頭一段「這個人大概是什麼樣」→ 性格 → 事業財運人脈 → 感情婚姻桃花 →
    人生波動挫折(刑墓庚虎迫空) → 怎麼破 → 總結建議 → 一句話概括，像讀故事一樣一路看下去，
    不再逐宮列表。這個結構本質上是在問「這個人整體是什麼樣」，只有命局模式(起局起的是某個人
    的出生時刻)講得通——事局是在問一件具體的事，套這套「性格/財運/感情」全展開的結構會文不
-   對題，所以只在 juType==='命局' 時使用；事局模式的白話版仍用上面逐宮版的
-   renderMasterSummaryPlain(之後另外設計事局專屬的白話結構)。
+   對題，所以只在 juType==='命局' 時使用；事局模式的白話版改用下方 renderShijuStoryPlain
+   (2026-09-06 新增，事局自己的敘事骨架，見該函式上方註解)。
    用戶也明確同意這裡「荀爽體系／主流體系」不用像專業版一樣貼標籤分開，可以揉在一起講——
    但仍然堅守「不腦補」這條線：每一句話都對應到 analyzeWealthSeven/analyzeCareerSeven/
    analyzeSimpleLocate/六害偵測 這些已經測試過的函式輸出，「總結」「一句話概括」也是用命中
@@ -623,15 +604,6 @@ function renderMasterSummaryPlain(summary, juType){
    分析真正的問題所在(現編沒查證的規則，不是表達方式問題)，這裡刻意不重蹈覆轍。 */
 function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourStem, needKey, industry, targetWuxing, yearsInput, masterSummary, marriageInfo, kongHitGongs, fuyinFanyinHits){
   const T2=x=>t2(x||'');
-
-  // 三層結構＋置信度標籤：標示每一段話是「查表就有的事實」(rule)、「把幾個已驗證符號的
-  // 意思兜在一起講」(combo)、還是「跨好幾個面向比出來的推論」(infer/weak)。標籤只是老實
-  // 講清楚這句話怎麼來的，不是免責聲明——寫的時候還是要對內容本身負責，不能拿標籤當藉口
-  // 亂寫。四個等級對應 ChatGPT 建議的【規則】【組合取象】【綜合推導】【弱推斷】，
-  // 【禁止輸出】那一級不會出現在畫面上，是「這種話本來就不該寫」的內部提醒。
-  // 2026-09-06 降視覺權重(用戶朋友(ChatGPT)反饋)：原本每段話都掛一個常駐顯示的彩色文字
-  // 徽章，改成預設只顯示小圓點(見 confTag()/toggleConfTag() 共用實作，qimen.html 對應的
-  // .conf-tag/.conf-dot/.conf-label 樣式)，hover 有 tooltip、點一下才展開文字。
 
   // ① 性格：日干＝內心，時干＝對外展現，直接用十天干取象詞典裡已經驗證過的描述，不新寫一套
   const dInfo=dayStem?LEX_DATA.stems[dayStem]:null;
@@ -650,24 +622,7 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
   // 名(如「庚虎」「諸干」)，小白看了不知道是什麼意思；改成「白話(原符號)」的形式，第一次
   // 出現就帶原詞，不需要另外查術語表也看得懂，也不影響可溯源(原符號還在，只是加了已驗證的
   // 白話說明)。(ChatGPT 建議「首次短釋義」，這裡直接用既有 role 欄位做到，不是新造內容。)
-  const glossItem=it=>(it.role&&it.role!==it.name)?`${T2(it.role)}(${T2(it.name)})`:T2(it.name);
-  const domainParagraph=(label, items)=>{
-    const positioned=items.filter(it=>it.rows&&it.rows.length);
-    const bad=positioned.filter(it=>it.bad===true);
-    const clean=positioned.filter(it=>it.bad===false);
-    if(!positioned.length)return {text:`${label}方面這局沒有明確的定位資訊，暫時看不出來。`, bad:[], total:0, tier:'weak'};
-    let text=`${label}方面，`;
-    if(bad.length===0){
-      text+=`「${clean.map(glossItem).join('」「')}」這幾個關鍵點位都還算乾淨，沒有明顯卡住的地方。`;
-    }else{
-      text+=`「${bad.map(glossItem).join('」「')}」這幾個點位命中了六害，需要留意`;
-      if(clean.length)text+=`；「${clean.map(glossItem).join('」「')}」倒是乾淨的`;
-      text+='。';
-    }
-    // combo：財富七要/事業七要/簡明定位讀法都是把好幾個已驗證的單點符號兜在一起才推出
-    // 這個生活面向的結論，不是單一查表事實，所以標「組合取象」而不是「規則」。
-    return {text, bad, total:positioned.length, tier:'combo'};
-  };
+  // glossItem/domainParagraph 是模組層級共用函式(見上方定義)，命局/事局故事卡共用同一份。
   const wealthP=domainParagraph('財運', wealth.items);
   const careerP=domainParagraph('事業', career.items);
 
@@ -777,6 +732,137 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
     <div class="plain-block"><div class="plain-gong">容易出現的波動、挫折</div><div class="plain-p">${confTag(wanderTier)}${wanderText}</div></div>
     <div class="plain-block"><div class="plain-gong">怎麼破</div><div class="plain-p">${confTag(cureGongsTier)}${cureGongsText}</div>${cureNoteText?`<div class="plain-p">${confTag(cureNoteTier)}${cureNoteText}</div>`:''}</div>
     <div class="plain-block"><div class="plain-gong">總結建議</div><div class="plain-p">${confTag(overallTier)}${overallText}</div></div>
+    <div class="plain-block" style="border-bottom:none"><div class="plain-p" style="font-weight:700">${confTag(oneLinerTier)}${oneLiner}</div></div>
+  </div>`;
+}
+
+/* ── 事局白話版・整篇故事(2026-09-06 新增，取代舊版逐宮列表 renderMasterSummaryPlain) ──
+   背景：命局故事卡(renderMingjuStoryPlain)上線後，事局的白話版一直維持逐宮條列的舊結構
+   (「來看X宮這邊」逐個講)，跟命局故事卡的讀故事節奏不一致，是明確留下的待辦事項。這裡不是
+   把命局那套「性格→財運→事業→感情→人生波動」照搬過來——命局在問「這個人整體是什麼樣」，
+   套用全部人生面向合理；事局只問「一件具體的事」，套同一套結構會文不對題(跟當初拆出命局
+   專屬結構的理由完全對稱)。改成事局自己的敘事骨架：
+     ①這件事目前的狀態(日干=本質/時干=表象，跟命局①同一組資料，只是換框架成「事」不是「人」)
+     ②針對這次「所求」的核心讀局(只跑所求對應的那一個面向，不是命局那樣四個面向全展開)
+     ③有沒有踩到雷(六害命中，跟命局④同一段邏輯)
+     ④怎麼破(事局的重點——這裡跟命局最大的不同：事局可以給完整灭象布阵操作步驟，不用
+       MINGJU_CURE_NOTE 擋掉)
+     ⑤整體怎麼樣　⑥一句話概括
+   每一句話仍然對應到既有已測試函式的輸出，不新增判斷方法論。 */
+function renderShijuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourStem, needKey, industry, targetWuxing, yearsInput, masterSummary, marriageInfo, kongHitGongs, fuyinFanyinHits){
+  const T2=x=>t2(x||'');
+  if(masterSummary.quiet){
+    return `<div class="master-card">
+      <div class="master-title">師傅總結</div>
+      <div class="plain-p">${confTag('rule')}這局整體挺平穩的——六害、格局、地利、主客、天時、人和，沒有哪個特別揪著你，可以按原計劃推進，不用特別緊張哪個方向。</div>
+    </div>`;
+  }
+
+  // ① 這件事目前的狀態：日干＝這件事的本質，時干＝這件事目前呈現出來的表象，跟命局①
+  // 用的是同一組 LEX_DATA 取象描述，只是開場白換成「事」的框架，不是「人」的框架。
+  const locateStemGong=(stem)=>{
+    if(!stem)return null;
+    for(const g of Object.keys(sky)){ if(sky[g]===stem)return g; }
+    return null;
+  };
+  const frameLine=(label, stem)=>{
+    if(!stem)return '';
+    const g=locateStemGong(stem);
+    if(!g)return `${label}干「${T2(stem)}」在天盤上沒有直接找到對應宮位（如果是「甲」，因為甲永遠藏在值符背後、不直接現於天盤，這是正常的，看值符落宮即可）。`;
+    if(g==='中')return `${label}干「${T2(stem)}」落在中宮——中宮本身不單獨排門/星/神(禽星寄坤)，可以直接參考坤宮。`;
+    const dr=door[g], st=star[g], gd=god[g];
+    const doorInfo=LEX_DATA.doors[dr], starInfo=LEX_DATA.stars[st], godInfo=LEX_DATA.gods[gd];
+    const names=[doorInfo?.name, starInfo?.name, godInfo?.name].filter(Boolean).map(T2).join('、');
+    const descs=[doorInfo?.desc, starInfo?.desc, godInfo?.desc].filter(Boolean).map(T2).join(' ');
+    return `${label}干「${T2(stem)}」落在<b>${T2(g)}宮</b>——這宮是${names}，${descs}`;
+  };
+  const dLine=frameLine('本質(日)', dayStem), hLine=frameLine('表象(時)', hourStem);
+  const stateText=[dLine,hLine].filter(Boolean).join(' ')||'這局缺少日干/時干資訊，這件事目前的狀態暫時看不出來。';
+  const stateTier=(dLine||hLine)?'rule':'weak';
+
+  // ② 針對這次「所求」的核心讀局：只跑所求對應的那一個面向，不像命局那樣四個面向全展開——
+  // 事局問的是一件事，不是整個人生。needKey 落在哪個既有分析方法，決定這裡怎麼讀：
+  // 財富七要/事業七要有專屬完整方法；求權威/表現/情感/突破/事業/桃花有簡明定位讀法；
+  // 其餘(如預設的「求財」)目前沒有對應的深度方法，老實講清楚，不硬湊一個。
+  let focusP;
+  if(needKey==='財富七要'){
+    focusP=domainParagraph('財運', analyzeWealthSeven(pan, {industry, targetWuxing: targetWuxing||null}).items);
+  }else if(needKey==='事業七要'){
+    focusP=domainParagraph('事業', analyzeCareerSeven(pan, zfzs, {industry}).items);
+  }else if(SIMPLE_LOCATE_DEFS[needKey]){
+    const locate=analyzeSimpleLocate(pan, needKey, zfzs);
+    focusP=domainParagraph(T2(needKey).replace(/^求/,''), locate.items);
+  }else{
+    focusP={text:`「所求」目前是「${T2(needKey)}」，這個選項沒有專屬的深度讀局方法(想看具體的財運判斷可以切到上面「所求」選單選「財富七要」重新起局)，下面直接看六害命中跟怎麼破。`, bad:[], total:0, tier:'weak'};
+  }
+  // 求桃花時額外補一段婚姻用神(已經有對象/已婚的相處方向)，跟簡明定位讀法(有沒有機會)
+  // 回答的是不同問題，都留著；其餘所求不主動帶出婚姻話題，避免答非所問。
+  let marriageText='', marriageTier='combo';
+  if(needKey==='求桃花'&&marriageInfo){
+    const {yiGong, gengGong, favor, isJi, yiLuck, gengLuck}=marriageInfo;
+    const yiKong=(kongHitGongs||[]).includes(yiGong), gengKong=(kongHitGongs||[]).includes(gengGong);
+    const hasFuyinFanyin=(fuyinFanyinHits||[]).length>0;
+    marriageText=`另外，如果問的是已經有對象或已婚的相處狀況（奇門固定用天盤乙代表女方、庚代表男方，這跟上面桃花旺不旺是兩件事）：目前${T2(favor)}${isJi?'，方向上偏和睦':'，方向上要多留意磨合'}。`;
+    if(yiKong)marriageText+='女方這一側還逢旬空，感情或婚姻容易有虛浮不實的感覺。';
+    if(gengKong)marriageText+='男方這一側還逢旬空，感情或婚姻容易有虛浮不實的感覺。';
+    if(hasFuyinFanyin)marriageText+='這局整體還逢伏吟反吟，變動性也要一併考慮。';
+    const luckWords=lk=>[lk.doorJi&&'吉門',lk.starJi&&'吉星',lk.godJi&&'吉神'].filter(Boolean);
+    const yiWords=luckWords(yiLuck), gengWords=luckWords(gengLuck);
+    if(yiWords.length)marriageText+=`女方這一側額外還有${yiWords.join('、')}，算是加分項，但不直接等於婚姻整體變好。`;
+    if(gengWords.length)marriageText+=`男方這一側額外還有${gengWords.join('、')}，算是加分項，但不直接等於婚姻整體變好。`;
+  }
+
+  // ③ 有沒有踩到雷：跟命局④同一段邏輯，只取「命中號令」的六害條目，合併成一段話不逐宮分段。
+  const wanderHits=[];
+  masterSummary.hotspots.forEach(hp=>{
+    hp.xunlao.filter(x=>x.isHit).forEach(x=>wanderHits.push({...x, gong:hp.gong}));
+  });
+  const wanderText=wanderHits.length===0
+    ?'目前盤面上刑墓庚虎迫空這幾種波動，沒有直接命中這件事，算是比較平穩的狀態。'
+    :'具體來看，這件事容易卡住、不順的地方有：'+wanderHits.map(x=>`${T2(x.gong)}宮這邊，${T2(x.text)}`).join('；')+'。';
+  const wanderTier='rule';
+
+  // ④ 怎麼破：這是事局白話版跟命局白話版最大的不同——事局可以給完整灭象布阵操作步驟，
+  // 不需要像命局那樣統一改成 MINGJU_CURE_NOTE。逐條沿用既有 plainCureText()。
+  const cureText=wanderHits.length===0
+    ?'目前沒有需要特別處理的地方，維持現狀就好。'
+    :wanderHits.map(x=>`${T2(x.gong)}宮：${plainCureText(x.cureSteps)}`).join(' ');
+  const cureTier='rule';
+
+  // ⑤ 整體怎麼樣：有明確所求分析時，拿「所求」跟「人生波動」兩塊一起看；沒有的話只看波動。
+  let overallText;
+  if(focusP.total>0){
+    const ratio=(focusP.total-focusP.bad.length)/focusP.total;
+    overallText=ratio===1
+      ?'這次所求對應的關鍵點位都還算乾淨，'
+      :`這次所求對應的關鍵點位裡有 ${focusP.bad.length}／${focusP.total} 個命中六害，`;
+    overallText+=wanderHits.length>0?`加上人生波動這塊命中了 ${wanderHits.length} 處，具體處理方式看上面「怎麼破」那段。`:'人生波動這塊目前沒有命中，整體算是相對平穩。';
+  }else{
+    overallText=wanderHits.length>0
+      ?`人生波動這塊（刑墓庚虎迫空）目前命中了 ${wanderHits.length} 處，具體處理方式看上面「怎麼破」那段。`
+      :'人生波動這塊（刑墓庚虎迫空）目前沒有命中，算是相對平穩。';
+  }
+  const overallTier='infer';
+
+  // ⑥ 一句話概括：純數字統計，不夾帶心理學式的性格判斷。
+  const totalBad=focusP.bad.length+wanderHits.length;
+  const totalAll=focusP.total+wanderHits.length;
+  const oneLinerTier=totalAll===0?'weak':'infer';
+  const oneLiner=totalAll===0
+    ?'這局資訊不足，暫時無法給出一句話概括。'
+    :(totalBad===0
+      ?'一句話概括：目前掃過的部分都還算乾淨，沒有特別需要緊張的地方。'
+      :`一句話概括：這局命中六害的訊號集中在${[focusP.bad.length>0?'所求對應的面向':'',wanderHits.length>0?'人生波動':''].filter(Boolean).join('、')}，其餘部分相對平穩，具體怎麼處理可以看上面「怎麼破」那段。`);
+
+  return `<div class="master-card">
+    <div class="master-title">師傅總結</div>
+    <div class="plain-p" style="opacity:.7;margin-bottom:4px">下面把這局拆成幾段來講事局的白話版——這件事目前的狀態、針對所求的讀局、有沒有踩雷、怎麼破，一路讀下去就好，不用先懂術語。這裡主流斷局法跟荀爽老師體系的判斷不特別分開標註，兩邊揉在一起講；如果想看兩套體系嚴格分開、逐宮完整的版本，切到「專業版」。</div>
+    <div class="plain-p" style="opacity:.55;font-size:12px;margin-bottom:10px">每段話前面的小標籤是老實告訴你這句話怎麼來的：${confTag('rule')}查表就有的事實、${confTag('combo')}把幾個已驗證的符號兜在一起講、${confTag('infer')}跨好幾個面向比出來的相對判斷(不是鐵律)、${confTag('weak')}資訊不足只能先這樣講。標籤不是免責聲明，只是讓你自己判斷要多當真。</div>
+    <div class="plain-block"><div class="plain-gong">這件事目前是什麼狀態</div><div class="plain-p">${confTag(stateTier)}${stateText}</div></div>
+    <div class="plain-block"><div class="plain-gong">針對這次所求的讀局</div><div class="plain-p">${confTag(focusP.tier)}${focusP.text}</div>${marriageText?`<div class="plain-p">${confTag(marriageTier)}${marriageText}</div>`:''}</div>
+    <div class="plain-block"><div class="plain-gong">有沒有踩到雷</div><div class="plain-p">${confTag(wanderTier)}${wanderText}</div></div>
+    <div class="plain-block"><div class="plain-gong">怎麼破</div><div class="plain-p">${confTag(cureTier)}${cureText}</div></div>
+    <div class="plain-block"><div class="plain-gong">整體怎麼樣</div><div class="plain-p">${confTag(overallTier)}${overallText}</div></div>
     <div class="plain-block" style="border-bottom:none"><div class="plain-p" style="font-weight:700">${confTag(oneLinerTier)}${oneLiner}</div></div>
   </div>`;
 }
@@ -1071,7 +1157,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
   <div class="master-mode master-mode-plain">${
     juType==='命局'
       ?renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourStem, needKey, industry, targetWuxing, yearsInput, masterSummary, marriageInfo, kongHitGongs, fuyinFanyinHits)
-      :renderMasterSummaryPlain(masterSummary, juType)
+      :renderShijuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourStem, needKey, industry, targetWuxing, yearsInput, masterSummary, marriageInfo, kongHitGongs, fuyinFanyinHits)
   }</div>
   <div class="master-mode master-mode-pro" style="display:none">${renderMasterSummary(masterSummary, juType)}</div>
 
