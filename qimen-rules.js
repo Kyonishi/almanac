@@ -1270,10 +1270,11 @@ const XIONG_STAR=new Set(['天內','天柱','天英']);
 const JI_GOD=new Set(['值符','太陰','六合','九天']);
 const XIONG_GOD=new Set(['螣蛇','白虎','玄武','九地','勾陳','朱雀']);
 // ── 財富七要 / 事業七要 報告渲染 (沿用 ana-block/ana-h/ana-item 既有樣式) ──
-function renderWealthCareerReport(pan, mode, industry, targetWuxing){
+function renderWealthCareerReport(pan, mode, industry, targetWuxing, juType){
   const T2=x=>t2(x||'');
   const zfzs=pan.值符值使;
   const isWealth=mode==='財富七要';
+  const isMingju=juType==='命局';
   const {items, crossHits}=isWealth
     ? analyzeWealthSeven(pan, {industry, targetWuxing: targetWuxing||null})
     : analyzeCareerSeven(pan, zfzs, {industry});
@@ -1292,7 +1293,7 @@ function renderWealthCareerReport(pan, mode, industry, targetWuxing){
       const gongTxt=r.gong?`${T2(r.gong)}宮`:'（未定位）';
       const stemTxt=r.stem?`「${T2(r.stem)}」`:(r.role?`${T2(r.role)}${r.stem?'「'+T2(r.stem)+'」':''}`:'');
       const harmTxt=r.harms&&r.harms.length?`命中：${r.harms.join('、')}`:'乾淨';
-      const curesHtml=(r.gong&&r.harms&&r.harms.length)
+      const curesHtml=(r.gong&&r.harms&&r.harms.length&&!isMingju)
         ? getCuresAtGong(r.gong,pan).map(c=>{
             const xiangTxt=c.xiang?.wu ? `，${T2(c.xiang.wu)}` : '';
             const placeTxt=c.place?`，放於${T2(c.place)}方位`:'';
@@ -1327,11 +1328,17 @@ function renderWealthCareerReport(pan, mode, industry, targetWuxing){
   if(badCount===0) verdict='七要基本乾淨，沒有明顯阻力。';
   else if(badCount<=2) verdict=`七要中有 ${badCount} 項命中六害，問題不算全面，針對命中的項目排雷即可。`;
   else verdict=`七要中有 ${badCount} 項命中六害，阻力比較全面，建議按嚴重度優先處理，或考慮這條路本身是否適合走。`;
+  // 命局模式下不給灭象布阵具體擺放/方位指令(跟 buildXunlaoItems/命局故事卡同一條規則)，
+  // 逐條命中都省略 curesHtml，改成整張卡片統一講一次原因，不逐條重複貼同一句話。
+  const mingjuNoteHtml=(isMingju&&badCount>0)
+    ? `<div class="ana-block"><div class="ana-h">化解方法提醒</div><div>${T2(MINGJU_CURE_NOTE)}</div></div>`
+    : '';
 
   return `<div class="analysis-card">
     <div class="ana-block"><div class="ana-h">${T2(mode)}・逐項檢視${BADGE_SOURCE_A}${BADGE_CONSENSUS_Y}</div>${itemsHtml}</div>
     ${crossRows?`<div class="ana-block"><div class="ana-h">要素之間的關聯（同宮/對宮，推導未經逐字驗證）</div>${crossRows}</div>`:''}
     <div class="ana-block"><div class="ana-h">整體怎麼樣</div><div>${verdict}</div></div>
+    ${mingjuNoteHtml}
     <div class="ana-block"><div class="ana-h">基礎原則提醒</div>
       <div>① 符號有雙面性——本人主動占據某領域(如玄武對應的心理學/哲學)，該符號可能從「外部威脅」轉化為「本人自身」，不能無腦判凶。<br>
       ② 命裡最容易的路 ≠ 本人真正想走的路，讀局時把「最佳路徑」和「當事人實際選擇」分開呈現。<br>
@@ -1342,10 +1349,12 @@ function renderWealthCareerReport(pan, mode, industry, targetWuxing){
 
 // ── 「簡明定位讀法」報告渲染 (權威/表現/情感/突破/桃花共用一套模板，沿用財富/事業七要
 //    的既有樣式，但明確標註這裡的符號來源分級較低、不是逐字教材，供使用者自行判斷輕重) ──
-function renderSimpleLocateReport(pan, needKey, yearsInput){
+function renderSimpleLocateReport(pan, needKey, yearsInput, juType){
   const T2=x=>t2(x||'');
   const zfzs=pan.值符值使;
+  const isMingju=juType==='命局';
   const {items, crossHits}=analyzeSimpleLocate(pan, needKey, zfzs);
+  let anyCureHidden=false;
 
   const itemsHtml=items.map(it=>{
     const badgeTxt = it.bad===null?'未定位':(it.bad?'⚠ 有六害':'✓ 乾淨');
@@ -1353,7 +1362,8 @@ function renderSimpleLocateReport(pan, needKey, yearsInput){
     const rowsHtml=(it.rows||[]).map(r=>{
       const gongTxt=r.gong?`${T2(r.gong)}宮`:'（未定位）';
       const harmTxt=r.harms&&r.harms.length?`命中：${r.harms.join('、')}`:'乾淨';
-      const curesHtml=(r.gong&&r.harms&&r.harms.length)
+      if(r.gong&&r.harms&&r.harms.length&&isMingju)anyCureHidden=true;
+      const curesHtml=(r.gong&&r.harms&&r.harms.length&&!isMingju)
         ? getCuresAtGong(r.gong,pan).map(c=>{
             const xiangTxt=c.xiang?.wu ? `，${T2(c.xiang.wu)}` : '';
             const placeTxt=c.place?`，放於${T2(c.place)}方位`:'';
@@ -1400,7 +1410,8 @@ function renderSimpleLocateReport(pan, needKey, yearsInput){
         if(!l.gong)return `<div class="ana-item">${l.label}——地支對照找不到宮位，暫無法定位</div>`;
         const badgeTxt=l.bad?'⚠ 有六害':'✓ 乾淨';
         const badgeCls=l.bad?'pill-xiong':'pill-ji';
-        const curesHtml=l.bad
+        if(l.bad&&isMingju)anyCureHidden=true;
+        const curesHtml=(l.bad&&!isMingju)
           ? getCuresAtGong(l.gong,pan).map(c=>{
               const xiangTxt=c.xiang?.wu ? `，${T2(c.xiang.wu)}` : '';
               const placeTxt=c.place?`，放於${T2(c.place)}方位`:'';
@@ -1431,6 +1442,7 @@ function renderSimpleLocateReport(pan, needKey, yearsInput){
     ${crossRows?`<div class="ana-block"><div class="ana-h">符號之間的關聯（同宮/對宮，推導未經逐字驗證）</div>${crossRows}</div>`:''}
     ${peachHtml}
     <div class="ana-block"><div class="ana-h">整體怎麼樣</div><div>${verdict}</div></div>
+    ${anyCureHidden?`<div class="ana-block"><div class="ana-h">化解方法提醒</div><div>${T2(MINGJU_CURE_NOTE)}</div></div>`:''}
   </div>`;
 }
 
