@@ -1210,6 +1210,11 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
        也都是視頻截圖逐字轉錄；灭象動作(可移可扔可送/只能移別扔別送等)直接沿用 MIEXIANG_RULE，
        不是自己編的新規則。這一版把同一類化解方式相同的命中合併成一條，避免重複的布阵說明洗版；
        灭象跟布阵拆成兩行分開講清楚；整體用「一步步」的口吻寫，像人在旁邊講解，不是條列報告。 */
+    // 「本局解讀」原本沒有區分命局/事局——灭象布阵是荀爽老師針對「事局」設計的化解方法，命局
+    // 模式下不該給具體擺放/方位指令(跟 buildXunlaoItems/白話總結卡/財富七要報告同一條規則，
+    // 2026-09-06 覆查財富七要報告時比對「本局解讀」發現這裡漏改)，這裡改成命局模式只講「命中了
+    // 什麼」，不逐條印 stepsHtml/kongHtml 的具體灭象/布阵步驟，改成整段統一講一次 MINGJU_CURE_NOTE。
+    const isMingju=juType==='命局';
     const LIUHAI_MEANING={刑:'争執損耗',墓:'沉溺迷失',庚:'凶禍阻隔',虎:'快速危險',迫:'壓力脅迫',空:'虛假不實'};
     /* 刑/墓/庚 的軍事隱喻 —— 來源: 荀爽老師視頻「主帥/三奇/六儀」截圖逐字轉錄:
        甲=主帥(指揮中樞，護主帥) / 乙丙丁=三奇(致勝奇謀，以奇勝) / 戊己庚辛壬癸=六儀(大規模正面主力，以正合)
@@ -1241,6 +1246,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
 
     // 灭象/布阵 兩步驟拆開講，灭象動作沿用 MIEXIANG_RULE (未驗證的部份誠實標註)
     const stepsHtml=(item)=>{
+      if(isMingju)return '';
       const rule=MIEXIANG_RULE[item.type];
       const mxUnverified=(rule&&rule.verified===false&&!/^（/.test(rule.action))?'（暫缺視頻原文明確說明，建議人工覆核）':'';
       const mxLine=rule?`<div class="ana-step">灭象：${rule.action}${mxUnverified}</div>`:'';
@@ -1361,7 +1367,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
         const rule=MIEXIANG_RULE['空'];
         const c=first.cure;
         let bu='';
-        if(c&&c.xiang){
+        if(!isMingju&&c&&c.xiang){
           const x=c.xiang;
           const cvUnverified=c.verified===false?'（此為推導，未經視頻原文逐字驗證，僅供參考）':'';
           bu=`<div class="ana-step">補放：「${T2(x.stem)}」——${x.wu}，放${x.placement}${cvUnverified}</div>`;
@@ -1369,8 +1375,8 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
         kongHtml=`<div class="ana-item">
           <span class="lh-word lh-kong">空</span>
           ${gongDirList}皆空亡——${LIUHAI_MEANING['空']}
-          <div class="ana-step">灭象：${rule?rule.action:''}</div>
-          <div class="ana-step">布阵：每個空亡宮各自去自己對應的方位（如上列）補放，方位跟著宮走、不能合併成一個。</div>
+          ${isMingju?'':`<div class="ana-step">灭象：${rule?rule.action:''}</div>
+          <div class="ana-step">布阵：每個空亡宮各自去自己對應的方位（如上列）補放，方位跟著宮走、不能合併成一個。</div>`}
           ${bu}
         </div>`;
       }
@@ -1388,6 +1394,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
           </div>`;
         }).join('')}
         ${kongHtml}
+        ${isMingju?`<div class="ana-item" style="opacity:.8">${T2(MINGJU_CURE_NOTE)}</div>`:''}
       </div>`;
     }else if(hitList.length){
       attentionHtml=`<div class="ana-block"><div class="ana-h">第二步・有沒有踩到雷</div><div>本局有六害，但都沒有命中本次號令保護的天干/宮位，屬於盤面背景，不是真正衝著這次問事來的，可以先不用特別處理。</div></div>`;
@@ -1399,16 +1406,16 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     const hasSevere=hitOnly.some(x=>x.severity<=3);
     let verdict;
     if(hitOnly.length===0) verdict='整體比較順，沒有命中號令的凶象，可以按原計劃推進。';
-    else if(hasSevere) verdict='有明顯阻力（命中了刑/墓/庚其中之一），建議先把上面列的灭象/布阵做完，再看局勢有沒有轉順。';
+    else if(hasSevere) verdict=isMingju?'有明顯阻力（命中了刑/墓/庚其中之一），命局模式暫不給具體灭象/布阵步驟，詳見上方說明。':'有明顯阻力（命中了刑/墓/庚其中之一），建議先把上面列的灭象/布阵做完，再看局勢有沒有轉順。';
     else verdict='有一些干擾（虎/迫/空層級），問題不算嚴重，但處理掉會更順。';
 
     return `<div class="analysis-card">
       ${openingHtml}
       ${attentionHtml}
       <div class="ana-block"><div class="ana-h">第三步・整體怎麼樣</div><div>${verdict}</div></div>
-      <div class="ana-block"><div class="ana-h">第四步・排雷時要注意</div>
+      ${isMingju?'':`<div class="ana-block"><div class="ana-h">第四步・排雷時要注意</div>
         <div>灭象、布阵一律「重天干、可忽略地干」，每個宮只看上面的天干；布阵時把化解用的天干/地支形象，按對你最有利的方式布入對應宮位（荀爽老師說的「利益最大原則」）。</div>
-      </div>
+      </div>`}
     </div>`;
   })()}
 
@@ -1416,8 +1423,10 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     const anyHit=Object.keys(jixingHits).length||Object.keys(rumuHits).length||Object.keys(menpoHits).length
       ||Object.keys(gengHits).length||Object.keys(baihuHits).length||kongHitGongs.length;
     if(!anyHit)return '';
+    const isMingju=juType==='命局';
 
     const cureLine=(cure)=>{
+      if(isMingju)return '';
       if(!cure)return '';
       const isKong=cure.hai==='空';
       const placeLine=cure.place
@@ -1503,7 +1512,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
           const branchDetail=(cure&&cure.branchXiangs&&cure.branchXiangs.length)
             ?cure.branchXiangs.map(bx=>`「${bx.branch}」(${bx.zodiac})：${bx.wu}，放${bx.placement}`).join('；')
             :'';
-          const cureHtml=cure?`<div class="cure-line">→ 用合：擺放「${cure.doorsText}」門象、對應地支「${cure.branchesText}」<br>
+          const cureHtml=(cure&&!isMingju)?`<div class="cure-line">→ 用合：擺放「${cure.doorsText}」門象、對應地支「${cure.branchesText}」<br>
             <span style="opacity:.85">地支形象：${branchDetail}</span></div>`:'';
           return `<div${rowClass(isHit)}>· ${T2(g)}宮　${T2(dr)}門迫 ${hlTag(isHit)}${isHit?dedupNote:cureHtml}</div>`;
         }).join('')}
@@ -1519,12 +1528,15 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
       </div>`;
     }
 
+    if(isMingju){
+      html+=`<div style="font-size:11px;opacity:.7;margin-top:6px">${T2(MINGJU_CURE_NOTE)}</div>`;
+    }
     html+='</div>';
     return html;
   })()}
 
-  ${(needKey==='財富七要'||needKey==='事業七要') ? renderWealthCareerReport(pan, needKey, industry, targetWuxing)
-    : (SIMPLE_LOCATE_DEFS[needKey] ? renderSimpleLocateReport(pan, needKey, yearsInput) : '')}
+  ${(needKey==='財富七要'||needKey==='事業七要') ? renderWealthCareerReport(pan, needKey, industry, targetWuxing, juType)
+    : (SIMPLE_LOCATE_DEFS[needKey] ? renderSimpleLocateReport(pan, needKey, yearsInput, juType) : '')}
 
   <div class="info-card">
     <div class="info-title">吉凶速覽</div>
