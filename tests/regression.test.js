@@ -608,6 +608,32 @@ function check(label, actual, expected) {
       byCross3['門象'], undefined);
   }
 
+  // scoreProfile() 評分偏差修正(2026-09-06，用戶朋友(ChatGPT)第五輪反饋，查證屬實)：直接用
+  // 合成 profile 測試，不依賴真實排盤，鎖定修正後的精確行為。
+  {
+    const p=(xunlao,mainstream)=>({gong:'測',xunlao,mainstream});
+    check('scoreProfile：背景態主客(isHit:false)不貢獻分數(原本是每宮必有、不該墊底分)',
+      Rules.scoreProfile(p([],[{type:'主客',isHit:false,favor:'平'}])), 0);
+    check('scoreProfile：命中號令的主客(isHit:true)貢獻1.5分',
+      Rules.scoreProfile(p([],[{type:'主客',isHit:true,favor:'主'}])), 1.5);
+    check('scoreProfile：背景態人和(isHit:false)不貢獻分數(同上，人和也是每宮必有)',
+      Rules.scoreProfile(p([],[{type:'人和',isHit:false,luck:'平'}])), 0);
+    check('scoreProfile：命中號令的人和(isHit:true)貢獻1.5分',
+      Rules.scoreProfile(p([],[{type:'人和',isHit:true,luck:'吉'}])), 1.5);
+    check('scoreProfile：同一宮兩條地利都命中號令，只算1.5分(不因為四角宮兩地支疊加成3分)',
+      Rules.scoreProfile(p([],[{type:'地利',isHit:true},{type:'地利',isHit:true}])), 1.5);
+    check('scoreProfile：同一宮兩條地利一命中一背景，仍只算1.5分(取命中優先，不逐條加總)',
+      Rules.scoreProfile(p([],[{type:'地利',isHit:true},{type:'地利',isHit:false}])), 1.5);
+    check('scoreProfile：同一宮兩條地利都是背景，只算0.3分(不因為兩地支疊加成0.6分)',
+      Rules.scoreProfile(p([],[{type:'地利',isHit:false},{type:'地利',isHit:false}])), 0.3);
+    check('scoreProfile：格局/三詐五假/天時/驛馬背景態不受這次修正影響，維持原本0.3分',
+      Rules.scoreProfile(p([],[{type:'格局',isHit:false,luck:'凶'}])), 0.3);
+    check('scoreProfile：一個宮完全沒有任何命中(六害乾淨+主客人和背景不算分+沒有地利/格局等背景條目)得0分，quiet:true現在真的可達',
+      Rules.scoreProfile(p([], [
+        {type:'主客',isHit:false,favor:'平'}, {type:'人和',isHit:false,luck:'平'},
+      ])), 0);
+  }
+
   const gz1 = Rules.parseGanzhi('戊辰年甲寅月戊申日壬戌時');
   check('用戶命局干支拆解正確', gz1, {年干:'戊',年支:'辰',月干:'甲',月支:'寅',日干:'戊',日支:'申',時干:'壬',時支:'戌'});
 
@@ -656,8 +682,16 @@ function check(label, actual, expected) {
   const protectedGolden = Rules.buildProtectedStems(panGolden.干支, '', '求財', null);
   const summaryGolden = Rules.buildMasterSummary(panGolden, protectedGolden, '求財');
   check('黃金案例：師傅總結引擎正常跑出3個熱點，不崩潰', summaryGolden.hotspots.length, 3);
-  check('黃金案例最高分熱點是巽宮(時干己酉的己在巽宮擊刑+全局門反吟)',
-    summaryGolden.hotspots[0].gong, '巽');
+  // 2026-09-06 修正 scoreProfile() 的評分偏差(用戶朋友(ChatGPT)第五輪反饋，查證屬實)後，
+  // 這裡從「巽」變成「乾」——不是新 bug，是舊分數本身就不公平：乾宮天時/驛馬/主客/人和/地利
+  // 5個維度全部命中號令，巽宮只有地利/主客/人和3個維度命中，乾宮命中的維度數量本來就比巽宮
+  // 多，只是舊公式讓主客/人和不管命中與否都貢獻分數、加上巽是四角宮地利條目數量是坎離震兌
+  // 的兩倍，兩個偏差疊加後才讓巽反而排到乾前面。修好偏差後乾排第一才是如實反映「命中維度
+  // 較多」，巽/坎兩個熱點本身沒有從熱點名單裡消失，只是內部排序更正。
+  check('黃金案例最高分熱點是乾宮(天時/驛馬/主客/人和/地利5個維度全部命中號令，比巽宮的3個維度多)',
+    summaryGolden.hotspots[0].gong, '乾');
+  check('黃金案例次高分熱點仍是巽宮(刑迫兩條荀爽六害都命中，加上地利/主客/人和3個維度)',
+    summaryGolden.hotspots[1].gong, '巽');
 
   // 事局 vs 命局：灭象布阵是荀爽老師針對「事局」設計的具體操作方法，命局是天生整體結構，
   // 不是在問一件具體的事，硬套「去某方位擺某物品」的指令會文不對題(用戶實測發現的問題：
