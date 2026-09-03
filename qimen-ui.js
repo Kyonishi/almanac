@@ -502,7 +502,7 @@ function renderMasterSummary(summary, juType){
     :'';
   return `<div class="master-card">
     <div class="master-title">師傅總結</div>
-    <div class="ana-step" style="margin-bottom:10px">下面依「這局最該注意的程度」排出最多 3 個宮，每個宮都把主流斷局法跟荀爽老師體系的判斷分開列出，絕不混在一起講。「命中號令」代表這件事直接壓在你自己（日干/時干/值符/所求對應天干）身上，比較要緊；「背景」代表這件事存在於這局，但不是直接衝著你來，程度上輕一些——如果想看完整的逐宮明細，往下滑可以看到兩套體系各自完整的判斷卡片。${mingjuIntro}</div>
+    <div class="ana-step" style="margin-bottom:10px">下面依「這局最該注意的程度」排出最多 3 個宮，每個宮都把主流斷局法跟荀爽老師體系的判斷分開列出，絕不混在一起講。「命中號令」代表這件事直接壓在你自己（日干/時干/值符/所求對應天干）身上，比較要緊；「背景」代表這件事存在於這局，但不是直接衝著你來，程度上輕一些——如果想看完整的逐宮明細，往下滑可以看到兩套體系各自完整的判斷卡片。下面的格局/六害描述沿用傳統典籍/教材的原始意象用詞，部分措辭較重(如「百事皆凶」「車禍意外」)，是傳統文字上的比喻性/警示性描述，不是斷定你現實生活一定會發生這些事；尤其涉及健康、意外等字眼，請勿當作醫療或安全判斷依據。${mingjuIntro}</div>
     ${hotspotHtml}
   </div>`;
 }
@@ -1027,6 +1027,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
   <div class="section-label">解讀一・主流斷局法（跨門派共識，與下面荀爽老師體系是兩套不同來源）${BADGE_SOURCE_B}${BADGE_CONSENSUS_X}</div>
   ${gejuHits.length ? `<div class="geju-card">
     <div class="geju-title">命中的吉凶格局</div>
+    <div style="font-size:11px;opacity:.6;margin-bottom:6px">下面的描述沿用傳統典籍/教材的原始意象用詞，部分措辭較重(如「百事皆凶」「車禍意外」)，是傳統文字上的比喻性/警示性描述，不是本工具斷定你現實生活一定會發生這些事；尤其涉及健康、意外等字眼，請勿當作醫療或安全判斷依據。</div>
     ${gejuHits.map(h=>hotspotGongs.has(h.gong)?`<div class="geju-item">
       <span class="pill ${h.luck==='吉'?'pill-ji':'pill-xiong'}">${T2(h.luck)}格</span>
       <b>${T2(h.gong)}宮　${T2(h.name)}</b>　（天盤${T2(h.sky)}／地盤${T2(h.earth)}）${seenNote}
