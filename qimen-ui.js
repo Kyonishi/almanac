@@ -679,10 +679,20 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
   [...wealthP.bad, ...careerP.bad, ...(peachP.bad||[])].forEach(it=>{
     (it.rows||[]).forEach(r=>{ if(r.harms&&r.harms.length)cureGongs.add(r.gong); });
   });
-  const cureTier='rule'; // 只是統計命中宮位數量+統一講一次事局提示，沒有新的組合或推論
-  const cureText=cureGongs.size===0
+  // 用戶朋友(ChatGPT)第三輪反饋覆核時抓到兩處措辭問題：(1) cureGongs.size 統計的是「去重
+  // 後的宮位數」，原本文案卻寫成「共N處」聽起來像在數命中訊號的數量——同一個宮可能同時命中
+  // 好幾種訊號，兩者不是同一件事，容易誤導。(2) 這個宮位清單是把財運/事業/感情婚姻/人生波動
+  // 好幾個不同來源的命中結果合併去重才得到的，這個「合併」動作本身跟②③④一樣屬於組合取象，
+  // 不是單一查表事實；後面「命局不給灭象布阵具體操作指令」才是純粹的規則陳述——整段只標一個
+  // 「規則」標籤會蓋掉這個差異，改成拆兩句話分別標籤。另外原本「這局在...宮命中了...」的講法
+  // 聽起來像對整張盤逐宮窮舉的結論，但這裡的集合只來自白話卡已經選中的幾個面向，改成「以上
+  // 幾個面向目前涉及...」，不暗示其餘沒展示的宮位已經被排除在外。
+  const cureGongsTier='combo';
+  const cureGongsText=cureGongs.size===0
     ?'目前沒有需要特別處理的地方，維持現狀就好。'
-    :`這局在${[...cureGongs].map(T2).join('、')}宮命中了需要處理的訊號，共 ${cureGongs.size} 處。荀爽老師體系對應的化解方法(灭象布阵：具體要擺什麼、放哪個方位)是針對「事局」——也就是問一件具體的事——設計的；命局代表你天生的整體結構，不是在問一件具體的事，這裡先不給出擺放/方位這類具體操作指令，以免文不對題。如果想針對某個具體的困擾找到對症的化解步驟，建議挑一件具體想問的事，重新起一個「事局」來問。`;
+    :`以上幾個面向目前涉及${[...cureGongs].map(T2).join('、')}宮，共 ${cureGongs.size} 個宮位需要留意——這是財運/事業/感情婚姻/人生波動這幾段合併去重後的宮位數，不是全盤逐宮窮舉的結果，也不等於命中訊號的數量(同一個宮可能同時命中好幾種訊號)。`;
+  const cureNoteTier='rule';
+  const cureNoteText=cureGongs.size===0?'':'荀爽老師體系對應的化解方法(灭象布阵：具體要擺什麼、放哪個方位)是針對「事局」——也就是問一件具體的事——設計的；命局代表你天生的整體結構，不是在問一件具體的事，這裡先不給出擺放/方位這類具體操作指令，以免文不對題。如果想針對某個具體的困擾找到對症的化解步驟，建議挑一件具體想問的事，重新起一個「事局」來問。';
 
   // ⑥ 總結建議：拿「乾淨度」比較幾個面向，不是現編性格結論——分母是這個面向的點位數，
   //    分子是乾淨點位數，比例越高代表這個面向目前相對越順，純數字比較。
@@ -725,7 +735,7 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
     <div class="plain-block"><div class="plain-gong">事業財運人脈</div><div class="plain-p">${confTag(wealthP.tier)}${wealthP.text}</div><div class="plain-p">${confTag(careerP.tier)}${careerP.text}</div></div>
     <div class="plain-block"><div class="plain-gong">感情婚姻桃花</div><div class="plain-p">${confTag(peachP.tier)}${peachP.text}</div>${marriageText?`<div class="plain-p">${confTag(marriageTier)}${marriageText}</div>`:''}</div>
     <div class="plain-block"><div class="plain-gong">容易出現的波動、挫折</div><div class="plain-p">${confTag(wanderTier)}${wanderText}</div></div>
-    <div class="plain-block"><div class="plain-gong">怎麼破</div><div class="plain-p">${confTag(cureTier)}${cureText}</div></div>
+    <div class="plain-block"><div class="plain-gong">怎麼破</div><div class="plain-p">${confTag(cureGongsTier)}${cureGongsText}</div>${cureNoteText?`<div class="plain-p">${confTag(cureNoteTier)}${cureNoteText}</div>`:''}</div>
     <div class="plain-block"><div class="plain-gong">總結建議</div><div class="plain-p">${confTag(overallTier)}${overallText}</div></div>
     <div class="plain-block" style="border-bottom:none"><div class="plain-p" style="font-weight:700">${confTag(oneLinerTier)}${oneLiner}</div></div>
   </div>`;
