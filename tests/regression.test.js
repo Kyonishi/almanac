@@ -358,6 +358,42 @@ function check(label, actual, expected) {
   check('案例一：8個外宮全部各命中一筆(無漏算無重複)', zhukeHits.length, 8);
 }
 
+// ── 主流斷局法：婚姻用神(天盤乙代表女方／庚代表男方) (2026-08-31 新增) ──
+// 天盤乙=女方、庚=男方、六合=媒人，是奇門獨立於八字「日干克我者為官殺/夫星」的另一套
+// 固定符號體系(甲最忌庚剋，乙是甲的妹妹，乙庚天干相合，甲嫁妹乙於庚化解庚對甲的威脅)。
+// 判斷比較的是乙、庚「各自落宮」的五行生克(不是乙庚天干本身，因為天干本來就相合)。
+// 多方獨立資料源交叉核對一致的基準值，門/星/神的吉凶判斷沿用既有 luckClass。
+{
+  console.log('\n── 婚姻用神(天盤乙/庚落宮生克) ──');
+  const emptyDSG = { 坎:'', 坤:'', 震:'', 巽:'', 乾:'', 兌:'', 艮:'', 離:'' };
+  check('乙庚同五行(乙落坤土/庚落艮土)：比和，勢均力敵',
+    Rules.checkYiGengMarriage({坤:'乙', 艮:'庚'}, emptyDSG, emptyDSG, emptyDSG),
+    {yiGong:'坤', gengGong:'艮', yiWx:'土', gengWx:'土', relation:'比和', favor:'勢均力敵', isJi:true, hasLuckySymbol:false});
+  check('乙生庚(乙落離火/庚落艮土)：女方討好男方',
+    Rules.checkYiGengMarriage({離:'乙', 艮:'庚'}, emptyDSG, emptyDSG, emptyDSG),
+    {yiGong:'離', gengGong:'艮', yiWx:'火', gengWx:'土', relation:'乙生庚', favor:'女方討好男方', isJi:true, hasLuckySymbol:false});
+  check('庚生乙(乙落巽木/庚落坎水)：男方討好女方',
+    Rules.checkYiGengMarriage({巽:'乙', 坎:'庚'}, emptyDSG, emptyDSG, emptyDSG),
+    {yiGong:'巽', gengGong:'坎', yiWx:'木', gengWx:'水', relation:'庚生乙', favor:'男方討好女方', isJi:true, hasLuckySymbol:false});
+  check('乙克庚(乙落兌金/庚落巽木)：女嫌男',
+    Rules.checkYiGengMarriage({兌:'乙', 巽:'庚'}, emptyDSG, emptyDSG, emptyDSG),
+    {yiGong:'兌', gengGong:'巽', yiWx:'金', gengWx:'木', relation:'乙克庚', favor:'女嫌男', isJi:false, hasLuckySymbol:false});
+  check('庚克乙(乙落乾金/庚落離火)：男嫌女',
+    Rules.checkYiGengMarriage({乾:'乙', 離:'庚'}, emptyDSG, emptyDSG, emptyDSG),
+    {yiGong:'乾', gengGong:'離', yiWx:'金', gengWx:'火', relation:'庚克乙', favor:'男嫌女', isJi:false, hasLuckySymbol:false});
+  check('乙或庚落中宮(未落外八宮)：中五寄宮規則未確認，回傳 null',
+    Rules.checkYiGengMarriage({中:'乙', 艮:'庚'}, emptyDSG, emptyDSG, emptyDSG), null);
+  check('吉門/吉星/吉神任一命中：hasLuckySymbol為true',
+    Rules.checkYiGengMarriage({乾:'乙', 離:'庚'},
+      {乾:'開', 離:''}, emptyDSG, emptyDSG).hasLuckySymbol,
+    true);
+
+  const pan1 = QimenJS.qimenChaibu(Solar, 2020, 1, 1, 0, 0);
+  const m1 = Rules.checkYiGengMarriage(pan1.天盤, pan1.門, pan1.星, pan1.神);
+  check('案例：己亥年丙子月癸卯日壬子時——乙落乾(金)/庚落離(火)，庚克乙(男嫌女)',
+    m1, {yiGong:'乾', gengGong:'離', yiWx:'金', gengWx:'火', relation:'庚克乙', favor:'男嫌女', isJi:false, hasLuckySymbol:true});
+}
+
 // ── 主流斷局法：天時(九星按月令旺相休囚死) (2026-08-29 新增) ──
 // 跟一般八字五行旺相休囚死的判斷基準點不同(著眼星曜「往外生助」的作用力，而非跟季節比同氣)，
 // 163.com/CSDN 等多方獨立來源給出的天蓬(水)具體案例，是鎖定這套規則的關鍵基準值。

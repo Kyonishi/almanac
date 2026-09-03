@@ -155,6 +155,17 @@ function clearHistoryAll(){
   saveHistoryList([]);
   renderHistoryPanel();
 }
+// 還原「大行業/小行業」下拉：小行業的值格式是 "大行業::小行業"(一般行業)或單純
+// key(INDUSTRY_MAP 的常見行業)，要先選對大行業、觸發選項重新產生，才能把小行業設回去，
+// 不能直接對小行業下拉設值(這時候小行業清單可能還是「先選大行業」的預設空清單)。
+function restoreIndustrySelect(industry){
+  const bigSel=document.getElementById('iIndustryBig'), smallSel=document.getElementById('iIndustrySmall');
+  if(!bigSel||!smallSel)return;
+  if(!industry){ bigSel.value=''; updateSmallIndustryOptions(); return; }
+  bigSel.value = industry.includes('::') ? industry.split('::')[0] : '__FLAT__';
+  updateSmallIndustryOptions();
+  smallSel.value=industry;
+}
 function reloadHistoryRecord(id){
   const rec=loadHistory().find(r=>r.id===id);
   if(!rec)return;
@@ -163,10 +174,16 @@ function reloadHistoryRecord(id){
   document.getElementById('iNeed').value=rec.needKey||'求財';
   document.getElementById('iYears').value=rec.yearsInput||'';
   document.getElementById('iJuType').value=rec.juType||'事局';
+  // longitudeInput/industry/targetWuxing 是這次(2026-09-03)才開始存的欄位，舊記錄沒有這幾
+  // 個欄位時一律還原成空值(=不校正/不選行業/不比較月令)，誠實反映「這筆舊記錄本來就沒存
+  // 這項資訊」，不是隨便留著畫面上原本的值繼續用。
+  document.getElementById('iLongitude').value=rec.longitudeInput!==undefined?rec.longitudeInput:'';
+  restoreIndustrySelect(rec.industry||'');
+  document.getElementById('iMonthTarget').value=rec.targetWuxing||'';
   updateNeedHint();
   document.getElementById('ritualPanel').style.display='none';
   document.getElementById('historyPanel').style.display='none';
-  calc();
+  calc(true); // 只是回看舊記錄，不是新起一局，不該再往歷史清單多推一筆
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function exportHistoryJson(){
@@ -178,6 +195,36 @@ function exportHistoryJson(){
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+// 嚴格校驗匯入備份裡每一筆記錄的形狀，只留下欄位型別正確的部分，其餘一律丟棄或轉成安全的
+// 空值——不是只檢查「這是不是陣列」就整包收下(Codex code review 2026-09-03 抓到的問題：
+// 原本沒做這層校驗，dateStr/needKey/prediction 文字、id 等欄位會直接被拼進 innerHTML/
+// onclick，被竄改過或來路不明的備份檔案可以藉此在瀏覽器裡跑任意腳本)。這裡只負責「型別
+// 正確」，畫面顯示時 renderHistoryPanel()/renderPredictionSnapshot() 仍然會對所有文字做
+// escHtml，雙層防護不互相取代。
+function sanitizeHistoryRecord(r){
+  if(!r||typeof r!=='object')return null;
+  const id=Number(r.id);
+  if(!Number.isFinite(id))return null;
+  const str=v=>typeof v==='string'?v:'';
+  const sanitizeItems=arr=>Array.isArray(arr)
+    ?arr.filter(x=>x&&typeof x==='object').map(x=>({text:str(x.text), isHit:x.isHit===true}))
+    :[];
+  const prediction=Array.isArray(r.prediction)
+    ?r.prediction.filter(hp=>hp&&typeof hp==='object').map(hp=>({
+        gong:str(hp.gong), agreement:str(hp.agreement),
+        xunlao:sanitizeItems(hp.xunlao), mainstream:sanitizeItems(hp.mainstream),
+      }))
+    :undefined; // undefined 保留「這筆記錄建立於功能上線前，沒有快照」的既有語意
+  const reviewedAt=Number(r.reviewedAt);
+  return {
+    id, dateStr:str(r.dateStr), timeStr:str(r.timeStr), needKey:str(r.needKey),
+    yearsInput:str(r.yearsInput), juType:str(r.juType), juLabel:str(r.juLabel), gz:str(r.gz),
+    hitsSummary:str(r.hitsSummary), longitudeInput:str(r.longitudeInput),
+    industry:str(r.industry), targetWuxing:str(r.targetWuxing), review:str(r.review),
+    reviewedAt:Number.isFinite(reviewedAt)?reviewedAt:undefined,
+    prediction,
+  };
+}
 function importHistoryJson(fileInput){
   const file=fileInput.files&&fileInput.files[0];
   if(!file)return;
@@ -186,13 +233,15 @@ function importHistoryJson(fileInput){
     try{
       const imported=JSON.parse(e.target.result);
       if(!Array.isArray(imported))throw new Error('格式不對');
+      const sanitized=imported.map(sanitizeHistoryRecord).filter(Boolean);
       const existing=loadHistory();
       const existingIds=new Set(existing.map(r=>r.id));
-      const merged=existing.concat(imported.filter(r=>r&&r.id&&!existingIds.has(r.id)));
+      const merged=existing.concat(sanitized.filter(r=>!existingIds.has(r.id)));
       merged.sort((a,b)=>b.id-a.id);
       saveHistoryList(merged.slice(0,HISTORY_MAX));
       renderHistoryPanel();
-      alert(`已匯入，目前共有 ${merged.length} 筆歷史記錄`);
+      const skipped=imported.length-sanitized.length;
+      alert(`已匯入，目前共有 ${merged.length} 筆歷史記錄${skipped>0?`（${skipped} 筆格式不正確已略過）`:''}`);
     }catch(err){ alert('匯入失敗：檔案格式不正確'); }
   };
   reader.readAsText(file);
@@ -214,10 +263,12 @@ function renderPredictionSnapshot(r){
     return '<div class="h-pred-note">起局當下判斷：這局整體沒有特別突出的宮位，算是比較平穩的一局。</div>';
   }
   const badge=x=>`<span class="h-badge ${x.isHit?'h-badge-hit':'h-badge-bg'}">${x.isHit?'命中號令':'背景'}</span>`;
+  // 這裡的文字全部經過 escHtml：預註冊快照理論上是本專案自己算出來的內容，但也是匯入備份
+  // 可以覆蓋的欄位，不能假設它一定乾淨(Codex code review 2026-09-03)。
   const body=r.prediction.map((hp,idx)=>`
-    <div class="h-pred-gong">${idx+1}. ${t2(hp.gong)}宮</div>
-    ${hp.xunlao.map(x=>`<div class="h-pred-line">［荀爽］${t2(x.text)}${badge(x)}</div>`).join('')}
-    ${hp.mainstream.map(x=>`<div class="h-pred-line">［主流］${t2(x.text)}${badge(x)}</div>`).join('')}
+    <div class="h-pred-gong">${idx+1}. ${escHtml(t2(hp.gong))}宮</div>
+    ${hp.xunlao.map(x=>`<div class="h-pred-line">［荀爽］${escHtml(t2(x.text))}${badge(x)}</div>`).join('')}
+    ${hp.mainstream.map(x=>`<div class="h-pred-line">［主流］${escHtml(t2(x.text))}${badge(x)}</div>`).join('')}
   `).join('');
   return `<details class="h-pred"><summary>起局當下的判斷（預註冊，鎖定不可改，共 ${r.prediction.length} 個熱點宮）</summary>${body}</details>`;
 }
@@ -226,22 +277,27 @@ function renderHistoryPanel(){
   const list=loadHistory();
   const rows=list.map(r=>{
     const reviewed=r.review&&r.review.trim();
+    // safeId：只接受有限整數，直接嵌進 onclick="...(${safeId})" 屬性裡不加引號，如果 id
+    // 不是乾淨的數字，惡意字串可以直接跳出屬性、插入任意腳本(Codex code review
+    // 2026-09-03)。所有其餘文字欄位也都經過 escHtml，雙層防護，不管 sanitizeHistoryRecord
+    // 這層有沒有漏網之魚，畫面渲染這一層自己也要對每個欄位負責。
+    const safeId=Number.isFinite(Number(r.id))?Number(r.id):0;
     return `
     <div class="h-row">
       <div class="h-row-top">
-        <div class="h-row-main" onclick="reloadHistoryRecord(${r.id})">
-          <div class="h-row-date">${r.dateStr} ${r.timeStr}
+        <div class="h-row-main" onclick="reloadHistoryRecord(${safeId})">
+          <div class="h-row-date">${escHtml(r.dateStr)} ${escHtml(r.timeStr)}
             <span class="h-badge ${reviewed?'h-badge-done':'h-badge-todo'}">${reviewed?'已復盤':'未復盤'}</span>
           </div>
-          <div class="h-row-info">${t2(r.juLabel||'')} · ${t2(r.gz||'')}${r.needKey?(' · 所求：'+r.needKey):''}</div>
-          ${r.hitsSummary?`<div class="h-row-hits">${t2(r.hitsSummary)}</div>`:''}
+          <div class="h-row-info">${escHtml(t2(r.juLabel||''))} · ${escHtml(t2(r.gz||''))}${r.needKey?(' · 所求：'+escHtml(r.needKey)):''}</div>
+          ${r.hitsSummary?`<div class="h-row-hits">${escHtml(t2(r.hitsSummary))}</div>`:''}
         </div>
-        <button class="h-row-del" onclick="deleteHistoryRecord(${r.id})" title="刪除">✕</button>
+        <button class="h-row-del" onclick="deleteHistoryRecord(${safeId})" title="刪除">✕</button>
       </div>
       ${renderPredictionSnapshot(r)}
       <div class="h-review">
-        <textarea class="h-review-input" id="review_${r.id}" placeholder="事後回看：這局準不準？實際發生了什麼？（用來校對方法論）">${r.review?escHtml(r.review):''}</textarea>
-        <button class="h-btn" onclick="saveReview(${r.id})">保存復盤</button>
+        <textarea class="h-review-input" id="review_${safeId}" placeholder="事後回看：這局準不準？實際發生了什麼？（用來校對方法論）">${r.review?escHtml(r.review):''}</textarea>
+        <button class="h-btn" onclick="saveReview(${safeId})">保存復盤</button>
       </div>
     </div>`;
   }).join('');
@@ -267,6 +323,14 @@ function saveReview(id){
   renderHistoryPanel();
 }
 window.saveReview=saveReview;
+// 師傅總結「白話版／專業版」切換：兩種都已經渲染好放在 DOM 裡，純粹是顯示/隱藏，
+// 不重新計算、不重新排局——切換不會漏掉任何一套內容，兩邊資料來源完全相同。
+window.setMasterMode=function(btn,mode){
+  const scope=btn.parentElement.parentElement; // .master-toggle 的父層(#result)，同時包住兩種模式的內容
+  scope.querySelectorAll('.mt-btn').forEach(b=>b.classList.toggle('mt-active', b.dataset.mode===mode));
+  scope.querySelector('.master-mode-plain').style.display = mode==='plain'?'':'none';
+  scope.querySelector('.master-mode-pro').style.display = mode==='pro'?'':'none';
+};
 window.toggleHistory=function(){
   const p=document.getElementById('historyPanel');
   if(p.style.display==='none'){
@@ -353,8 +417,11 @@ function updHeader(){
 }
 updHeader();setInterval(updHeader,30000);
 
-/* ── 起局 ── */
-function calc(){
+/* ── 起局 ──
+   skipHistory：從歷史記錄「重新載入」時傳 true，代表這不是一次新的起局，只是回看舊記錄，
+   不應該再往歷史清單裡多推一筆——不然每點開一筆舊記錄就會多出一筆一模一樣的新記錄，
+   長期會把清單洗版、擠掉真正的舊資料(Codex code review 2026-09-03 抓到的問題)。 */
+function calc(skipHistory){
   const dv=document.getElementById('iDate').value;
   const tv=document.getElementById('iTime').value;
   if(!dv||!tv){alert('請輸入日期和時間');return;}
@@ -369,7 +436,7 @@ function calc(){
   const longitude=lonRaw===''||lonRaw===undefined?undefined:Number(lonRaw);
   try{
     const pan=QimenJS.qimenChaibu(Solar,y,m,d,h,mi,longitude);
-    renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxing);
+    renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxing,lonRaw,skipHistory);
   }catch(e){
     document.getElementById('result').innerHTML=
       `<div class="empty"><div class="big">⚠</div>起局失敗：${e.message}</div>`;
@@ -440,8 +507,235 @@ function renderMasterSummary(summary, juType){
   </div>`;
 }
 
+/* ── 師傅總結・白話版(2026-08-30 新增) ──
+   背景：用戶覺得現有輸出「得有奇門遁甲基礎才看得懂」，拿一份 ChatGPT 生成的命盤分析做對比，
+   覺得那種「像真人講話」的口吻、先給結論再展開的段落節奏很好讀。核對過那份分析後發現：它的
+   「好讀」是純粹的表達技巧(分段、口語連接詞、類比)，但內容本身有真實問題——用五行生克算反的
+   邏輯選「夫星」、把「用神定宮看意象」跟「方位擇吉」混為一談、套用來源不明的坊間標籤(如「丁壬
+   合＝淫蕩之合」)、拿單一宮位代表整體財運、後段大量脫離盤面的通用建議(巴納姆效應)。這些問題
+   都是「現編了沒查證的規則」，不是表達方式的問題——所以白話版只學表達，不學內容生成方式：
+   這裡的每一句話，用的都是 buildMasterSummary() 已經算好、經過測試的 text/cureSteps 原始
+   資料，只是換一種更順口的組裝方式(先講結論、用「另外」「不過」這類口語連接詞串起來、把「命中
+   號令/背景」翻成白話)，絕不新增判斷、絕不把荀爽體系跟主流體系的結論揉在一起講。 */
+// 把 formatCureSteps() 的結構化化解步驟，組成一段順口的話，而不是條列的「灭象：xxx／布阵：xxx」。
+// 白話版的兩個渲染函式(逐宮版/命局故事版)共用同一份，用詞保持一致。
+function plainCureText(cs){
+  const T2=x=>t2(x||'');
+  if(!cs)return '化解方法這裡暫時沒查到明確的說法，需要人工再核對一下。';
+  const parts=[];
+  if(cs.miexiang)parts.push(`第一步先「灭象」：${T2(cs.miexiang.action)}${cs.miexiang.verified?'':'（這步視頻裡沒有明講，僅供參考）'}`);
+  if(cs.place)parts.push(`可以把化解用的東西放在家裡或辦公室「${T2(cs.place)}」這個方位角落——這是物品要擺哪裡，跟你本人要不要去這個方向沒有關係`);
+  if(cs.buzhen&&cs.buzhen.length)parts.push(`具體怎麼布：${cs.buzhen.map(b=>T2(b.text)).join('，')}`);
+  if(cs.note)parts.push(T2(cs.note));
+  if(cs.verified===false)parts.push('（這條化解方法是推導出來的，不是視頻原文逐字講的，僅供參考）');
+  return parts.join('；')+'。';
+}
+function renderMasterSummaryPlain(summary, juType){
+  const T2=x=>t2(x||'');
+  if(summary.quiet){
+    return `<div class="master-card">
+      <div class="master-title">師傅總結</div>
+      <div class="plain-p">這局整體挺平穩的——六害、格局、地利、主客、天時、人和，沒有哪個特別揪著你，可以按原計劃推進，不用特別緊張哪個方向。</div>
+    </div>`;
+  }
+  const plainCure=plainCureText;
+  const AGREEMENT_PLAIN={
+    consistent_xiong:'這裡兩套不同的規則，各自獨立算出來，都覺得不太順——能對上號，比只看一套更值得留意。',
+    consistent_ji:'這裡兩套規則都覺得還不錯。',
+    mixed:'這裡兩套規則不太一樣，一個偏順一個偏不順——這不是矛盾，是這個位置本來就有的複雜面，你自己感受哪個更準就好，不用強行調成一個結論。',
+    none:'',
+  };
+  const hotspotPlain=summary.hotspots.map((h,idx)=>{
+    const mingjuNote=h.xunlao.find(x=>x.cureNote)?.cureNote;
+    const xunlaoPara=h.xunlao.length?h.xunlao.map((x,i)=>{
+      const lead=i===0?'從刑墓庚虎迫空這套細緻的規則來看：':'另外，';
+      const hitTail=x.isHit?'——這條是直接衝著你來的。':'——不過這條只是盤面背景，不是直接針對你。';
+      const cureLine=x.cureNote?'':`　${plainCure(x.cureSteps)}`;
+      return `${lead}${T2(x.text)}${hitTail}${cureLine}`;
+    }).join(' '):'';
+    const mainstreamPara=h.mainstream.length?h.mainstream.map((x,i)=>{
+      const lead=i===0?'從大家比較公認的說法來看：':'另外，';
+      const hitTail=x.isHit?'——這條也是直接衝著你來的。':'——這條是背景，不是直接針對你。';
+      return `${lead}${T2(x.text)}${hitTail}`;
+    }).join(' ')+'　（這套目前沒有對應的化解方法，想知道具體怎麼處理，可以參考上面那段。）':'';
+    return `<div class="plain-block">
+      <div class="plain-gong">來看<b>${T2(h.gong)}宮</b>這邊${idx===0?'——這是這局最需要注意的地方':''}。</div>
+      ${AGREEMENT_PLAIN[h.agreement]?`<div class="plain-p" style="opacity:.8">${AGREEMENT_PLAIN[h.agreement]}</div>`:''}
+      ${xunlaoPara?`<div class="plain-p"><span class="plain-tag plain-tag-xunlao">荀爽老師這套</span>${xunlaoPara}</div>`:''}
+      ${mingjuNote?`<div class="plain-p" style="opacity:.75">${T2(mingjuNote)}</div>`:''}
+      ${mainstreamPara?`<div class="plain-p"><span class="plain-tag plain-tag-mainstream">大家比較公認的說法</span>${mainstreamPara}</div>`:''}
+    </div>`;
+  }).join('');
+  const mingjuIntro=juType==='命局'
+    ?'這是命局模式，「命中了什麼」照樣講給你聽，但荀爽老師這套灭象布阵的具體擺放指令這次先不給——那是針對「事局」(問一件具體的事)設計的方法，命局是你天生的整體結構，硬套具體操作會文不對題，遇到下面這些麻煩時，建議另外起一個事局來問。'
+    :'';
+  return `<div class="master-card">
+    <div class="master-title">師傅總結</div>
+    <div class="plain-p" style="margin-bottom:10px;opacity:.85">這局最值得注意的地方，挑出了 ${summary.hotspots.length} 個宮，主流斷局法跟荀爽老師體系的說法一律分開講，不會混在一起。「直接衝著你來的」代表這件事壓在你自己（日干/時干/值符/所求對應天干）身上，比較要緊；「背景」代表這局有這件事，但不是針對你，程度上輕一些。${mingjuIntro}</div>
+    ${hotspotPlain}
+  </div>`;
+}
+
+/* ── 命局白話版・整篇故事(2026-08-30 新增) ──
+   用戶明確要求的結構：開頭一段「這個人大概是什麼樣」→ 性格 → 事業財運人脈 → 感情婚姻桃花 →
+   人生波動挫折(刑墓庚虎迫空) → 怎麼破 → 總結建議 → 一句話概括，像讀故事一樣一路看下去，
+   不再逐宮列表。這個結構本質上是在問「這個人整體是什麼樣」，只有命局模式(起局起的是某個人
+   的出生時刻)講得通——事局是在問一件具體的事，套這套「性格/財運/感情」全展開的結構會文不
+   對題，所以只在 juType==='命局' 時使用；事局模式的白話版仍用上面逐宮版的
+   renderMasterSummaryPlain(之後另外設計事局專屬的白話結構)。
+   用戶也明確同意這裡「荀爽體系／主流體系」不用像專業版一樣貼標籤分開，可以揉在一起講——
+   但仍然堅守「不腦補」這條線：每一句話都對應到 analyzeWealthSeven/analyzeCareerSeven/
+   analyzeSimpleLocate/六害偵測 這些已經測試過的函式輸出，「總結」「一句話概括」也是用命中
+   數量做比較，不會現編一個「這個人是什麼性格」的心理學結論——那正是核對過的 ChatGPT 那份
+   分析真正的問題所在(現編沒查證的規則，不是表達方式問題)，這裡刻意不重蹈覆轍。 */
+function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourStem, needKey, industry, targetWuxing, yearsInput, masterSummary, marriageInfo, kongHitGongs, fuyinFanyinHits){
+  const T2=x=>t2(x||'');
+
+  // 三層結構＋置信度標籤：標示每一段話是「查表就有的事實」(rule)、「把幾個已驗證符號的
+  // 意思兜在一起講」(combo)、還是「跨好幾個面向比出來的推論」(infer/weak)。標籤只是老實
+  // 講清楚這句話怎麼來的，不是免責聲明——寫的時候還是要對內容本身負責，不能拿標籤當藉口
+  // 亂寫。四個等級對應 ChatGPT 建議的【規則】【組合取象】【綜合推導】【弱推斷】，
+  // 【禁止輸出】那一級不會出現在畫面上，是「這種話本來就不該寫」的內部提醒。
+  const CONF_TAG={rule:['plain-tag-rule','規則'], combo:['plain-tag-combo','組合取象'],
+    infer:['plain-tag-infer','綜合推導'], weak:['plain-tag-weak','弱推斷']};
+  const confTag=tier=>{const [cls,label]=CONF_TAG[tier]||CONF_TAG.rule; return `<span class="plain-tag ${cls}">${label}</span>`;};
+
+  // ① 性格：日干＝內心，時干＝對外展現，直接用十天干取象詞典裡已經驗證過的描述，不新寫一套
+  const dInfo=dayStem?LEX_DATA.stems[dayStem]:null;
+  const hInfo=hourStem?LEX_DATA.stems[hourStem]:null;
+  let personality='', personalityTier='rule';
+  if(dInfo)personality+=`往內心裡看，這個人骨子裡更接近「${T2(dInfo.name)}」這個字代表的東西：${T2(dInfo.desc)}`;
+  if(hInfo&&hourStem!==dayStem)personality+=` 而對外展現出來、別人看到的樣子，更接近「${T2(hInfo.name)}」：${T2(hInfo.desc)}`;
+  if(!personality){personality='這局缺少日干/時干資訊，性格這塊暫時看不出來。'; personalityTier='weak';}
+
+  // ② 事業財運人脈：直接借用「財富七要」「事業七要」已經驗證過的方法，命局模式下不管
+  //    起局時選的所求是什麼，都跑一次這兩套分析——命局本來就是問整個人，不是問單一件事。
+  const wealth=analyzeWealthSeven(pan, {industry, targetWuxing: targetWuxing||null});
+  const career=analyzeCareerSeven(pan, zfzs, {industry});
+  const domainParagraph=(label, items)=>{
+    const positioned=items.filter(it=>it.rows&&it.rows.length);
+    const bad=positioned.filter(it=>it.bad===true);
+    const clean=positioned.filter(it=>it.bad===false);
+    if(!positioned.length)return {text:`${label}方面這局沒有明確的定位資訊，暫時看不出來。`, bad:[], total:0, tier:'weak'};
+    let text=`${label}方面，`;
+    if(bad.length===0){
+      text+=`「${clean.map(it=>T2(it.name)).join('」「')}」這幾個關鍵點位都還算乾淨，沒有明顯卡住的地方。`;
+    }else{
+      text+=`「${bad.map(it=>T2(it.name)).join('」「')}」這幾個點位命中了六害，需要留意`;
+      if(clean.length)text+=`；「${clean.map(it=>T2(it.name)).join('」「')}」倒是乾淨的`;
+      text+='。';
+    }
+    // combo：財富七要/事業七要/簡明定位讀法都是把好幾個已驗證的單點符號兜在一起才推出
+    // 這個生活面向的結論，不是單一查表事實，所以標「組合取象」而不是「規則」。
+    return {text, bad, total:positioned.length, tier:'combo'};
+  };
+  const wealthP=domainParagraph('財運', wealth.items);
+  const careerP=domainParagraph('事業', career.items);
+
+  // ③ 感情婚姻桃花：借用「求桃花」簡明定位讀法(六合/休門，跨資料源核對過)——這個回答的是
+  //    「有沒有機會/桃花旺不旺」；下面再補一段「婚姻用神」(天盤乙／庚落宮生克)，回答的是
+  //    「已經有對象/已婚的話，兩人相處的方向」，兩者問的問題不一樣，都留著、講清楚各自在回答什麼。
+  const peach=analyzeSimpleLocate(pan, '求桃花', zfzs);
+  const peachP=peach?domainParagraph('感情婚姻', peach.items):{text:'感情婚姻這塊這次沒有算出來。', bad:[], total:0};
+  let marriageText='', marriageTier='combo'; // 把乙庚落宮生克+空亡+伏吟反吟三項已驗證判斷兜在一起講
+  if(marriageInfo){
+    const {yiGong, gengGong, favor, isJi}=marriageInfo;
+    const yiKong=(kongHitGongs||[]).includes(yiGong), gengKong=(kongHitGongs||[]).includes(gengGong);
+    const hasFuyinFanyin=(fuyinFanyinHits||[]).length>0;
+    marriageText=`另外，如果是看已經有對象或已婚的相處狀況（奇門固定用天盤乙代表女方、庚代表男方，這跟上面桃花旺不旺是兩件事）：目前${T2(favor)}${isJi?'，方向上偏和睦':'，方向上要多留意磨合'}。`;
+    if(yiKong)marriageText+='女方這一側還逢旬空，感情或婚姻容易有虛浮不實的感覺。';
+    if(gengKong)marriageText+='男方這一側還逢旬空，感情或婚姻容易有虛浮不實的感覺。';
+    if(hasFuyinFanyin)marriageText+='這局整體還逢伏吟反吟，變動性也要一併考慮。';
+  }
+
+  // ④ 人生波動挫折：師傅總結已經挑出的熱點宮，只取「命中號令」的六害條目(刑墓庚虎迫空)，
+  //    合併成一段話，不逐宮分段——這是用戶明確指定「揉在一起講」的地方。
+  const wanderHits=[];
+  masterSummary.hotspots.forEach(hp=>{
+    hp.xunlao.filter(x=>x.isHit).forEach(x=>wanderHits.push({...x, gong:hp.gong}));
+  });
+  const wanderText=wanderHits.length===0
+    ?'目前盤面上刑墓庚虎迫空這幾種波動，沒有直接命中你自己，算是比較平穩的一段時間。'
+    :'具體來看，容易讓你覺得卡住、不順的地方有：'+wanderHits.map(x=>`${T2(x.gong)}宮這邊，${T2(x.text)}`).join('；')+'。';
+  const wanderTier='rule'; // 直接列出「命中號令」的六害條目，沒有額外組合或推論
+
+  // ⑤ 怎麼破：財運/事業/感情裡好幾個符號常常同時落在同一宮(例如「生門」跟「干財」剛好都在
+  //    兌宮)，一開始按「每個符號」各自查一次化解，會把同一宮的同一份化解重複貼好幾遍——
+  //    改成先按「宮」去重，同一宮只講一次，不管有幾個符號落在那裡。
+  //    ④的刑墓庚虎迫空已經有 formatCureSteps 算好的完整步驟，優先用那份；②③命中六害但
+  //    不在④清單裡的宮，才另外用 getCuresAtGong 查。
+  const cureGongsDone=new Set();
+  const cureParts=[];
+  wanderHits.forEach(x=>{
+    if(x.cureSteps&&!cureGongsDone.has(x.gong)){
+      cureGongsDone.add(x.gong);
+      cureParts.push(`${T2(x.gong)}宮這條：${plainCureText(x.cureSteps)}`);
+    }
+  });
+  [...wealthP.bad, ...careerP.bad, ...(peachP.bad||[])].forEach(it=>{
+    (it.rows||[]).forEach(r=>{
+      if(r.harms&&r.harms.length&&!cureGongsDone.has(r.gong)){
+        cureGongsDone.add(r.gong);
+        getCuresAtGong(r.gong, pan).forEach(c=>{
+          const xiangTxt=c.xiang?.wu?`，${T2(c.xiang.wu)}`:'';
+          const placeTxt=c.place?`，放於${T2(c.place)}方位`:'';
+          cureParts.push(`${T2(r.gong)}宮這條：${T2(c.method||'')}${c.cureStem?'（用'+T2(c.cureStem)+'）':''}${xiangTxt}${placeTxt}${c.note?'　'+T2(c.note):''}`);
+        });
+      }
+    });
+  });
+  const cureText=cureParts.length?cureParts.join('　'):'目前沒有需要特別處理的地方，維持現狀就好。';
+  const cureTier='combo'; // 把好幾個命中六害的宮各自對應的化解方法兜在一起，不是單一查表事實
+
+  // ⑥ 總結建議：拿「乾淨度」比較幾個面向，不是現編性格結論——分母是這個面向的點位數，
+  //    分子是乾淨點位數，比例越高代表這個面向目前相對越順，純數字比較。
+  const domains=[
+    {label:'財運', ...wealthP},
+    {label:'事業', ...careerP},
+    {label:'感情婚姻', ...peachP},
+  ].filter(dm=>dm.total>0);
+  let overallText='';
+  if(domains.length){
+    const scored=domains.map(dm=>({label:dm.label, ratio:(dm.total-dm.bad.length)/dm.total}));
+    scored.sort((a,b)=>b.ratio-a.ratio);
+    const best=scored[0], worst=scored[scored.length-1];
+    overallText=(best.label===worst.label||best.ratio===worst.ratio)
+      ?'綜合來看，財運、事業、感情婚姻這幾個面向目前狀態差不多，沒有哪一塊特別突出或特別卡。'
+      :`綜合來看，「${best.label}」這塊目前相對最順；「${worst.label}」這塊命中六害的點位比例最高，如果最近要花心思，這塊可能更值得優先處理。`;
+  }
+  overallText+=wanderHits.length>0
+    ?` 另外，人生波動這塊（刑墓庚虎迫空）目前命中了 ${wanderHits.length} 處，具體處理方式看上面「怎麼破」那段。`
+    :' 人生波動這塊（刑墓庚虎迫空）目前沒有命中你自己，算是相對平穩。';
+  const overallTier='infer'; // 拿財運/事業/感情婚姻的乾淨度比例互相比較，是跨面向的相對判斷，
+  // 不是單一查表事實，程度上比「組合取象」再往上一層——比較結果會隨盤面變化，只是現在
+  // 相對哪塊更該注意，不是說哪塊「不好」或「一定會怎樣」。
+
+  // ⑦ 一句話概括：純數字統計出來的一句話，不夾帶心理學式的性格判斷
+  const totalBad=domains.reduce((s,dm)=>s+dm.bad.length,0)+wanderHits.length;
+  const totalAll=domains.reduce((s,dm)=>s+dm.total,0)+wanderHits.length;
+  const oneLinerTier=totalAll===0?'weak':'infer';
+  const oneLiner=totalAll===0
+    ?'這局資訊不足，暫時無法給出一句話概括。'
+    :(totalBad===0
+      ?'一句話概括：目前掃過的幾個面向都還算乾淨，沒有特別需要緊張的地方。'
+      :`一句話概括：這局命中六害的訊號集中在${domains.filter(dm=>dm.bad.length>0).map(dm=>dm.label).join('、')||'人生波動'}這幾塊，其餘部分相對平穩，具體怎麼處理可以看上面「怎麼破」那段。`);
+
+  return `<div class="master-card">
+    <div class="master-title">師傅總結</div>
+    <div class="plain-p" style="opacity:.7;margin-bottom:4px">下面是把這局拆成幾個生活面向來講的白話版——性格、財運事業、感情婚姻、容易波動的地方，一路讀下去就好，不用先懂術語。這裡主流斷局法跟荀爽老師體系的判斷不特別分開標註，兩邊揉在一起講；如果想看兩套體系嚴格分開、逐宮完整的版本，切到「專業版」。</div>
+    <div class="plain-p" style="opacity:.55;font-size:12px;margin-bottom:10px">每段話前面的小標籤是老實告訴你這句話怎麼來的：${confTag('rule')}查表就有的事實、${confTag('combo')}把幾個已驗證的符號兜在一起講、${confTag('infer')}跨好幾個面向比出來的相對判斷(不是鐵律)、${confTag('weak')}資訊不足只能先這樣講。標籤不是免責聲明，只是讓你自己判斷要多當真。</div>
+    <div class="plain-block"><div class="plain-gong">這個人大概是什麼樣</div><div class="plain-p">${confTag(personalityTier)}${personality}</div></div>
+    <div class="plain-block"><div class="plain-gong">事業財運人脈</div><div class="plain-p">${confTag(wealthP.tier)}${wealthP.text}</div><div class="plain-p">${confTag(careerP.tier)}${careerP.text}</div></div>
+    <div class="plain-block"><div class="plain-gong">感情婚姻桃花</div><div class="plain-p">${confTag(peachP.tier)}${peachP.text}</div>${marriageText?`<div class="plain-p">${confTag(marriageTier)}${marriageText}</div>`:''}</div>
+    <div class="plain-block"><div class="plain-gong">容易出現的波動、挫折</div><div class="plain-p">${confTag(wanderTier)}${wanderText}</div></div>
+    <div class="plain-block"><div class="plain-gong">怎麼破</div><div class="plain-p">${confTag(cureTier)}${cureText}</div></div>
+    <div class="plain-block"><div class="plain-gong">總結建議</div><div class="plain-p">${confTag(overallTier)}${overallText}</div></div>
+    <div class="plain-block" style="border-bottom:none"><div class="plain-p" style="font-weight:700">${confTag(oneLinerTier)}${oneLiner}</div></div>
+  </div>`;
+}
+
 /* ── 渲染盤面 ── */
-function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxing){
+function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxing,longitudeInput,skipHistory){
   needKey=needKey||'求財';
   juType=juType||'事局';
   const sky=pan.天盤||{}, earth=pan.地盤||{};
@@ -469,6 +763,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
   const tianshiHits=checkTianshi(star, gzForTianshi && gzForTianshi.月支);
   const renheHits=checkRenhe(door);
   const fuyinFanyinHits=checkFuyinFanyin(star, door);
+  const marriageInfo=checkYiGengMarriage(sky, door, star, god);
 
   /* 號令: 日時/生年/意象/符使 四要素合併的保護天干集合 */
   const zhifuStem=zfzs.值符天干?zfzs.值符天干[1]:null;
@@ -711,7 +1006,16 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     <div class="pan-grid">${gridHTML}</div>
   </div>
 
-  ${renderMasterSummary(masterSummary, juType)}
+  <div class="master-toggle">
+    <button class="mt-btn mt-active" data-mode="plain" onclick="setMasterMode(this,'plain')">白話版</button>
+    <button class="mt-btn" data-mode="pro" onclick="setMasterMode(this,'pro')">專業版</button>
+  </div>
+  <div class="master-mode master-mode-plain">${
+    juType==='命局'
+      ?renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourStem, needKey, industry, targetWuxing, yearsInput, masterSummary, marriageInfo, kongHitGongs, fuyinFanyinHits)
+      :renderMasterSummaryPlain(masterSummary, juType)
+  }</div>
+  <div class="master-mode master-mode-pro" style="display:none">${renderMasterSummary(masterSummary, juType)}</div>
 
   <div class="section-label">解讀一・主流斷局法（跨門派共識，與下面荀爽老師體系是兩套不同來源）${BADGE_SOURCE_B}${BADGE_CONSENSUS_X}</div>
   ${gejuHits.length ? `<div class="geju-card">
@@ -782,6 +1086,24 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
       ${zhuHits.length?`<div class="ana-step" style="font-weight:700;color:var(--grn);margin-top:4px">利主</div>${renderWithBgCollapse(zhuHits,rowHtml)}`:''}
       ${keHits.length?`<div class="ana-step" style="font-weight:700;color:var(--red);margin-top:4px">利客</div>${renderWithBgCollapse(keHits,rowHtml)}`:''}
       ${biheHits.length?`<div class="ana-step" style="font-weight:700;opacity:.7;margin-top:4px">比和(主客同心)</div>${renderWithBgCollapse(biheHits,rowHtml)}`:''}
+    </div>`;
+  })()}
+  ${(function(){
+    if(!marriageInfo)return '';
+    const {yiGong, gengGong, yiWx, gengWx, relation, favor, isJi}=marriageInfo;
+    const yiKong=kongHitGongs.includes(yiGong), gengKong=kongHitGongs.includes(gengGong);
+    const hasFuyinFanyin=fuyinFanyinHits.length>0;
+    const goodOverall=isJi && !yiKong && !gengKong && !hasFuyinFanyin;
+    return `<div class="geju-card">
+      <div class="geju-title">主流斷局法：婚姻用神（天盤乙／庚落宮生克）</div>
+      <div style="font-size:11px;opacity:.6;margin-bottom:6px">天盤乙代表女方，庚代表男方(奇門固定符號，跟八字「日干克我者為官殺/夫星」是不同體系，不要混用)。比較的是乙、庚「各自落宮」的五行生克關係(不是乙庚天干本身——乙庚天干本來就相合)：相生/比和感情較好，相克感情較差；任一方落空亡、或整局逢星/門伏吟反吟，都不利。「三奇入墓」等更細節的判法本專案查證後仍有疑義，暫不收錄，跟六害/格局/地利/主客/天時/人和是完全獨立的另一個維度。</div>
+      <div class="ana-step" style="font-weight:700;${goodOverall?'color:var(--grn)':(isJi?'':'color:var(--red)')};margin-top:4px">
+        ${T2(yiGong)}宮乙(${T2(yiWx)})／${T2(gengGong)}宮庚(${T2(gengWx)})——${T2(relation)}，${T2(favor)}
+      </div>
+      ${yiKong?`<div class="ana-step" style="opacity:.75">乙落${T2(yiGong)}宮逢旬空——女方這一側虛浮不實，感情或婚姻容易不穩</div>`:''}
+      ${gengKong?`<div class="ana-step" style="opacity:.75">庚落${T2(gengGong)}宮逢旬空——男方這一側虛浮不實，感情或婚姻容易不穩</div>`:''}
+      ${hasFuyinFanyin?`<div class="ana-step" style="opacity:.75">整局逢伏吟反吟——感情/婚姻的變動性要一併考慮，不是單純好壞</div>`:''}
+      ${(!isJi&&!yiKong&&!gengKong&&!hasFuyinFanyin)?`<div class="ana-step" style="opacity:.6">單就乙庚落宮生克來看偏不利，但沒有旬空或伏吟反吟加重，程度上不算太嚴重</div>`:''}
     </div>`;
   })()}
   ${(function(){
@@ -1218,18 +1540,28 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     xunlao: hp.xunlao.map(x=>({text:x.text, isHit:x.isHit})),
     mainstream: hp.mainstream.map(x=>({text:x.text, isHit:x.isHit})),
   }));
-  pushHistoryRecord({
-    id: Date.now(),
-    dateStr: `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`,
-    timeStr: `${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}`,
-    needKey,
-    yearsInput: yearsInput||'',
-    juType,
-    juLabel,
-    gz,
-    hitsSummary: hitLabels.length?`六害命中：${hitLabels.join('、')}`:'六害：無命中',
-    prediction: predictionSnapshot,
-  });
+  // skipHistory：從歷史記錄重新載入時不重複推入新記錄(見 calc() 註解)。
+  // longitudeInput/industry/targetWuxing：Codex code review 2026-09-03 抓到的問題——
+  // 原本沒有存這三個欄位，「重新載入」舊記錄時會直接沿用畫面上目前的值，經度會影響真太陽時
+  // 校正甚至時柱本身，同一筆歷史記錄重新排出來的盤可能因此跟起局當下不一樣，失去「回看」
+  // 的意義，所以這三項也要原封不動存進記錄、重新載入時原封不動還原。
+  if(!skipHistory){
+    pushHistoryRecord({
+      id: Date.now(),
+      dateStr: `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`,
+      timeStr: `${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}`,
+      needKey,
+      yearsInput: yearsInput||'',
+      juType,
+      juLabel,
+      gz,
+      hitsSummary: hitLabels.length?`六害命中：${hitLabels.join('、')}`:'六害：無命中',
+      prediction: predictionSnapshot,
+      longitudeInput: longitudeInput||'',
+      industry: industry||'',
+      targetWuxing: targetWuxing||'',
+    });
+  }
 }
 
 /* ── 初始化 ── */

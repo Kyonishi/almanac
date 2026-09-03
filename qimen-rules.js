@@ -118,6 +118,44 @@ function checkZhuke(sky, earth){
   return hits;
 }
 
+// ══════════════════ 主流斷局法：婚姻用神(天盤乙代表女方／庚代表男方) ══════════════════
+// 來源: 2026-08-31 綜合多個獨立線上命理資料源交叉核對一致：天盤乙代表女方，天盤庚代表
+// 男方，六合代表媒人。取象邏輯有完整脈絡支撐、不是隨意指定的符號：甲(主帥)最忌庚(七殺)
+// 克制，乙是甲的「妹妹」(同屬三奇，關係親近)，乙庚天干相合，於是「甲把妹妹乙嫁給庚」，
+// 用婚姻關係化解庚對甲本身的威脅。這跟八字「日干克我者為官殺/夫星」是完全不同體系的
+// 獨立邏輯——曾經誤用八字那套邏輯去質疑這個方法(以為「克丁的應該是水，庚不該是夫星」)，
+// 查證後發現是體系搞混了：奇門的乙庚夫妻符號固定不看問卦人日干是什麼，不能拿另一套
+// 體系的規則來否定它，特此記錄避免重犯。
+// 判斷方法查證一致：比較乙、庚「各自落宮」的五行生克關係(不是乙庚天干本身的五行——
+// 乙庚天干本來就相合，會變化的是兩人分別落在哪個宮，所以看宮位五行)：
+//   相生/比和 → 感情較好的方向(乙生庚＝女方討好男方，庚生乙＝男方討好女方，比和＝勢均力敵)
+//   相剋 → 感情不好的方向(庚宮克乙宮＝男嫌女，乙宮克庚宮＝女嫌男)
+//   任一方逢吉門/吉神/吉星(沿用既有 luckClass 判斷)，感情走向更容易加分
+//   任一方落空亡(不論生克)、或整局逢星/門伏吟反吟 → 都判定婚戀不利，這兩點各自在多篇
+//   來源裡都有明確、一致的說法，沿用本專案既有的空亡/伏吟反吟判斷結果，不重新定義。
+// 查證時也看到「庚入墓刑傷丈夫、乙入墓克妻子」的說法，但沒查清楚這裡的「入墓」具體是
+// 十二長生的「墓」階段(getTwelveStagesAtGong，適用任何天干)還是荀爽老師六害體系的
+// 「三奇入墓」(只固定收乙丙丁，庚並不在表中，兩者機制不同)，兩篇來源都只提了結論沒有
+// 說清楚査法，跟「人假」「天馬丁馬」一樣寧缺勿濫，這部分暫不收錄，只實作查證清楚的核心
+// 生克判斷+空亡+伏吟反吟三項。「年命」(雙方生年)輔助判斷也查到了，但需要伴侶的生年
+// 資訊，本專案目前沒有這個輸入欄位，暫不收錄。
+function checkYiGengMarriage(sky, door, star, god){
+  const yiGong=locateStem(sky,'乙')[0]||null;
+  const gengGong=locateStem(sky,'庚')[0]||null;
+  if(!yiGong||!gengGong)return null; // 乙或庚落中宮，中五寄宮規則未確認，暫不判斷
+  const yiWx=GONG_WUXING[yiGong], gengWx=GONG_WUXING[gengGong];
+  let relation, favor;
+  if(yiWx===gengWx){ relation='比和'; favor='勢均力敵'; }
+  else if(SHENG_TABLE[yiWx]===gengWx){ relation='乙生庚'; favor='女方討好男方'; }
+  else if(SHENG_TABLE[gengWx]===yiWx){ relation='庚生乙'; favor='男方討好女方'; }
+  else if(KE_TABLE_WUXING[yiWx]===gengWx){ relation='乙克庚'; favor='女嫌男'; }
+  else if(KE_TABLE_WUXING[gengWx]===yiWx){ relation='庚克乙'; favor='男嫌女'; }
+  const isJi=relation==='比和'||relation==='乙生庚'||relation==='庚生乙';
+  const luckyAt=(gong)=>[door[gong],star[gong],god[gong]].some(v=>luckClass(v)==='pill-ji');
+  const hasLuckySymbol=luckyAt(yiGong)||luckyAt(gengGong);
+  return {yiGong, gengGong, yiWx, gengWx, relation, favor, isJi, hasLuckySymbol};
+}
+
 // ══════════════════ 主流斷局法：天時(九星按月令旺相休囚死) ══════════════════
 // 來源: 2026-08-29 查證時發現九星的旺相休囚「廢」跟一般八字五行旺相休囚死的判斷基準點不同
 // (CSDN/163等多方獨立來源明確指出、解釋原因一致，非單一部落格說法)：
@@ -1629,7 +1667,7 @@ if (typeof module !== 'undefined' && module.exports) {
     harmsAtGong, getCuresAtGong, parseGanzhi, GRID_ORDER, ZHI_TO_GONG,
     monthRelation, analyzeWealthSeven,
     CHANGSHENG_START, TWELVE_STAGES, GONG_TO_ZHI, getTwelveStage, getTwelveStagesAtGong, checkDili,
-    stemWuxing, SHENG_TABLE, KE_TABLE_WUXING, checkZhuke,
+    stemWuxing, SHENG_TABLE, KE_TABLE_WUXING, checkZhuke, checkYiGengMarriage,
     BRANCH_WUXING, getNineStarState, checkTianshi,
     DOOR_WUXING, GONG_WUXING, KE_MAP, getMenGongRelation, checkRenhe,
     STAR_HOME, DOOR_HOME, checkFuyinFanyin,
