@@ -565,6 +565,25 @@ function check(label, actual, expected) {
       cs.buzhen.map(b=>b.dimension), ['字','物','意','行']);
     check('formatCureSteps 保留 place/method', {place:cs.place, method:cs.method},
       {place:'正西或正北', method:'用合(天干五合)'});
+    // 2026-09-06 新增：意/行兩維獨立標記 verified:false(WUXING_YI_XING 五行通用推導，非逐字
+    // 視頻)，即使整條 cure 本身是 verified:true，字/物兩維沒有這個標記(沿用整條的可信度)。
+    const byDim=Object.fromEntries(cs.buzhen.map(b=>[b.dimension,b.verified]));
+    check('formatCureSteps 意/行兩維各自標 verified:false', {意:byDim['意'], 行:byDim['行']},
+      {意:false, 行:false});
+    check('formatCureSteps 字/物兩維不額外標記(沿用整條 verified)', {字:byDim['字'], 物:byDim['物']},
+      {字:undefined, 物:undefined});
+    check('formatCureSteps 整條 cure 本身仍是 verified:true', cs.verified, true);
+  }
+  {
+    // 反例：即使整條 cure 是 verified:false(如「墓」用冲推導)，意/行還是各自獨立標 false，
+    // 不會因為整條已經是 false 就變成看起來「兩層意思一樣」——這兩件事本來就是分開的判斷。
+    const cs2=Rules.formatCureSteps({hai:'墓', xiang:{stem:'辛',wuxing:'金',zi:'寫「辛」字',
+      wu:'擺放亮白金屬類物品',yi:'學習決斷/規則型知識',xing:'剛強類運動',placement:'高處'},
+      place:'正西或正北', method:'用冲(地支六冲，推導未驗證)', verified:false});
+    check('整條verified:false時，意/行仍各自標 verified:false',
+      cs2.buzhen.filter(b=>b.dimension==='意'||b.dimension==='行').every(b=>b.verified===false), true);
+    check('整條verified:false時，字/物不額外標記',
+      cs2.buzhen.filter(b=>b.dimension==='字'||b.dimension==='物').every(b=>b.verified===undefined), true);
   }
 
   const gz1 = Rules.parseGanzhi('戊辰年甲寅月戊申日壬戌時');

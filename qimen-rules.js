@@ -505,7 +505,9 @@ const MIEXIANG_RULE={
   '空':{action:'不做灭象，直接布阵「缺啥補啥」', verified:true},
 };
 
-// 依「字/物/意/行」四維，用 LEX_DATA 的顏色材質生成布阵化解物描述 (物維度可自動生成, 字/意/行為五行通用推導)
+// 依「字/物/意/行」四維，用 LEX_DATA 的顏色材質生成布阵化解物描述——字/物沿用上層 cure 選定的
+// 天干本身的可信度(字只是複述天干、物是 LEX_DATA 顏色材質)，意/行則固定是 WUXING_YI_XING
+// 的五行通用推導，可信度是獨立的一層，見 formatCureSteps() 內的說明
 const WUXING_YI_XING={ // 五行對應的通用「意/行」提示 (非逐字視頻原文, 為五行常理推導, 供参考)
   '木':{yi:'學習成長型知識(如植物、規劃、教育)', xing:'伸展類運動(如瑜伽、太極)'},
   '火':{yi:'學習表達/展示型知識(如演講、藝術)', xing:'有氧/爆發類運動(如跑步、拳擊)'},
@@ -1464,6 +1466,16 @@ const RENHE_MEANING={
 
 // 把 getCureFor*() 系列函式回傳的 cure 物件，轉成統一的「灭象/布阵」結構化步驟，
 // 供白話總結跟渲染層共用；不含任何新判斷，純粹重新整理既有欄位。
+// 2026-09-06 修正(用戶朋友(ChatGPT)第四輪反饋，化解步驟可信度粒度)：這個函式原本只給整條
+// 化解步驟一個總的 verified 狀態，但「字/物/意/行」四維其實不是同一個來源——字(寫哪個天干的
+// 字)只是把上層 cure 已經決定好的 cureStem 原樣複述一次，物(顏色材質)來自 LEX_DATA(已標明
+// 跨來源交叉核對)，兩者都可以沿用上層 cure 本身的可信度；意/行兩維則固定來自 WUXING_YI_XING
+// 這張表，該表明確標註「非逐字視頻原文，為五行常理推導」，不管上層 cure 本身是不是逐字驗證
+// (例如「刑用合」的合天干選擇確實是視頻原文)，意/行都是額外疊加上去的推導內容，可信度不會
+// 因為上層驗證過就跟著提高——原本整條只給一個 verified，會把這兩種不同可信度的內容混在一起，
+// 讓「意/行」這種明確標記過的推導內容看起來跟「合天干」一樣是逐字驗證的。現在意/行兩條各自
+// 帶自己的 verified:false，門象/物(地支)/字/物這幾維沒有另外標記，沿用整條 cure 的
+// verified 狀態即可(它們本來就跟 cure 本身選定的天干/地支是同一個來源)。
 function formatCureSteps(cure){
   if(!cure)return null;
   const rule=MIEXIANG_RULE[cure.hai];
@@ -1478,8 +1490,8 @@ function formatCureSteps(cure){
     const x=cure.xiang;
     buzhen.push({dimension:'字', text:`寫「${x.stem}」字，放${x.placement||'高處'}`});
     buzhen.push({dimension:'物', text:`${x.wu}，放${x.placement||'高處'}`});
-    if(x.yi)buzhen.push({dimension:'意', text:x.yi});
-    if(x.xing)buzhen.push({dimension:'行', text:x.xing});
+    if(x.yi)buzhen.push({dimension:'意', text:x.yi, verified:false});
+    if(x.xing)buzhen.push({dimension:'行', text:x.xing, verified:false});
   }
   return {
     hai:cure.hai, miexiang, buzhen,
