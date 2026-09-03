@@ -574,9 +574,21 @@ function domainParagraph(label, items){
 // 亂寫。四個等級對應 ChatGPT 建議的【規則】【組合取象】【綜合推導】【弱推斷】，
 // 【禁止輸出】那一級不會出現在畫面上，是「這種話本來就不該寫」的內部提醒。命局/事局
 // 故事卡共用同一份，不各自維護一份重複標籤表。
-const CONF_TAG={rule:['plain-tag-rule','規則'], combo:['plain-tag-combo','組合取象'],
-  infer:['plain-tag-infer','綜合推導'], weak:['plain-tag-weak','弱推斷']};
-function confTag(tier){const [cls,label]=CONF_TAG[tier]||CONF_TAG.rule; return `<span class="plain-tag ${cls}">${label}</span>`;}
+// 2026-09-06 降視覺權重(用戶朋友(ChatGPT)反饋)：原本每段話都掛一個常駐顯示的彩色文字
+// 徽章，視覺權重跟段落內容差不多重；改成預設只顯示一個小圓點(顏色沿用既有分級配色)，
+// hover 有 title tooltip 顯示完整說明，點一下/點按才展開成文字標籤——手機沒有 hover，
+// 點擊才是主要互動方式。CSS 對應 qimen.html 的 .conf-tag/.conf-dot/.conf-label。
+const CONF_TAG={
+  rule:['conf-tag-rule','規則','查表就有的事實'],
+  combo:['conf-tag-combo','組合取象','把幾個已驗證的符號兜在一起講'],
+  infer:['conf-tag-infer','綜合推導','跨好幾個面向比出來的相對判斷(不是鐵律)'],
+  weak:['conf-tag-weak','弱推斷','資訊不足只能先這樣講'],
+};
+function confTag(tier){
+  const [cls,label,desc]=CONF_TAG[tier]||CONF_TAG.rule;
+  return `<span class="conf-tag ${cls}" onclick="toggleConfTag(this)" title="${label}：${desc}"><span class="conf-dot"></span><span class="conf-label">${label}</span></span>`;
+}
+function toggleConfTag(el){ el.classList.toggle('conf-open'); }
 
 /* ── 命局白話版・整篇故事(2026-08-30 新增) ──
    用戶明確要求的結構：開頭一段「這個人大概是什麼樣」→ 性格 → 事業財運人脈 → 感情婚姻桃花 →
