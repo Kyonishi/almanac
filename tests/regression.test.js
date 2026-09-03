@@ -366,48 +366,53 @@ function check(label, actual, expected) {
 {
   console.log('\n── 婚姻用神(天盤乙/庚落宮生克) ──');
   const emptyDSG = { 坎:'', 坤:'', 震:'', 巽:'', 乾:'', 兌:'', 艮:'', 離:'' };
+  const noLuck = {doorJi:false, starJi:false, godJi:false};
   check('乙庚同五行(乙落坤土/庚落艮土)：比和，勢均力敵',
     Rules.checkYiGengMarriage({坤:'乙', 艮:'庚'}, emptyDSG, emptyDSG, emptyDSG),
-    {yiGong:'坤', gengGong:'艮', yiWx:'土', gengWx:'土', relation:'比和', favor:'勢均力敵', isJi:true, hasLuckySymbol:false});
+    {yiGong:'坤', gengGong:'艮', yiWx:'土', gengWx:'土', relation:'比和', favor:'勢均力敵', isJi:true, yiLuck:noLuck, gengLuck:noLuck});
   check('乙生庚(乙落離火/庚落艮土)：女方討好男方',
     Rules.checkYiGengMarriage({離:'乙', 艮:'庚'}, emptyDSG, emptyDSG, emptyDSG),
-    {yiGong:'離', gengGong:'艮', yiWx:'火', gengWx:'土', relation:'乙生庚', favor:'女方討好男方', isJi:true, hasLuckySymbol:false});
+    {yiGong:'離', gengGong:'艮', yiWx:'火', gengWx:'土', relation:'乙生庚', favor:'女方討好男方', isJi:true, yiLuck:noLuck, gengLuck:noLuck});
   check('庚生乙(乙落巽木/庚落坎水)：男方討好女方',
     Rules.checkYiGengMarriage({巽:'乙', 坎:'庚'}, emptyDSG, emptyDSG, emptyDSG),
-    {yiGong:'巽', gengGong:'坎', yiWx:'木', gengWx:'水', relation:'庚生乙', favor:'男方討好女方', isJi:true, hasLuckySymbol:false});
+    {yiGong:'巽', gengGong:'坎', yiWx:'木', gengWx:'水', relation:'庚生乙', favor:'男方討好女方', isJi:true, yiLuck:noLuck, gengLuck:noLuck});
   check('乙克庚(乙落兌金/庚落巽木)：女嫌男',
     Rules.checkYiGengMarriage({兌:'乙', 巽:'庚'}, emptyDSG, emptyDSG, emptyDSG),
-    {yiGong:'兌', gengGong:'巽', yiWx:'金', gengWx:'木', relation:'乙克庚', favor:'女嫌男', isJi:false, hasLuckySymbol:false});
+    {yiGong:'兌', gengGong:'巽', yiWx:'金', gengWx:'木', relation:'乙克庚', favor:'女嫌男', isJi:false, yiLuck:noLuck, gengLuck:noLuck});
   check('庚克乙(乙落乾金/庚落離火)：男嫌女',
     Rules.checkYiGengMarriage({乾:'乙', 離:'庚'}, emptyDSG, emptyDSG, emptyDSG),
-    {yiGong:'乾', gengGong:'離', yiWx:'金', gengWx:'火', relation:'庚克乙', favor:'男嫌女', isJi:false, hasLuckySymbol:false});
+    {yiGong:'乾', gengGong:'離', yiWx:'金', gengWx:'火', relation:'庚克乙', favor:'男嫌女', isJi:false, yiLuck:noLuck, gengLuck:noLuck});
   check('乙或庚落中宮(未落外八宮)：中五寄宮規則未確認，回傳 null',
     Rules.checkYiGengMarriage({中:'乙', 艮:'庚'}, emptyDSG, emptyDSG, emptyDSG), null);
-  check('吉門/吉星/吉神任一命中：hasLuckySymbol為true(門觸發)',
+  // 2026-09-06 修正(用戶朋友(ChatGPT)第五輪反饋第3點，查證屬實)：原本 hasLuckySymbol 把
+  // 「乙宮/庚宮」×「門/星/神」六個獨立信號揉成一個布爾值，看不出到底是哪一方、哪個符號
+  // 類型有吉象；改成結構化的 yiLuck/gengLuck，這裡逐一測每個維度各自命中時只標到對的
+  // 那一方、對的那個維度，不會互相污染。
+  check('吉門命中(乾:開門)：只標到乙方(乾)的doorJi，庚方(離)不受影響',
     Rules.checkYiGengMarriage({乾:'乙', 離:'庚'},
-      {乾:'開', 離:''}, emptyDSG, emptyDSG).hasLuckySymbol,
-    true);
-  // 2026-09-06 新增：luckClass() 星/神判斷曾經因為字串格式對不上盤面單字代碼而完全失效
-  // (見 luckClass() 上方註解)，這裡專門補星、神各自觸發 hasLuckySymbol 的測試，門的測試
-  // 沒辦法覆蓋到這個曾經存在的 bug——之前只測過門，星/神的路徑從沒被真正測到過。
+      {乾:'開', 離:''}, emptyDSG, emptyDSG).yiLuck,
+    {doorJi:true, starJi:false, godJi:false});
+  // luckClass() 星/神判斷曾經因為字串格式對不上盤面單字代碼而完全失效(見 luckClass() 上方
+  // 註解)，這裡專門補星、神各自觸發的測試，門的測試沒辦法覆蓋到這個曾經存在的 bug。
   const emptyDoor = { 坎:'', 坤:'', 震:'', 巽:'', 乾:'', 兌:'', 艮:'', 離:'' };
-  check('吉門/吉星/吉神任一命中：hasLuckySymbol為true(星觸發，天心=吉)',
+  check('吉星命中(乾:天心)：只標到乙方(乾)的starJi',
     Rules.checkYiGengMarriage({乾:'乙', 離:'庚'},
-      emptyDoor, {...emptyDoor, 乾:'心'}, emptyDSG).hasLuckySymbol,
-    true);
-  check('吉門/吉星/吉神任一命中：hasLuckySymbol為true(神觸發，太陰=吉)',
+      emptyDoor, {...emptyDoor, 乾:'心'}, emptyDSG).yiLuck,
+    {doorJi:false, starJi:true, godJi:false});
+  check('吉神命中(離:太陰)：只標到庚方(離)的godJi，乙方(乾)不受影響',
     Rules.checkYiGengMarriage({乾:'乙', 離:'庚'},
-      emptyDoor, emptyDSG, {...emptyDoor, 離:'陰'}).hasLuckySymbol,
-    true);
-  check('無吉門/吉星/吉神命中：hasLuckySymbol為false(天蓬單獨出現不算吉)',
+      emptyDoor, emptyDSG, {...emptyDoor, 離:'陰'}).gengLuck,
+    {doorJi:false, starJi:false, godJi:true});
+  check('天蓬單獨出現不算吉：yiLuck/gengLuck 都是全false',
     Rules.checkYiGengMarriage({乾:'乙', 離:'庚'},
-      emptyDoor, {...emptyDoor, 乾:'蓬'}, emptyDSG).hasLuckySymbol,
-    false);
+      emptyDoor, {...emptyDoor, 乾:'蓬'}, emptyDSG),
+    {yiGong:'乾', gengGong:'離', yiWx:'金', gengWx:'火', relation:'庚克乙', favor:'男嫌女', isJi:false, yiLuck:noLuck, gengLuck:noLuck});
 
   const pan1 = QimenJS.qimenChaibu(Solar, 2020, 1, 1, 0, 0);
   const m1 = Rules.checkYiGengMarriage(pan1.天盤, pan1.門, pan1.星, pan1.神);
-  check('案例：己亥年丙子月癸卯日壬子時——乙落乾(金)/庚落離(火)，庚克乙(男嫌女)',
-    m1, {yiGong:'乾', gengGong:'離', yiWx:'金', gengWx:'火', relation:'庚克乙', favor:'男嫌女', isJi:false, hasLuckySymbol:true});
+  check('案例：己亥年丙子月癸卯日壬子時——乙落乾(金)/庚落離(火)，庚克乙(男嫌女)，兩方各自的門/星/神吉象分開列',
+    m1, {yiGong:'乾', gengGong:'離', yiWx:'金', gengWx:'火', relation:'庚克乙', favor:'男嫌女', isJi:false,
+      yiLuck:{doorJi:false, starJi:true, godJi:true}, gengLuck:{doorJi:true, starJi:false, godJi:true}});
 }
 
 // ── luckClass()：星/神吉凶判斷改用 LEX_DATA (2026-09-06 修正) ──

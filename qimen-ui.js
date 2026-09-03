@@ -661,13 +661,20 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
   const peachP=peach?domainParagraph('感情婚姻', peach.items):{text:'感情婚姻這塊這次沒有算出來。', bad:[], total:0};
   let marriageText='', marriageTier='combo'; // 把乙庚落宮生克+空亡+伏吟反吟三項已驗證判斷兜在一起講
   if(marriageInfo){
-    const {yiGong, gengGong, favor, isJi}=marriageInfo;
+    const {yiGong, gengGong, favor, isJi, yiLuck, gengLuck}=marriageInfo;
     const yiKong=(kongHitGongs||[]).includes(yiGong), gengKong=(kongHitGongs||[]).includes(gengGong);
     const hasFuyinFanyin=(fuyinFanyinHits||[]).length>0;
     marriageText=`另外，如果是看已經有對象或已婚的相處狀況（奇門固定用天盤乙代表女方、庚代表男方，這跟上面桃花旺不旺是兩件事）：目前${T2(favor)}${isJi?'，方向上偏和睦':'，方向上要多留意磨合'}。`;
     if(yiKong)marriageText+='女方這一側還逢旬空，感情或婚姻容易有虛浮不實的感覺。';
     if(gengKong)marriageText+='男方這一側還逢旬空，感情或婚姻容易有虛浮不實的感覺。';
     if(hasFuyinFanyin)marriageText+='這局整體還逢伏吟反吟，變動性也要一併考慮。';
+    // 2026-09-06 修正：門/星/神哪一方吉、哪個維度吉，分開講清楚，不是像原本的
+    // hasLuckySymbol 那樣把兩邊三個維度混成一句「有沒有吉象」——一方有吉象只是這一方
+    // 額外多一點加分，不直接等於「婚姻整體加分」，跟上面乙庚生克的主判斷分開陳述。
+    const luckWords=lk=>[lk.doorJi&&'吉門',lk.starJi&&'吉星',lk.godJi&&'吉神'].filter(Boolean);
+    const yiWords=luckWords(yiLuck), gengWords=luckWords(gengLuck);
+    if(yiWords.length)marriageText+=`女方這一側額外還有${yiWords.join('、')}，算是加分項，但不直接等於婚姻整體變好。`;
+    if(gengWords.length)marriageText+=`男方這一側額外還有${gengWords.join('、')}，算是加分項，但不直接等於婚姻整體變好。`;
   }
 
   // ④ 人生波動挫折：師傅總結已經挑出的熱點宮，只取「命中號令」的六害條目(刑墓庚虎迫空)，
@@ -1124,10 +1131,15 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
   })()}
   ${(function(){
     if(!marriageInfo)return '';
-    const {yiGong, gengGong, yiWx, gengWx, relation, favor, isJi}=marriageInfo;
+    const {yiGong, gengGong, yiWx, gengWx, relation, favor, isJi, yiLuck, gengLuck}=marriageInfo;
     const yiKong=kongHitGongs.includes(yiGong), gengKong=kongHitGongs.includes(gengGong);
     const hasFuyinFanyin=fuyinFanyinHits.length>0;
     const goodOverall=isJi && !yiKong && !gengKong && !hasFuyinFanyin;
+    // 2026-09-06 修正：門/星/神哪一方吉、哪個維度吉分開列出，不是像原本的 hasLuckySymbol
+    // 那樣把兩邊三個維度混成一個籠統的布爾值——這裡列出來只是額外參考資訊，不併入上面
+    // 乙庚落宮生克的主判斷，也不影響 goodOverall 的顏色判斷。
+    const luckWords=lk=>[lk.doorJi&&'吉門',lk.starJi&&'吉星',lk.godJi&&'吉神'].filter(Boolean);
+    const yiWords=luckWords(yiLuck), gengWords=luckWords(gengLuck);
     return `<div class="geju-card">
       <div class="geju-title">主流斷局法：婚姻用神（天盤乙／庚落宮生克）</div>
       <div style="font-size:11px;opacity:.6;margin-bottom:6px">天盤乙代表女方，庚代表男方(奇門固定符號，跟八字「日干克我者為官殺/夫星」是不同體系，不要混用)。比較的是乙、庚「各自落宮」的五行生克關係(不是乙庚天干本身——乙庚天干本來就相合)：相生/比和感情較好，相克感情較差；任一方落空亡、或整局逢星/門伏吟反吟，都不利。「三奇入墓」等更細節的判法本專案查證後仍有疑義，暫不收錄，跟六害/格局/地利/主客/天時/人和是完全獨立的另一個維度。</div>
@@ -1138,6 +1150,8 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
       ${gengKong?`<div class="ana-step" style="opacity:.75">庚落${T2(gengGong)}宮逢旬空——男方這一側虛浮不實，感情或婚姻容易不穩</div>`:''}
       ${hasFuyinFanyin?`<div class="ana-step" style="opacity:.75">整局逢伏吟反吟——感情/婚姻的變動性要一併考慮，不是單純好壞</div>`:''}
       ${(!isJi&&!yiKong&&!gengKong&&!hasFuyinFanyin)?`<div class="ana-step" style="opacity:.6">單就乙庚落宮生克來看偏不利，但沒有旬空或伏吟反吟加重，程度上不算太嚴重</div>`:''}
+      ${yiWords.length?`<div class="ana-step" style="opacity:.75">女方(乙落${T2(yiGong)}宮)額外命中${yiWords.join('、')}，屬於這一方單獨的加分參考，不併入上面的整體判斷</div>`:''}
+      ${gengWords.length?`<div class="ana-step" style="opacity:.75">男方(庚落${T2(gengGong)}宮)額外命中${gengWords.join('、')}，屬於這一方單獨的加分參考，不併入上面的整體判斷</div>`:''}
     </div>`;
   })()}
   ${(function(){
@@ -1154,7 +1168,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     </div>`;
     return `<div class="geju-card">
       <div class="geju-title">主流斷局法：天時（九星按月令旺相休囚死）</div>
-      <div style="font-size:11px;opacity:.6;margin-bottom:6px">跟一般五行旺相休囚死的判斷基準不同：九星看重的是「往外生助」的作用力，我生月令才是旺，跟月令同五行只排第二(相)；月令生我則最弱(死/廢)。得天時(有力)＝旺/相，失天時(無力)＝囚/死，休＝中性不列出。跟六害/格局/地利/主客是完全獨立的另一個維度。</div>
+      <div style="font-size:11px;opacity:.6;margin-bottom:6px">跟一般五行旺相休囚死的判斷基準不同：九星看重的是「往外生助」的作用力，我生月令才是旺，跟月令同五行只排第二(相)；月令生我則最弱(死/廢)。得天時(有力)＝旺/相，失天時(無力)＝囚/死，休＝中性不列出。跟六害/格局/地利/主客是完全獨立的另一個維度。<br>這裡回答的是「這顆星現在的力量強弱」，跟上面「吉凶速覽」九宮格用顏色標的「這顆星本身先天偏吉還是偏凶」是兩套完全不同的資料，不是同一件事——一顆先天偏凶的星(如天蓬)一樣可以在這裡得天時(旺/相)，意思是「這股偏凶的力量現在比較有力」，不是矛盾，也不是「旺＝更凶」或「旺＝變吉」，兩者要分開看。</div>
       ${jiHits.length?`<div class="ana-step" style="font-weight:700;color:var(--grn);margin-top:4px">得天時</div>${renderWithBgCollapse(jiHits,rowHtml)}`:''}
       ${xiongHits.length?`<div class="ana-step" style="font-weight:700;color:var(--red);margin-top:4px">失天時</div>${renderWithBgCollapse(xiongHits,rowHtml)}`:''}
     </div>`;
