@@ -546,6 +546,23 @@ function plainCureText(cs){
   if(cs.verified===false)parts.push('（這條化解方法是推導出來的，不是視頻原文逐字講的，僅供參考）');
   return parts.join('；')+'。';
 }
+// 置信度標籤(命局故事卡專用，2026-09-01 新增；2026-09-06 降視覺權重)：標示每一段話是
+// 「查表就有的事實」(rule)、「把幾個已驗證符號的意思兜在一起講」(combo)、還是「跨好幾個
+// 面向比出來的推論」(infer/weak)。標籤只是老實講清楚這句話怎麼來的，不是免責聲明。原本用
+// 常駐顯示的彩色文字徽章，視覺權重跟段落內容差不多重(用戶朋友(ChatGPT)反饋)；改成預設只
+// 顯示一個小圓點，hover 有 tooltip 顯示完整說明，點一下/點按才展開成文字標籤——手機沒有
+// hover，點擊才是主要互動方式。CSS 對應 qimen.html 的 .conf-tag/.conf-dot/.conf-label。
+const CONF_TAG={
+  rule:['conf-tag-rule','規則','查表就有的事實'],
+  combo:['conf-tag-combo','組合取象','把幾個已驗證的符號兜在一起講'],
+  infer:['conf-tag-infer','綜合推導','跨好幾個面向比出來的相對判斷(不是鐵律)'],
+  weak:['conf-tag-weak','弱推斷','資訊不足只能先這樣講'],
+};
+function confTag(tier){
+  const [cls,label,desc]=CONF_TAG[tier]||CONF_TAG.rule;
+  return `<span class="conf-tag ${cls}" onclick="toggleConfTag(this)" title="${label}：${desc}"><span class="conf-dot"></span><span class="conf-label">${label}</span></span>`;
+}
+function toggleConfTag(el){ el.classList.toggle('conf-open'); }
 function renderMasterSummaryPlain(summary, juType){
   const T2=x=>t2(x||'');
   if(summary.quiet){
@@ -612,9 +629,9 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
   // 講清楚這句話怎麼來的，不是免責聲明——寫的時候還是要對內容本身負責，不能拿標籤當藉口
   // 亂寫。四個等級對應 ChatGPT 建議的【規則】【組合取象】【綜合推導】【弱推斷】，
   // 【禁止輸出】那一級不會出現在畫面上，是「這種話本來就不該寫」的內部提醒。
-  const CONF_TAG={rule:['plain-tag-rule','規則'], combo:['plain-tag-combo','組合取象'],
-    infer:['plain-tag-infer','綜合推導'], weak:['plain-tag-weak','弱推斷']};
-  const confTag=tier=>{const [cls,label]=CONF_TAG[tier]||CONF_TAG.rule; return `<span class="plain-tag ${cls}">${label}</span>`;};
+  // 2026-09-06 降視覺權重(用戶朋友(ChatGPT)反饋)：原本每段話都掛一個常駐顯示的彩色文字
+  // 徽章，改成預設只顯示小圓點(見 confTag()/toggleConfTag() 共用實作，qimen.html 對應的
+  // .conf-tag/.conf-dot/.conf-label 樣式)，hover 有 tooltip、點一下才展開文字。
 
   // ① 性格：日干＝內心，時干＝對外展現，直接用十天干取象詞典裡已經驗證過的描述，不新寫一套
   const dInfo=dayStem?LEX_DATA.stems[dayStem]:null;

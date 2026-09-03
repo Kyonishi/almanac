@@ -316,14 +316,27 @@ header{
   border-radius:8px;margin-right:6px;vertical-align:middle}
 .plain-tag-xunlao{background:#FEF3F3;color:#8B1A1A}
 .plain-tag-mainstream{background:#F5F3FA;color:#5B3FA0}
-/* 三層結構＋置信度標籤(2026-09-01 新增)：標示白話總結每一段話是「查表就有的事實」、
-   「把幾個已驗證符號的意思兜在一起講」、還是「跨好幾個面向比出來的推論」，讓讀者自己
-   判斷要多當真——標籤本身不是免責聲明，寫的時候還是要對內容負責，只是老實講清楚
-   這句話是怎麼來的。 */
-.plain-tag-rule{background:#EEF7EE;color:#2E6B2E}
-.plain-tag-combo{background:#EEF3FA;color:#2A5C8A}
-.plain-tag-infer{background:#FBF3E3;color:#8A5A1A}
-.plain-tag-weak{background:#F2F2F2;color:#666}
+/* 三層結構＋置信度標籤(2026-09-01 新增；2026-09-06 降視覺權重)：標示白話總結每一段話是
+   「查表就有的事實」、「把幾個已驗證符號的意思兜在一起講」、還是「跨好幾個面向比出來的
+   推論」，讓讀者自己判斷要多當真——標籤本身不是免責聲明，寫的時候還是要對內容負責，只是
+   老實講清楚這句話是怎麼來的。原本用固定顯示的彩色文字徽章，常駐佔位、視覺權重跟段落
+   內容本身差不多重(用戶朋友(ChatGPT)反饋點出)；改成預設只顯示一個小圓點(顏色沿用既有
+   分級配色)，滑鼠移上去有原生 tooltip 顯示完整說明，點一下/點按會展開成文字標籤(手機
+   沒有 hover，點擊才是主要互動方式)，不特別關心來源分級的人完全不受干擾。 */
+.conf-tag{display:inline-block;cursor:pointer;vertical-align:middle;margin-right:6px;line-height:1}
+.conf-dot{display:inline-block;width:7px;height:7px;border-radius:50%;vertical-align:middle}
+.conf-label{display:none;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:8px;
+  margin-left:4px;vertical-align:middle}
+.conf-tag.conf-open .conf-dot{display:none}
+.conf-tag.conf-open .conf-label{display:inline-block}
+.conf-tag-rule .conf-dot{background:#2E6B2E}
+.conf-tag-rule .conf-label{background:#EEF7EE;color:#2E6B2E}
+.conf-tag-combo .conf-dot{background:#2A5C8A}
+.conf-tag-combo .conf-label{background:#EEF3FA;color:#2A5C8A}
+.conf-tag-infer .conf-dot{background:#8A5A1A}
+.conf-tag-infer .conf-label{background:#FBF3E3;color:#8A5A1A}
+.conf-tag-weak .conf-dot{background:#666}
+.conf-tag-weak .conf-label{background:#F2F2F2;color:#666}
 
 
 /* cross-nav：常駐按鈕(萬年曆)不透明度降低一點、佔用範圍縮小，減少對卡片內容的遮擋；
