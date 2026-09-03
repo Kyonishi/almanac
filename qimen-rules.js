@@ -151,9 +151,19 @@ function checkYiGengMarriage(sky, door, star, god){
   else if(KE_TABLE_WUXING[yiWx]===gengWx){ relation='乙克庚'; favor='女嫌男'; }
   else if(KE_TABLE_WUXING[gengWx]===yiWx){ relation='庚克乙'; favor='男嫌女'; }
   const isJi=relation==='比和'||relation==='乙生庚'||relation==='庚生乙';
-  const luckyAt=(gong)=>[door[gong],star[gong],god[gong]].some(v=>luckClass(v)==='pill-ji');
-  const hasLuckySymbol=luckyAt(yiGong)||luckyAt(gengGong);
-  return {yiGong, gengGong, yiWx, gengWx, relation, favor, isJi, hasLuckySymbol};
+  // 2026-09-06 修正(用戶朋友(ChatGPT)第五輪反饋第3點，查證屬實)：原本 hasLuckySymbol 用
+  // 一個 OR 把「乙宮/庚宮」×「門/星/神」六個獨立信號全部揉成一個布爾值，完全看不出「到底是
+  // 哪一方、哪個符號類型有吉象」，也看不出「另一方是不是同時有凶象」——這個欄位目前其實沒有
+  // 被任何畫面用到(純粹算出來、測試鎖住，從未渲染)，改成結構化的 yiLuck/gengLuck，各自標
+  // 門/星/神三個維度是否為吉，供渲染層自己決定怎麼呈現，不在資料層就把兩邊、三個維度混成
+  // 一個籠統的「有沒有吉象」。
+  const luckDetail=(gong)=>({
+    doorJi: door[gong]?luckClass(door[gong])==='pill-ji':false,
+    starJi: star[gong]?luckClass(star[gong])==='pill-ji':false,
+    godJi: god[gong]?luckClass(god[gong])==='pill-ji':false,
+  });
+  const yiLuck=luckDetail(yiGong), gengLuck=luckDetail(gengGong);
+  return {yiGong, gengGong, yiWx, gengWx, relation, favor, isJi, yiLuck, gengLuck};
 }
 
 // ══════════════════ 主流斷局法：天時(九星按月令旺相休囚死) ══════════════════
@@ -1468,9 +1478,14 @@ const XUNLAO_DEEPER={
 const DILI_MEANING={吉:'這個方向此刻有勁、使得上力', 凶:'這個方向此刻沒勁、使不上力'};
 const ZHUKE_MEANING={主:'這個方向的主動權偏向你/根基這邊', 客:'這個方向的主動權偏向對方/事情的變化這邊', 平:'這個方向雙方勢均力敵，不分高下'};
 const TIANSHI_MEANING={吉:'這個方向踩在對的時機上', 凶:'這個方向生不逢時，時機不站在這邊'};
+// 2026-09-06 修正(用戶朋友(ChatGPT)第五輪反饋第4點，查證屬實)：「制比迫更難受」這個嚴重度
+// 排序原本沒有查到任何來源支持——門克宮(迫)/宮克門(制)本身有古籍跟多方獨立來源一致，迫、制
+// 皆不利也說得通，但查證後沒找到足夠可靠的依據支持「制一定比迫嚴重」，古籍講法通常強調的是
+// 「吉門受迫/受制則吉事難成，凶門受迫/受制則凶性加重」，重點在門本身吉凶跟所問事項，不是給
+// 迫制建立固定排名，改成不排序的事實表達，兩者都只講「這個方向怎麼被卡住」，不比較誰更嚴重。
 const RENHE_MEANING={
   迫:'這個方向的力道被壓著、動不了',
-  制:'這個方向被外力直接克住，比迫更難受',
+  制:'這個方向被外力反過來克住，這個門代表的事情比較難發揮',
   和:'這個方向能順暢地把力量交出去，算順利',
   義:'這個方向能得到環境反過來的滋養，算得利',
   比和:'這個方向不分勝負，平常',
