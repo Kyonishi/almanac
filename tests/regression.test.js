@@ -471,6 +471,49 @@ function check(label, actual, expected) {
       yiLuck:{doorJi:false, starJi:true, godJi:true}, gengLuck:{doorJi:true, starJi:false, godJi:true}});
 }
 
+// ── 主流斷局法：求財用神(日干／生門宮位生克 + 生門旺相休囚) (2026-09 新增) ──
+// 用戶朋友(ChatGPT)第六輪反饋建議「事局通用用神模型，優先補一個有完整來源的問事場景」，
+// 求財是預設所求裡唯一沒有專屬深度讀局方法的一項，補這個場景的用神模型跟既有婚姻用神
+// (checkYiGengMarriage)同一套「比較兩符號各自落宮的五行生克」方法論，只是換一組符號
+// (日干／生門，不是乙／庚)，跟門迫/天時共用底層五行表，不新增獨立查表。
+{
+  console.log('\n── 求財用神(日干/生門落宮生克 + 生門旺相休囚) ──');
+  const emptyDoor2 = { 坎:'', 坤:'', 震:'', 巽:'', 乾:'', 兌:'', 艮:'', 離:'' };
+  check('日克財(日干壬落巽木/生門落坤土，木克土)：不利',
+    Rules.checkQiucaiYongshen({巽:'壬'}, {...emptyDoor2, 坤:'生'}, '壬', null),
+    {dayGong:'巽', shengmenGong:'坤', dayWx:'木', smWx:'土', relation:'日克財', favor:'不利', isJi:false, doorState:null, doorFavor:null});
+  check('日生財(日干乙落震木/生門落離火，木生火——日生財)：有利',
+    Rules.checkQiucaiYongshen({震:'乙'}, {...emptyDoor2, 離:'生'}, '乙', null),
+    {dayGong:'震', shengmenGong:'離', dayWx:'木', smWx:'火', relation:'日生財', favor:'有利', isJi:true, doorState:null, doorFavor:null});
+  check('比和(日干丁落離火/生門落離火——同宮同五行)：勢均力敵',
+    Rules.checkQiucaiYongshen({離:'丁'}, {離:'生'}, '丁', null),
+    {dayGong:'離', shengmenGong:'離', dayWx:'火', smWx:'火', relation:'比和', favor:'勢均力敵', isJi:true, doorState:null, doorFavor:null});
+  check('日干或生門查無落宮(如都落中宮)：回傳 null',
+    Rules.checkQiucaiYongshen({中:'甲'}, {}, '甲', null), null);
+  check('沒有日干：回傳 null',
+    Rules.checkQiucaiYongshen({巽:'壬'}, {坤:'生'}, null, null), null);
+
+  // 生門旺相休囚：沿用 getNineStarState()(天時同一套月令基準)，生門固有五行是土(DOOR_WUXING['生'])
+  check('生門(土)遇月支寅(木)：土被木克＝囚，無力',
+    Rules.checkQiucaiYongshen({巽:'壬'}, {...emptyDoor2, 坤:'生'}, '壬', '寅').doorState, '囚');
+  // 天時的旺衰基準是反過來的「我生之月才是旺，月生我反而最弱(死)」(既有 getNineStarState()
+  // 註解已經講清楚，這裡沿用同一套，不是月生我=旺這種一般八字直覺)：土生金，所以土在
+  // 金月(申)才是旺；土在火月(巳)因為是「月(火)生我(土)」反而是死，不是旺。
+  check('生門(土)遇月支申(金)：土生金＝旺，得力',
+    Rules.checkQiucaiYongshen({巽:'壬'}, {...emptyDoor2, 坤:'生'}, '壬', '申'),
+    {dayGong:'巽', shengmenGong:'坤', dayWx:'木', smWx:'土', relation:'日克財', favor:'不利', isJi:false, doorState:'旺', doorFavor:'得力'});
+  check('生門(土)遇月支巳(火)：月(火)生我(土)＝死，無力(跟一般八字直覺相反，天時基準本來就反過來)',
+    Rules.checkQiucaiYongshen({巽:'壬'}, {...emptyDoor2, 坤:'生'}, '壬', '巳').doorState, '死');
+
+  // 真實案例覆核(2024-02-28 18:39)：日干壬落巽(木)，生門落坤(土)，木克土=日克財=不利；
+  // 生門(土)遇月支寅(木)=囚=無力，跟前面手算的合成案例是同一組五行關係，交叉印證公式正確。
+  const panR = QimenJS.qimenChaibu(Solar, 2024, 2, 28, 18, 39);
+  const gzR = Rules.parseGanzhi(panR.干支);
+  check('案例(2024-02-28 18:39)：日干壬落巽/生門落坤，日克財不利，生門囚無力',
+    Rules.checkQiucaiYongshen(panR.天盤, panR.門, gzR.日干, gzR.月支),
+    {dayGong:'巽', shengmenGong:'坤', dayWx:'木', smWx:'土', relation:'日克財', favor:'不利', isJi:false, doorState:'囚', doorFavor:'無力'});
+}
+
 // ── luckClass()：星/神吉凶判斷改用 LEX_DATA (2026-09-06 修正) ──
 // 修正前：星/神的判斷陣列寫的是「天輔」「值符」這種完整兩字名稱，但盤面實際存的是單字代碼
 // （「輔」「符」），字串永遠對不上，星/神兩類判斷從一開始就是死代碼，一律回傳中性，且不報錯——
