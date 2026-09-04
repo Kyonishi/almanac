@@ -1146,7 +1146,8 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
       ?renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourStem, needKey, industry, targetWuxing, yearsInput, masterSummary, marriageInfo, kongHitGongs, fuyinFanyinHits)
       :renderShijuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourStem, needKey, industry, targetWuxing, yearsInput, masterSummary, marriageInfo, kongHitGongs, fuyinFanyinHits)
   }</div>
-  <div class="master-mode master-mode-pro" style="display:none">${renderMasterSummary(masterSummary, juType)}</div>
+  <div class="master-mode master-mode-pro" style="display:none">
+  ${renderMasterSummary(masterSummary, juType)}
 
   <div class="section-label">解讀一・主流斷局法（跨門派共識，與下面荀爽老師體系是兩套不同來源）${BADGE_SOURCE_B}${BADGE_CONSENSUS_X}</div>
   ${gejuHits.length ? `<div class="geju-card">
@@ -1666,6 +1667,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     html+='</div>';
     return html;
   })()}
+  </div>
 
   ${(needKey==='財富七要'||needKey==='事業七要') ? renderWealthCareerReport(pan, needKey, industry, targetWuxing, juType)
     : (SIMPLE_LOCATE_DEFS[needKey] ? renderSimpleLocateReport(pan, needKey, yearsInput, juType) : '')}
