@@ -697,7 +697,6 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
   else overallText+='財運、事業、感情這幾塊有的順、有的卡，不是一路到底的順或不順，各自的狀況上面已經分開講清楚。';
 
   return `<div class="master-card">
-    <div class="master-title">師傅總結</div>
     <div class="plain-p" style="opacity:.6;margin-bottom:10px;font-size:12px">下面是白話版——用比較口語、帶一點推論的方式講這個人整體大概是什麼樣，讀起來會比逐條列數據活潑一些；如果想看每一句話嚴格對應哪個規則、哪個來源，切到「專業版」，那邊完整保留逐宮、逐規則的明細，不會因為這裡寫得活潑就少了什麼。</div>
     <div class="plain-block"><div class="plain-gong">本人特點</div><div class="plain-p">${selfText}</div></div>
     <div class="plain-block"><div class="plain-gong">財運</div><div class="plain-p">${wealthText}</div></div>
@@ -842,7 +841,6 @@ function renderShijuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSte
       :`一句話概括：這局命中六害的訊號集中在${[focusP.bad.length>0?'所求對應的面向':'',wanderHits.length>0?'人生波動':''].filter(Boolean).join('、')}，其餘部分相對平穩，具體怎麼處理可以看上面「怎麼破」那段。`);
 
   return `<div class="master-card">
-    <div class="master-title">師傅總結</div>
     <div class="plain-p" style="opacity:.7;margin-bottom:4px">下面把這局拆成幾段來講事局的白話版——這件事目前的狀態、針對所求的讀局、有沒有踩雷、怎麼破，一路讀下去就好，不用先懂術語。這裡主流斷局法跟荀爽老師體系的判斷不特別分開標註，兩邊揉在一起講；如果想看兩套體系嚴格分開、逐宮完整的版本，切到「專業版」。</div>
     <div class="plain-p" style="opacity:.55;font-size:12px;margin-bottom:10px">每段話前面的小標籤是老實告訴你這句話怎麼來的：${confTag('rule')}查表就有的事實、${confTag('combo')}把幾個已驗證的符號兜在一起講、${confTag('infer')}跨好幾個面向比出來的相對判斷(不是鐵律)、${confTag('weak')}資訊不足只能先這樣講。標籤不是免責聲明，只是讓你自己判斷要多當真。</div>
     <div class="plain-block"><div class="plain-gong">這件事目前是什麼狀態</div><div class="plain-p">${confTag(stateTier)}${stateText}</div></div>
