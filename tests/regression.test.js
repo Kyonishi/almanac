@@ -514,6 +514,46 @@ function check(label, actual, expected) {
     {dayGong:'巽', shengmenGong:'坤', dayWx:'木', smWx:'土', relation:'日克財', favor:'不利', isJi:false, doorState:'囚', doorFavor:'無力'});
 }
 
+// ── 事業用神(日干/開門落宮生克 + 開門旺相休囚) (2026-09 新增) ──
+// 跟求財用神同一套方法論，換成「開門代表單位」這組關係；跟求財不同的是這裡兩個獨立來源
+// 都明確給了「克」的方向性含義(日克開門=自己想離開，開門克日=單位不想要)，所以這裡的
+// isJi/favor 判斷保留方向區分，不像求財那樣把兩個克的方向籠統合併成同一句「不利」。
+{
+  console.log('\n── 事業用神(日干/開門落宮生克 + 開門旺相休囚) ──');
+  const emptyDoor3 = { 坎:'', 坤:'', 震:'', 巽:'', 乾:'', 兌:'', 艮:'', 離:'' };
+  check('日克開門(日干壬落巽木/開門落坤土，木克土)：本人想離開',
+    Rules.checkShiyeYongshen({巽:'壬'}, {...emptyDoor3, 坤:'開'}, '壬', null),
+    {dayGong:'巽', kaimenGong:'坤', dayWx:'木', kmWx:'土', relation:'日克開門', favor:'本人想離開', isJi:false, doorState:null, doorFavor:null});
+  check('開門克日(日干乙落坤土/開門落震木，木克土——開門克日)：單位不想要',
+    Rules.checkShiyeYongshen({坤:'乙'}, {...emptyDoor3, 震:'開'}, '乙', null),
+    {dayGong:'坤', kaimenGong:'震', dayWx:'土', kmWx:'木', relation:'開門克日', favor:'單位不想要', isJi:false, doorState:null, doorFavor:null});
+  check('開門生日(開門火生日干土，比如日干丁落坤土/開門落離火)：有利',
+    Rules.checkShiyeYongshen({坤:'丁'}, {...emptyDoor3, 離:'開'}, '丁', null),
+    {dayGong:'坤', kaimenGong:'離', dayWx:'土', kmWx:'火', relation:'開門生日', favor:'有利', isJi:true, doorState:null, doorFavor:null});
+  check('日干或開門查無落宮：回傳 null',
+    Rules.checkShiyeYongshen({中:'甲'}, {}, '甲', null), null);
+
+  // 真實案例覆核(1986-03-14 09:06)：日干丁落坤(土)，開門落離(火)，火生土=開門生日=有利；
+  // 開門固有五行(金)遇月支卯(木)：金克木=休，中性(不特別旺也不特別弱)。
+  const panR2 = QimenJS.qimenChaibu(Solar, 1986, 3, 14, 9, 6);
+  const gzR2 = Rules.parseGanzhi(panR2.干支);
+  check('案例(1986-03-14 09:06)：日干丁落坤/開門落離，開門生日有利，開門休中性',
+    Rules.checkShiyeYongshen(panR2.天盤, panR2.門, gzR2.日干, gzR2.月支),
+    {dayGong:'坤', kaimenGong:'離', dayWx:'土', kmWx:'火', relation:'開門生日', favor:'有利', isJi:true, doorState:'休', doorFavor:'中性'});
+}
+
+// ── 命局：日干臨地盤干組合(日干加臨) (2026-09 新增) ──
+// 目前只有「日干加壬」查到兩個獨立來源交叉核對一致，其餘九種組合暫不收錄(見
+// getRiganJialinMeaning 上方查證註解)，這裡鎖定已驗證的部分+確認未收錄的部分老實回傳 null。
+{
+  console.log('\n── 命局：日干臨地盤干組合(日干加臨) ──');
+  check('日干加壬：已驗證，主難以盡情發揮、出行調動、遇阻力',
+    Rules.getRiganJialinMeaning('壬'), '難以盡情發揮，也跟出行、調動、遇阻力這類狀況有關');
+  check('日干加甲/乙/丙/丁/戊/己/庚/辛/癸：目前只有單一來源，未收錄，老實回傳 null',
+    ['甲','乙','丙','丁','戊','己','庚','辛','癸'].map(Rules.getRiganJialinMeaning),
+    [null,null,null,null,null,null,null,null,null]);
+}
+
 // ── luckClass()：星/神吉凶判斷改用 LEX_DATA (2026-09-06 修正) ──
 // 修正前：星/神的判斷陣列寫的是「天輔」「值符」這種完整兩字名稱，但盤面實際存的是單字代碼
 // （「輔」「符」），字串永遠對不上，星/神兩類判斷從一開始就是死代碼，一律回傳中性，且不報錯——
