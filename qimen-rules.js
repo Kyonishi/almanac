@@ -395,6 +395,51 @@ function checkQiucaiYongshen(sky, door, dayStem, monthZhi){
   return {dayGong, shengmenGong, dayWx, smWx, relation, favor, isJi, doorState, doorFavor};
 }
 
+// ══════════════════ 主流斷局法：事業用神(日干／開門宮位生克 + 開門旺相休囚) ══════════════════
+// 來源: 2026-09 查證，跟求財用神同一套方法論(比較兩符號各自落宮的五行生克)，套用到「開門
+// 代表單位/工作」這組關係。WebSearch 彙整多篇資料一致的說法：「日干逢開門，與其相生或比合，
+// 表明本人事業心強、工作順利」；services.shen88.cn 進一步給出方向性的細節：「日干克開門是
+// 自己不想在單位幹了」「開門克日干是單位不願意要了」——跟求財用神不同，這裡兩個獨立來源都
+// 明確給了「克」的方向性含義，所以保留方向區分，不像求財那樣籠統合併成「不利」。開門的固有
+// 五行(DOOR_WUXING)相對月令的旺相休囚，沿用跟求財用神完全相同的 getNineStarState() 機制。
+// 日干或開門落中宮：中五寄宮規則未確認，回傳 null，跟求財用神/婚姻用神的處理一致。
+function checkShiyeYongshen(sky, door, dayStem, monthZhi){
+  if(!dayStem)return null;
+  const dayGong=locateStem(sky, dayStem)[0]||null;
+  const kaimenGong=locateDoor(door, '開')[0]||null;
+  if(!dayGong||!kaimenGong)return null;
+  const dayWx=GONG_WUXING[dayGong], kmWx=GONG_WUXING[kaimenGong];
+  let relation, favor;
+  if(dayWx===kmWx){ relation='比和'; favor='勢均力敵'; }
+  else if(SHENG_TABLE[dayWx]===kmWx){ relation='日生開門'; favor='有利'; }
+  else if(SHENG_TABLE[kmWx]===dayWx){ relation='開門生日'; favor='有利'; }
+  else if(KE_TABLE_WUXING[dayWx]===kmWx){ relation='日克開門'; favor='本人想離開'; }
+  else if(KE_TABLE_WUXING[kmWx]===dayWx){ relation='開門克日'; favor='單位不想要'; }
+  const isJi=relation==='比和'||relation==='日生開門'||relation==='開門生日';
+  const seasonWx=monthZhi?BRANCH_WUXING[monthZhi]:null;
+  const doorState=seasonWx?getNineStarState(DOOR_WUXING['開'], seasonWx):null;
+  const doorFavor=doorState?(TIANSHI_JI.has(doorState)?'得力':(TIANSHI_XIONG.has(doorState)?'無力':'中性')):null;
+  return {dayGong, kaimenGong, dayWx, kmWx, relation, favor, isJi, doorState, doorFavor};
+}
+
+// ══════════════════ 命局：日干臨地盤干組合(日干加臨) ══════════════════
+// 來源: 2026-09 查證，命局測人專屬的方法(qimen.yi958.com「日干(用神)所落宮的組合信息」
+// 明確以「測算求測人自身時，日干代表求測人」為前提，不是拿事局的判斷硬套)：日干落宮後，
+// 這一宮的地盤干對這個人形成「接應」關係，天干加臨天干的固定組合各自有傳統含義(跟
+// MAINSTREAM_GEJU 的天盤干/地盤干同宮組合是同一種形式，只是這裡限定「天盤干＝日干本身」
+// 這個特定情境，用來描述人，不是描述事)。
+// 目前只有「日干加壬」查到兩個獨立來源交叉核對一致：qimen.yi958.com「主難以發揮，加地盤壬，
+// 可能有出行、調動事，也主遇有阻力」；WebSearch 彙整多篇資料一致的「日干加壬、癸，難以發展」
+// 「日干加地盤壬，主走動、出行」。其餘九種組合(日干加甲/乙/丙/丁/戊/己/庚/辛/癸)目前只在
+// qimen.yi958.com 單一來源查到，沒有第二個來源交叉核對，跟「人假」「天馬丁馬」一樣寧缺勿濫，
+// 暫不收錄，等之後查到第二個來源再補上，不要因為缺一項就整套不用。
+const RIGAN_JIALIN_MEANING={
+  '壬':'難以盡情發揮，也跟出行、調動、遇阻力這類狀況有關',
+};
+function getRiganJialinMeaning(earthStem){
+  return RIGAN_JIALIN_MEANING[earthStem]||null;
+}
+
 // ══ 庚 (六害之一, 獨立於擊刑檢測: 只要天盤出現庚即命中) ══
 // 來源: 荀爽視頻「六害: 刑墓庚虎迫空」明確列出庚為獨立一害, 與擊刑表中庚落艮宮的
 // "六儀擊刑"是兩件事 (庚本身即為害, 不論落在哪一宮)
@@ -1900,6 +1945,7 @@ if (typeof module !== 'undefined' && module.exports) {
     SIMPLE_LOCATE_DEFS, analyzeSimpleLocate,
     PEACH_TRINE, getPeachBranch, buildPeachBlossomLocates, yearToBranch, yearToStem,
     getMuyuBranch, buildMuyuPeachLocates, checkDayStemMuyu, escHtml, checkQiucaiYongshen,
+    checkShiyeYongshen, getRiganJialinMeaning, RIGAN_JIALIN_MEANING,
     locateStem, locateDoor, locateStar, locateGod, locateSymbol,
     harmsAtGong, getCuresAtGong, parseGanzhi, GRID_ORDER, ZHI_TO_GONG,
     monthRelation, analyzeWealthSeven,
