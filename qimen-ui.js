@@ -1667,10 +1667,10 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     html+='</div>';
     return html;
   })()}
-  </div>
 
   ${(needKey==='財富七要'||needKey==='事業七要') ? renderWealthCareerReport(pan, needKey, industry, targetWuxing, juType)
     : (SIMPLE_LOCATE_DEFS[needKey] ? renderSimpleLocateReport(pan, needKey, yearsInput, juType) : '')}
+  </div>
 
   <div class="info-card">
     <div class="info-title">吉凶速覽</div>
