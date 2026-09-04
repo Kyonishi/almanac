@@ -354,6 +354,47 @@ function checkRenhe(doorMap){
   return hits;
 }
 
+// ══════════════════ 主流斷局法：求財用神(日干／生門宮位生克 + 生門旺相休囚) ══════════════════
+// 來源: 2026-09 查證，三個獨立資料源交叉核對一致的核心部分：daoisms.com.cn「奇門遁甲預測
+// 用神之占財」明確給出「日干代表占問者本人」「生門代表財利、利潤」；同一站「奇門遁甲的用神」
+// 頁面補充判斷通則「比較兩個符號各自落宮的五行生克關係」(例：「生門宮五行若生值符宮的五行
+// 其物可買」)，跟本專案既有婚姻用神(checkYiGengMarriage比較乙宮/庚宮，不比較乙庚天干本身)
+// 是同一套方法論；WebSearch 彙整多篇資料一致的說法「生門與問測者的生克關係影響財運，生則吉，
+// 克則苦」「生門五行所處的旺相狀況求財有利，休囚不可得」。
+// 查證時也發現次要角色說法有分歧：一個來源說「值符為貨主、值使為購貨之人」，另一個來源說
+// 「值符代表買主」，方向剛好相反；六合(經紀人)、月干(同行競爭者)、時干的確切角色也只有單一
+// 來源提及、沒有第二個來源交叉核對——這些次要角色說法不一致或未經覆核，這裡不收錄，只實作
+// 「日干、生門」這組核心且跨來源一致的用神關係，跟「甲子戊(戊)代表資本」已經在財富七要的
+// 「本錢」一項實作，這裡不重複定義，只在文字裡提示參考。跟「人假」「天馬丁馬」一樣寧缺勿濫。
+// 判斷方式：
+//   1. 日干所在宮 vs 生門所在宮，比較兩宮的五行生克關係——沿用跟婚姻用神完全相同的處理
+//      方式(不分生克方向，相生/比和都算有利，相克都算不利；來源對「日克財」「財克日」哪個
+//      方向更好只有零星、彼此不一致的說法，這裡不採用未覆核的方向性判斷，只取兩篇來源都
+//      同意的「生則吉、克則苦」這個對稱結論)。
+//   2. 生門的固有五行(DOOR_WUXING)相對月令的旺相休囚死——直接沿用 getNineStarState()(原本
+//      給天時/九星用，該函式本身是純五行輸入輸出，不限定一定要是星)，跟天時判斷用同一套
+//      月令基準，不重新定義一套新的旺衰邏輯。
+//   3. 日干或生門落中宮：中五寄宮規則各派不同、本專案尚未確認，回傳 null，不猜測(跟婚姻
+//      用神乙庚落中宮時的處理一致)。
+function checkQiucaiYongshen(sky, door, dayStem, monthZhi){
+  if(!dayStem)return null;
+  const dayGong=locateStem(sky, dayStem)[0]||null;
+  const shengmenGong=locateDoor(door, '生')[0]||null;
+  if(!dayGong||!shengmenGong)return null;
+  const dayWx=GONG_WUXING[dayGong], smWx=GONG_WUXING[shengmenGong];
+  let relation, favor;
+  if(dayWx===smWx){ relation='比和'; favor='勢均力敵'; }
+  else if(SHENG_TABLE[dayWx]===smWx){ relation='日生財'; favor='有利'; }
+  else if(SHENG_TABLE[smWx]===dayWx){ relation='財生日'; favor='有利'; }
+  else if(KE_TABLE_WUXING[dayWx]===smWx){ relation='日克財'; favor='不利'; }
+  else if(KE_TABLE_WUXING[smWx]===dayWx){ relation='財克日'; favor='不利'; }
+  const isJi=relation==='比和'||relation==='日生財'||relation==='財生日';
+  const seasonWx=monthZhi?BRANCH_WUXING[monthZhi]:null;
+  const doorState=seasonWx?getNineStarState(DOOR_WUXING['生'], seasonWx):null;
+  const doorFavor=doorState?(TIANSHI_JI.has(doorState)?'得力':(TIANSHI_XIONG.has(doorState)?'無力':'中性')):null;
+  return {dayGong, shengmenGong, dayWx, smWx, relation, favor, isJi, doorState, doorFavor};
+}
+
 // ══ 庚 (六害之一, 獨立於擊刑檢測: 只要天盤出現庚即命中) ══
 // 來源: 荀爽視頻「六害: 刑墓庚虎迫空」明確列出庚為獨立一害, 與擊刑表中庚落艮宮的
 // "六儀擊刑"是兩件事 (庚本身即為害, 不論落在哪一宮)
@@ -1858,7 +1899,7 @@ if (typeof module !== 'undefined' && module.exports) {
     MAINSTREAM_GEJU, checkMainstreamGeju, SANZHA_DEFS, WUJIA_DEFS, checkSanzhaWujia,
     SIMPLE_LOCATE_DEFS, analyzeSimpleLocate,
     PEACH_TRINE, getPeachBranch, buildPeachBlossomLocates, yearToBranch, yearToStem,
-    getMuyuBranch, buildMuyuPeachLocates, checkDayStemMuyu, escHtml,
+    getMuyuBranch, buildMuyuPeachLocates, checkDayStemMuyu, escHtml, checkQiucaiYongshen,
     locateStem, locateDoor, locateStar, locateGod, locateSymbol,
     harmsAtGong, getCuresAtGong, parseGanzhi, GRID_ORDER, ZHI_TO_GONG,
     monthRelation, analyzeWealthSeven,

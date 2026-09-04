@@ -787,7 +787,9 @@ function renderShijuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSte
   // ② 針對這次「所求」的核心讀局：只跑所求對應的那一個面向，不像命局那樣四個面向全展開——
   // 事局問的是一件事，不是整個人生。needKey 落在哪個既有分析方法，決定這裡怎麼讀：
   // 財富七要/事業七要有專屬完整方法；求權威/表現/情感/突破/事業/桃花有簡明定位讀法；
-  // 其餘(如預設的「求財」)目前沒有對應的深度方法，老實講清楚，不硬湊一個。
+  // 「求財」(預設所求)原本沒有對應的深度方法，2026-09 補上求財用神(checkQiucaiYongshen，
+  // 日干／生門落宮生克+生門旺相休囚，見 qimen-rules.js 該函式上方查證註解)；其餘所求若真的
+  // 沒有對應方法，仍老實講清楚，不硬湊一個。
   let focusP;
   if(needKey==='財富七要'){
     focusP=domainParagraph('財運', analyzeWealthSeven(pan, {industry, targetWuxing: targetWuxing||null}).items);
@@ -796,6 +798,17 @@ function renderShijuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSte
   }else if(SIMPLE_LOCATE_DEFS[needKey]){
     const locate=analyzeSimpleLocate(pan, needKey, zfzs);
     focusP=domainParagraph(T2(needKey).replace(/^求/,''), locate.items);
+  }else if(needKey==='求財'){
+    const gzQc=parseGanzhi(pan.干支);
+    const qc=gzQc?checkQiucaiYongshen(sky, door, dayStem, gzQc.月支):null;
+    if(qc){
+      let text=`財運方面，日干「${T2(dayStem)}」落${T2(qc.dayGong)}宮、生門(財)落${T2(qc.shengmenGong)}宮，兩宮五行是「${T2(qc.relation)}」，方向上${qc.favor==='有利'?'偏有利':(qc.favor==='不利'?'偏不利':'勢均力敵，不分高下')}。`;
+      if(qc.doorFavor)text+=`另外生門這次的旺衰是「${T2(qc.doorState)}」，${qc.doorFavor==='得力'?'現在比較有力':(qc.doorFavor==='無力'?'現在比較沒勁':'不特別旺也不特別弱')}。`;
+      const notFavorable=!qc.isJi||qc.doorFavor==='無力';
+      focusP={text, bad:notFavorable?[qc]:[], total:1, tier:'combo'};
+    }else{
+      focusP={text:'財運方面，這次日干或生門落在中宮，中五寄宮規則各派不同、本專案尚未確認，暫時無法判斷；如果想看更完整的財運面向，可以切到上面「所求」選單選「財富七要」重新起局。', bad:[], total:0, tier:'weak'};
+    }
   }else{
     focusP={text:`「所求」目前是「${T2(needKey)}」，這個選項沒有專屬的深度讀局方法(想看具體的財運判斷可以切到上面「所求」選單選「財富七要」重新起局)，下面直接看六害命中跟怎麼破。`, bad:[], total:0, tier:'weak'};
   }
@@ -1262,6 +1275,24 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
       ${(!isJi&&!yiKong&&!gengKong&&!hasFuyinFanyin)?`<div class="ana-step" style="opacity:.6">單就乙庚落宮生克來看偏不利，但沒有旬空或伏吟反吟加重，程度上不算太嚴重</div>`:''}
       ${yiWords.length?`<div class="ana-step" style="opacity:.75">女方(乙落${T2(yiGong)}宮)額外命中${yiWords.join('、')}，屬於這一方單獨的加分參考，不併入上面的整體判斷</div>`:''}
       ${gengWords.length?`<div class="ana-step" style="opacity:.75">男方(庚落${T2(gengGong)}宮)額外命中${gengWords.join('、')}，屬於這一方單獨的加分參考，不併入上面的整體判斷</div>`:''}
+    </div>`;
+  })()}
+  ${(function(){
+    // 求財用神(2026-09 新增，見 checkQiucaiYongshen 上方查證註解)：跟婚姻用神同一種卡片，
+    // 不看這次 needKey 選的是什麼——日干/生門的落宮位置是這張盤固有的結構，跟命局的
+    // 婚姻用神(乙/庚落宮)一樣不受所求影響，所以一律計算、一律顯示，供參考。
+    const gzQc=parseGanzhi(pan.干支);
+    if(!gzQc)return '';
+    const qc=checkQiucaiYongshen(sky, door, dayStem, gzQc.月支);
+    if(!qc)return '';
+    const goodOverall=qc.isJi&&qc.doorFavor!=='無力';
+    return `<div class="geju-card">
+      <div class="geju-title">主流斷局法：求財用神（日干／生門落宮生克）</div>
+      <div style="font-size:11px;opacity:.6;margin-bottom:6px">日干代表占問者本人，生門代表財利/利潤(跟婚姻用神同一套方法論：比較兩符號「各自落宮」的五行生克，不是天干/門本身的固有五行)：相生/比和方向較有利，相克方向較不利。另外查生門固有五行相對這次月令的旺相休囚(跟天時同一套月令基準)，得力/無力是次要修正，不併入上面的主判斷。值符/值使/六合/月干等次要角色在查證時發現不同來源說法互相矛盾(值符代表買主還是貨主，說法相反)，暫不收錄，只取兩篇來源都同意的「日干/生門」這組核心關係，跟「甲子戊(戊)代表資本」已經在財富七要的「本錢」一項實作，這裡不重複。</div>
+      <div class="ana-step" style="font-weight:700;${goodOverall?'color:var(--grn)':(qc.isJi?'':'color:var(--red)')};margin-top:4px">
+        ${T2(qc.dayGong)}宮日干(${T2(qc.dayWx)})／${T2(qc.shengmenGong)}宮生門(${T2(qc.smWx)})——${T2(qc.relation)}，${T2(qc.favor)}
+      </div>
+      ${qc.doorFavor?`<div class="ana-step" style="opacity:.75">生門這次的旺衰是「${T2(qc.doorState)}」——${qc.doorFavor==='得力'?'現在比較有力，加分參考':(qc.doorFavor==='無力'?'現在比較沒勁，扣分參考':'不特別旺也不特別弱')}，不併入上面的主判斷</div>`:''}
     </div>`;
   })()}
   ${(function(){
