@@ -1066,3 +1066,10 @@ Playwright 用 1986-03-14 09:06(命局)、1986-03-14 09:06(事局，同一時刻
 `.master-mode-pro` 內容裡確認找不到「解讀一」文字，專業版切過去後確認「解讀一」正常顯示，
 0 console error。`npm test` 224 條全部通過(這是純渲染結構調整，沒有新增/修改任何判斷規則，
 不需要新增測試)。
+
+**後續補漏**：用戶又發現同一問題還有第二處——「財富七要／事業七要」報告(`renderWealthCareerReport`)
+跟「求桃花／求突破變革」等簡明定位讀法報告(`renderSimpleLocateReport`)，也是寫在
+`.master-mode-pro` 的 `<div>` 外面，同樣不管切到哪個模式都會顯示。用同一個做法修正：把這段
+報告也搬進 `.master-mode-pro` 的 `<div>` 裡面(緊接在解讀一／解讀二後面)。Playwright 分別用
+「財富七要」「求突破變革」兩種 needKey 驗證：白話版底下確認找不到對應報告內容，專業版切
+過去後確認正常顯示，0 console error，`npm test` 224 條全部通過。
