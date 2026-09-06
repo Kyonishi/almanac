@@ -12,11 +12,8 @@
   --ink:#1A1A2E;--red:#8B1A1A;--gold:#9A7B2A;--lgold:#FDF6E3;
   --grn:#2E5E2E;--lgrn:#EEF5EE;
   --bg:#F5F0E8;--card:#FFFDF7;--brd:#E2D9C8;--sub:#7A6A50;
-  --content-w:500px; /* 手機寬度，下面桌面斷點會加寬；.cross-nav/.sheet 都吃這個變數，改這裡就同步 */
+  --content-w:500px;
 }
-/* 桌面/平板寬螢幕開啟時，原本卡片固定卡在畫面正中央 500px 窄欄裡，左右留白過多、看起來
-   像沒縮放好的手機版(用戶截圖回饋，2026-08-30)。這裡只加寬欄位本身，不改多欄式排版——
-   內部字級/間距都是照手機閱讀距離調的，欄位太寬反而會讓每行字太長不好讀，抓一個折衷值。 */
 @media (min-width:768px){ :root{ --content-w:720px; } }
 html,body{min-height:100%;background:var(--bg);
   font-family:-apple-system,'PingFang TC','Noto Sans TC',serif}
@@ -74,32 +71,14 @@ header{
 .h-btn:hover{background:rgba(212,175,55,.15)}
 .h-btn-danger{border-color:#B03030;color:#B03030}
 .h-list{max-height:320px;overflow-y:auto}
-/* 原本用 display:flex 讓「本行資訊」跟「事後回看」兩個區塊並排半版寬，這次新增「起局時
-   判斷」快照變成第三個要並排的區塊，繼續用 flex 平分寬度會把每個都擠得太窄；改成直向堆疊，
-   review 欄位反而拿到更寬的可輸入空間，不是退步(2026-08-29 新增預註冊式驗證日誌時一併修正) */
 .h-row{display:block;padding:8px 0;border-bottom:1px solid #EEE0BB}
 .h-row:last-child{border-bottom:none}
 .h-row-main{flex:1;cursor:pointer}
 .h-row-main:hover{opacity:.7}
 .h-row-date{font-weight:700}
 .h-row-info{opacity:.8;font-size:11.5px}
-.h-row-hits{font-size:11px;color:var(--red);margin-top:2px}
 .h-row-del{background:none;border:none;color:#B03030;cursor:pointer;font-size:14px;padding:4px}
 .h-row-top{display:flex;align-items:flex-start;gap:6px}
-.h-badge{font-size:10px;padding:1px 6px;border-radius:8px;margin-left:6px;font-weight:700}
-.h-badge-done{background:#E3F2E3;color:#2E7D32}
-.h-badge-todo{background:#F0F0F0;color:#999}
-/* 預註冊式驗證日誌：起局當下鎖定的判斷快照，唯讀、跟下面可編輯的「事後回看」視覺上明確分開 */
-.h-pred{margin-top:6px;background:#FFFBF0;border:1px solid #EEDCA8;border-radius:6px;padding:6px 8px}
-.h-pred>summary{cursor:pointer;font-size:11px;color:#8A6D1A;font-weight:700}
-.h-pred-gong{font-weight:700;margin-top:6px;font-size:11.5px;color:#8A6D1A}
-.h-pred-line{font-size:11.5px;opacity:.85;margin-top:2px;padding-left:8px}
-.h-badge-hit{background:var(--red);color:#fff}
-.h-badge-bg{background:#EFEFEF;color:#999}
-.h-review{margin-top:6px}
-.h-review-input{width:100%;min-height:44px;box-sizing:border-box;border:1px solid #DDD;border-radius:6px;
-  padding:6px 8px;font-size:12px;font-family:inherit;resize:vertical;margin-bottom:4px}
-.h-review-input:focus{outline:none;border-color:var(--gold)}
 
 /* RESULT */
 .result{margin:10px 8px}
@@ -144,50 +123,33 @@ header{
 .cell.center-cell{background:#FDFAF2}
 .cell.is-zf{background:#EEF7EE}  /* 值符所在宮 */
 .cell.is-zs{background:#FEF3F3}  /* 值使所在宮 */
-/* 宮名：荀爽老師排盤裡宮名是小字放在格子角落，不是標題，用絕對定位釘在右下角，
-   這樣主要內容(干/門/神/星)可以在格子正中間垂直置中，不受宮名影響。
-   顏色規則：有空亡才變藍色(跟 lh-kong 同色)，沒有就是預設(白/淡)色 —— 嚴格對齊六害配色表，不摻雜取象顏色 */
 .cell-gua{
   position:absolute;right:6px;bottom:4px;
   font-size:9px;color:var(--ink);opacity:.55;font-weight:600;letter-spacing:.5px;
 }
 .cell-gua.kongwang{color:#2E6FD9;opacity:1;font-weight:700}
-/* 方位：對照荀爽老師視頻九宮外圍的「東南/南/西南...」標法，釘在格子左上角(跟宮名右下角相對) */
 .cell-dir{
   position:absolute;left:6px;top:4px;
   font-size:9px;color:var(--ink);opacity:.4;font-weight:600;letter-spacing:1px;
 }
-/* 第一行：天干(左) + 神(右)，同一行並排 —— 對齊荀爽老師「干←乙 符」的排法 */
 .c-line{display:flex;align-items:baseline;justify-content:center;gap:6px;min-height:22px}
-/* 天干 (天盤)：預設白色/淡色，只有命中六害才變色——嚴格對齊荀爽老師配色表:
-   擊刑=紅 / 入墓=藍 / 庚=金黃 / 其餘一律預設色，不再套用材質取象顏色 */
 .c-sky{
   font-size:22px;font-weight:900;color:var(--ink);line-height:1;
 }
 .c-sky.dim{color:var(--ink);opacity:.4;font-weight:400;font-size:16px}
-.c-sky.jixing{color:#C0392B}
-.c-sky.rumu{color:#4FC3F7}
-.c-sky.geng-stem{color:#D4AF37}
-/* 地干 (地盤) */
 .c-earth{
   font-size:14px;font-weight:700;color:var(--ink);opacity:.75;line-height:1;
 }
-/* 神值：緊跟在天干右邊，同行顯示。預設白色/淡色，只有白虎才變金黃。
-   顯示完整名字(如玄武/九天)，字數變多了，字距收緊一點比較整齊 */
 .c-god-val,.c-star-val{
   font-size:12px;font-weight:700;color:var(--ink);opacity:.85;letter-spacing:.5px;
   display:inline-flex;align-items:center;gap:3px;line-height:1.3;
 }
-.c-god-val.baihu{color:#D4AF37;opacity:1;font-weight:800}
-/* 第二行：門，獨立居中一行 —— 對齊荀爽老師把門放在天干/地干中間單獨一行的排法。
-   預設白色/淡色，只有門迫才變綠。顯示「X門」完整名字 */
 .c-door-line{display:flex;justify-content:center;margin:3px 0}
 .c-door-val{
   font-size:14px;font-weight:800;color:var(--ink);letter-spacing:.5px;
   display:inline-flex;align-items:center;gap:3px;line-height:1;
 }
-.c-door-val.menpo{color:#4A9B4A}
-/* 空亡標記 (跟 cell-gua.kongwang 同色系, 都是藍) */
+/* 空亡標記 (跟 cell-gua.kongwang 同色系, 都是藍) — 排盤事實(哪個宮空亡)，不是吉凶判斷 */
 .c-kong{
   position:absolute;top:4px;right:4px;
   font-size:8px;color:#2E6FD9;background:#EAF1FC;
@@ -201,144 +163,7 @@ header{
 .c-special.zf-tag{background:var(--grn);color:#fff}
 .c-special.zs-tag{background:var(--red);color:#fff}
 
-/* 擊刑/入墓 顏色已經由 .c-sky.jixing / .c-sky.rumu 直接改字色表達，這裡只加小記號輔助辨識 */
-.c-sky.jixing::after{
-  content:'✕';font-size:9px;color:#C0392B;margin-left:2px;vertical-align:super
-}
-.c-sky.rumu::after{
-  content:'▽';font-size:8px;color:#4FC3F7;margin-left:2px;vertical-align:super
-}
-
-/* INFO CARD: 節氣/旬空/長生 */
-.info-card{background:var(--card);border-radius:12px;padding:14px 16px;
-  border:1px solid var(--brd);margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,.06)}
-.info-title{font-size:10px;color:var(--sub);letter-spacing:1.5px;margin-bottom:10px;font-weight:600}
-.info-row{display:flex;align-items:center;margin-bottom:6px}
-.info-row:last-child{margin-bottom:0}
-.info-k{font-size:11px;color:var(--sub);width:52px;flex-shrink:0}
-.info-v{font-size:12px;color:var(--ink);font-weight:600}
-.info-v .pill{
-  display:inline-block;padding:1px 7px;border-radius:8px;font-size:11px;margin-right:4px
-}
-.pill{display:inline-block;padding:1px 7px;border-radius:8px;font-size:11px;margin-right:4px}
-.pill-ji{background:#E8F5E9;color:var(--grn)}
-.pill-xiong{background:#FEF0F0;color:var(--red)}
-.pill-neutral{background:#F5F5F0;color:var(--sub)}
-
-/* 本局解讀（白話摘要卡，在六害明細卡之上） */
-.analysis-card{background:#F7F9FC;border:1px solid #D8E0EC;border-radius:10px;
-  padding:12px 14px;margin-bottom:10px;font-size:12.5px;color:#233;line-height:1.75}
-.ana-block{margin-bottom:10px}
-.ana-block:last-child{margin-bottom:0}
-.ana-h{font-weight:700;color:#1A3A6B;margin-bottom:3px;font-size:11px;letter-spacing:1px}
-.ana-item{margin-bottom:8px;padding-left:2px}
-.ana-step{padding-left:16px;opacity:.85;font-size:12px;margin-top:2px}
-
-/* 主流格局卡 (跨門派共識, 與六害說明卡是分開的兩套來源, 用另一個色系跟兩者都區分開) */
-.geju-card{background:#F5F3FA;border:1px solid #DCD3EE;border-radius:10px;
-  padding:12px 14px;margin-bottom:10px;font-size:12.5px;color:#332B4A;line-height:1.75}
-.geju-title{font-weight:700;color:#5B3FA0;margin-bottom:8px;font-size:11px;letter-spacing:1px}
-.geju-item{margin-bottom:8px}
-.geju-item:last-child{margin-bottom:0}
-.section-label{font-size:10px;color:var(--sub);letter-spacing:1.5px;margin:2px 2px 6px;font-weight:600}
-
-/* 可信度分級徽章：把 README「來源可信度」+「爭議程度」兩軸分級視覺化，掛在每個判斷來源
-   區塊的標題旁。刻意用兩個獨立徽章而非合併成一色，因為這兩件事本來就是不同維度，合併會
-   丟失資訊(查證得很仔細的東西不代表跨門派共識，反之亦然，這正是本專案分級的核心原則)。
-   配色呼應各自區塊既有的主題色：來源B(交叉核對)呼應解讀一的紫、來源A(逐字驗證)呼應師傅
-   總結/財富七要的金、爭議X(跨門派共識)用中性的綠、爭議Y(單一體系)呼應解讀二六害卡的紅。 */
-.tier-badge{display:inline-block;font-size:9.5px;padding:2px 7px;border-radius:9px;
-  margin-left:5px;font-weight:600;vertical-align:middle;white-space:nowrap;letter-spacing:.5px}
-.tier-source-a{background:#FDF6E3;color:#9A7B2A;border:1px solid #EEDCA8}
-.tier-source-b{background:#F5F3FA;color:#5B3FA0;border:1px solid #DCD3EE}
-.tier-consensus-x{background:#EEF5EE;color:#2E5E2E;border:1px solid #CFE5CF}
-.tier-consensus-y{background:#FEF9F9;color:#8B1A1A;border:1px solid #F5D5D5}
-
-/* 六害說明卡 */
-.liuhai-card{background:#FEF9F9;border:1px solid #F5D5D5;border-radius:10px;
-  padding:12px 14px;margin-bottom:10px;font-size:12px;color:#5C1010;line-height:1.7}
-.liuhai-sec{margin-bottom:8px}
-.liuhai-sec:last-child{margin-bottom:0}
-.liuhai-title{font-weight:700;margin-bottom:4px;letter-spacing:1px;display:flex;align-items:center;gap:5px}
-.liuhai-title .dot{width:6px;height:6px;border-radius:50%;display:inline-block}
-/* 六害配色 據荀爽視頻「六害」對照表逐字轉錄: 刑=紅 墓=淺藍 庚=金黃 迫=綠 虎=金黃 空=藍紫
-   (其餘說明文字不額外上色, 沿用預設文字色) */
-.lh-word{font-weight:700}
-.lh-xing{color:#C0392B} /* 刑：紅 */
-.lh-mu{color:#4FC3F7}   /* 墓：淺藍 */
-.lh-geng{color:#D4AF37} /* 庚：金黃 */
-.lh-po{color:#4A9B4A}   /* 迫：綠 */
-.lh-hu{color:#D4AF37}   /* 虎：金黃 */
-.lh-kong{color:#2E6FD9} /* 空：藍 */
-.liuhai-title.jx .dot{background:#C0392B}
-.liuhai-title.rm .dot{background:#4FC3F7}
-.liuhai-title.mp .dot{background:#D4AF37}
-.liuhai-title.po .dot{background:#4A9B4A}
-.liuhai-title.kw .dot{background:#2E6FD9}
-.cure-line{margin-top:3px;padding:6px 8px;background:#FFF3F3;border-radius:6px;font-size:12px;line-height:1.6}
-.hl-badge{font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px;font-weight:700}
-/* 「命中號令」比「背景」重要得多(直接壓在你自己身上)，視覺權重要拉開差距，
-   不能只靠顏色深淺讓人自己分辨(2026-08-29 用戶提出的檢視項目) */
-.hl-hit{background:var(--red);color:#fff;font-size:10.5px;padding:2px 8px;box-shadow:0 1px 3px rgba(198,58,58,.35)}
-.hl-bg{background:#EFEFEF;color:#999;font-weight:600;opacity:.8}
-
-/* 背景條目預設折疊：一個宮位常常大部分是「背景」、只有一兩個「命中號令」，
-   全部攤開反而讓真正要緊的訊號被淹沒，所以背景條目收進 <details> 預設收合，
-   命中號令跟師傅總結已挑出的熱點宮則永遠直接顯示，不受影響 */
-.bg-collapse{margin-top:2px}
-.bg-collapse>summary{cursor:pointer;font-size:11px;color:var(--sub);opacity:.75;padding-left:16px;list-style:none}
-.bg-collapse>summary::-webkit-details-marker{display:none}
-.bg-collapse>summary::before{content:'▸ ';display:inline-block}
-.bg-collapse[open]>summary::before{content:'▾ '}
-.bg-collapse[open]>summary{margin-bottom:4px}
-
-/* 師傅總結卡：擺在盤面正下方、解讀一之上，是給人看的第一站，金系跟其他卡都不同 */
-.master-card{background:#FFFBF0;border:1px solid #EEDCA8;border-radius:10px;
-  padding:14px;margin-bottom:14px;font-size:12.5px;color:#3A2E10;line-height:1.75}
-.master-title{font-weight:700;color:var(--gold);margin-bottom:8px;font-size:13px;letter-spacing:1px}
-.master-hotspot{margin-bottom:12px}
-.master-hotspot:last-child{margin-bottom:0}
-.master-hotspot-title{font-weight:700;color:#8A6D1A;margin-bottom:4px;font-size:12px}
-
-/* 師傅總結白話版/專業版切換(2026-08-30)：白話版是給不熟奇門術語的人看的入口，
-   專業版是原本的完整標籤+化解步驟版本，兩者資料來源完全一樣，純粹是排版/措辭不同 */
-.master-toggle{display:flex;gap:6px;margin-bottom:10px}
-.mt-btn{flex:1;background:#fff;border:1px solid var(--gold);color:#9A7B2A;
-  border-radius:8px;padding:6px 0;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
-.mt-btn.mt-active{background:var(--gold);color:#fff}
-/* 白話版排版：段落式、少徽章少邊框，讀起來像人在講話而不是查表 */
-.plain-p{margin-bottom:8px;line-height:1.9}
-.plain-p:last-child{margin-bottom:0}
-.plain-block{margin-bottom:16px;padding-bottom:14px;border-bottom:1px dashed #EEDCA8}
-.plain-block:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none}
-.plain-gong{font-weight:700;font-size:14px;color:#8A6D1A;margin-bottom:6px}
-.plain-tag{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 7px;
-  border-radius:8px;margin-right:6px;vertical-align:middle}
-/* 三層結構＋置信度標籤(2026-09-01 新增；2026-09-06 降視覺權重)：標示白話總結每一段話是
-   「查表就有的事實」、「把幾個已驗證符號的意思兜在一起講」、還是「跨好幾個面向比出來的
-   推論」，讓讀者自己判斷要多當真——標籤本身不是免責聲明，寫的時候還是要對內容負責，只是
-   老實講清楚這句話是怎麼來的。原本用固定顯示的彩色文字徽章，常駐佔位、視覺權重跟段落
-   內容本身差不多重(用戶朋友(ChatGPT)反饋點出)；改成預設只顯示一個小圓點(顏色沿用既有
-   分級配色)，滑鼠移上去有原生 tooltip 顯示完整說明，點一下/點按會展開成文字標籤(手機
-   沒有 hover，點擊才是主要互動方式)，不特別關心來源分級的人完全不受干擾。 */
-.conf-tag{display:inline-block;cursor:pointer;vertical-align:middle;margin-right:6px;line-height:1}
-.conf-dot{display:inline-block;width:7px;height:7px;border-radius:50%;vertical-align:middle}
-.conf-label{display:none;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:8px;
-  margin-left:4px;vertical-align:middle}
-.conf-tag.conf-open .conf-dot{display:none}
-.conf-tag.conf-open .conf-label{display:inline-block}
-.conf-tag-rule .conf-dot{background:#2E6B2E}
-.conf-tag-rule .conf-label{background:#EEF7EE;color:#2E6B2E}
-.conf-tag-combo .conf-dot{background:#2A5C8A}
-.conf-tag-combo .conf-label{background:#EEF3FA;color:#2A5C8A}
-.conf-tag-infer .conf-dot{background:#8A5A1A}
-.conf-tag-infer .conf-label{background:#FBF3E3;color:#8A5A1A}
-.conf-tag-weak .conf-dot{background:#666}
-.conf-tag-weak .conf-label{background:#F2F2F2;color:#666}
-
-
-/* cross-nav：常駐按鈕(萬年曆)不透明度降低一點、佔用範圍縮小，減少對卡片內容的遮擋；
-   回頂部是額外的小圓鈕，只在往下滑一段距離後才出現，平常不佔位置 */
+/* cross-nav */
 .cross-nav{
   position:fixed;bottom:20px;
   right:max(16px, calc((100vw - var(--content-w)) / 2 + 16px));
@@ -362,30 +187,6 @@ header{
 .cross-nav a.top-btn.show{opacity:.85;pointer-events:auto;transform:translateY(0)}
 .cross-nav a.top-btn:hover{opacity:1}
 
-/* ── clickable terms ── */
-.term{cursor:pointer}
-.term:active{opacity:.6}
-.c-sky.term, .c-earth.term{border-bottom:1px dotted currentColor;padding-bottom:1px}
-
-/* ── bottom sheet ── */
-.sheet-mask{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:990;
-  opacity:0;pointer-events:none;transition:opacity .2s}
-.sheet-mask.show{opacity:1;pointer-events:auto}
-.sheet{position:fixed;left:0;right:0;bottom:0;max-width:var(--content-w);margin:0 auto;
-  background:var(--card);border-radius:18px 18px 0 0;z-index:991;
-  padding:8px 20px 28px;transform:translateY(100%);transition:transform .25s ease;
-  box-shadow:0 -6px 24px rgba(0,0,0,.18);max-height:75vh;overflow-y:auto}
-.sheet.show{transform:translateY(0)}
-.sheet-bar{width:36px;height:4px;background:var(--brd);border-radius:2px;margin:6px auto 14px}
-.sheet-term{font-size:20px;font-weight:800;color:var(--red);margin-bottom:4px}
-.sheet-sub{font-size:12px;color:var(--gold);font-weight:600;margin-bottom:10px;letter-spacing:1px}
-.sheet-meta{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
-.sheet-tag{font-size:11px;padding:2px 9px;border-radius:10px;font-weight:600}
-.sheet-tag.color{background:#F5F0E8;color:var(--ink)}
-.sheet-tag.luck-ji{background:#E8F5E9;color:var(--grn)}
-.sheet-tag.luck-xiong{background:#FEF0F0;color:var(--red)}
-.sheet-tag.luck-neu{background:#F0F0F0;color:var(--sub)}
-.sheet-desc{font-size:14px;color:var(--ink);line-height:1.85}
 footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spacing:.5px}
 
 /* empty state */
@@ -404,15 +205,6 @@ footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spa
 </header>
 
 <div class="input-panel">
-  <div class="input-row">
-    <div class="input-label">局類型</div>
-    <select class="inp" id="iJuType" onchange="updateNeedHint()">
-      <option value="事局">事局（問一件事/一件事的走向）</option>
-      <option value="命局">命局（用某個人的出生時刻，分析這個人）</option>
-    </select>
-  </div>
-  <div class="input-hint">先決定這次是要問一件具體的事(事局)，還是用某個人的出生時刻分析這個人
-    整體(命局)——後面「所求」「經度」該填什麼，都跟著這個選擇走。</div>
   <div class="input-row">
     <div class="input-label">日期</div>
     <input class="inp" type="date" id="iDate">
@@ -433,55 +225,7 @@ footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spa
     <input class="inp" type="number" id="iLongitude" step="0.01" placeholder="留空＝不校正" value="104.06">
   </div>
   <div class="input-hint">真太陽時校正用：東經為正(西經填負數，如紐約-74.01)，成都約104.06(預設)。
-    事局填「這件事發生地」的經度；命局填「出生地」的經度，因人而異記得改。留空則完全不校正，
-    跟原本行為一樣。</div>
-  <div class="input-row">
-    <div class="input-label">生年</div>
-    <input class="inp" type="text" id="iYears" placeholder="家中長住者生年,如 1990,1988,2015">
-  </div>
-  <div class="input-row">
-    <div class="input-label">所求</div>
-    <select class="inp" id="iNeed">
-      <option value="求財">求財</option>
-      <option value="財富七要">財富七要</option>
-      <option value="事業七要">事業七要</option>
-      <option value="求事業">求事業</option>
-      <option value="求權威地位">求權威地位</option>
-      <option value="求表現曝光">求表現曝光</option>
-      <option value="求情感情欲">求情感情欲</option>
-      <option value="求桃花">求桃花</option>
-      <option value="求突破變革">求突破變革</option>
-    </select>
-  </div>
-  <div class="input-hint" id="needHint"></div>
-  <div class="input-hint">財富七要／事業七要為完整報告；求事業為推導、未經視頻原文逐字驗證；
-    求桃花的定位讀法已查證(六合/休門)，但空亡化解方式暫沿用癸、未完全驗證。</div>
-  <div class="input-row">
-    <div class="input-label">大行業</div>
-    <select class="inp" id="iIndustryBig">
-      <option value="">（不選，僅財富/事業七要報告用到）</option>
-    </select>
-  </div>
-  <div class="input-row">
-    <div class="input-label">小行業</div>
-    <select class="inp" id="iIndustrySmall">
-      <option value="">（先選大行業）</option>
-    </select>
-  </div>
-  <div class="input-row">
-    <div class="input-label">月令比較</div>
-    <select class="inp" id="iMonthTarget">
-      <option value="">（不比較，僅顯示月令本身——僅財富七要報告用到）</option>
-      <option value="木">木（比如比六合/生年財屬木時）</option>
-      <option value="火">火</option>
-      <option value="土">土（比如比戊/本錢，戊屬土）</option>
-      <option value="金">金</option>
-      <option value="水">水</option>
-    </select>
-  </div>
-  <div class="input-hint">「月令五種關係」沒有固定比較對象，要按這次具體問的是什麼來定——比如比
-    「戊(本錢)」就選土，比某個特定人/宮位就選那個對象的五行。不知道要比什麼就留空，只看月令
-    本身的季節氣候背景。</div>
+    留空則完全不校正。</div>
   <button class="btn-ritual" onclick="toggleRitual()" type="button">☯ 起局須知 / 起局儀式</button>
   <div class="ritual-panel" id="ritualPanel" style="display:none"></div>
   <button class="btn-ritual" onclick="toggleHistory()" type="button">🕘 起局歷史記錄</button>
@@ -497,22 +241,10 @@ footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spa
   </div>
 </div>
 
-<div class="sheet-mask" id="smask" onclick="closeSheet()"></div>
-<div class="sheet" id="sheet">
-  <div class="sheet-bar"></div>
-  <div class="sheet-term" id="sterm"></div>
-  <div class="sheet-sub" id="ssub"></div>
-  <div class="sheet-meta" id="smeta"></div>
-  <div class="sheet-desc" id="sdesc"></div>
-  <div id="shits"></div>
-</div>
-
-
 <footer>時家奇門遁甲 · 拆補法 · lunar-javascript (6tail) · 無廣告</footer>
 
 <script src="qimen-engine.js"></script>
 <script src="qimen-lexicon.js"></script>
-<script src="qimen-rules.js"></script>
 <script src="qimen-ui.js"></script>
 
 <div class="cross-nav">
