@@ -608,7 +608,30 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
   const T2=x=>t2(x||'');
   const gz=parseGanzhi(pan.干支);
   const monthZhi=gz?gz.月支:null;
-  const dayGong=dayStem?locateStem(sky,dayStem)[0]:null;
+  // 2026-09-06 修正：原本直接用 locateStem(sky,dayStem) 定位日干，但拆補法裡「甲」永遠不上
+  // 天盤(寄於六儀)，日干是甲的命盤(實測約 7.7%)一律定位失敗，加上日干落中宮(約 9.8%)跟日干
+  // 沒出現在天盤外八宮(約 4%)，合計約 21.6% 的命盤會讓「本人特點/財運/事業」三段同時變成
+  // 一句免責聲明；而且三種原因原本被統一講成「落在中宮」，是錯誤歸因。改用 locateDayStemGong
+  // (甲按六儀遁甲改看旬首所遁的儀，見 qimen-rules.js 該函式上方的查證註解)，並在定位不到時
+  // 分開講清楚原因、同時降級輸出還算得出來的部分，不再整段空轉。
+  const xunDunGan=pan.旬首||null;
+  const dayLoc=locateDayStemGong(sky, dayStem, xunDunGan);
+  const dayGong=dayLoc?dayLoc.gong:null;
+  const dayVia=dayLoc?dayLoc.via:null;
+  const missReason=dayLoc?null:dayStemMissReason(sky, dayStem, xunDunGan);
+  // 三種定位失敗原因分開講，不再一律說成「落在中宮」
+  const missText=(()=>{
+    if(!missReason)return '';
+    if(missReason==='no-daystem')return '這局沒有日干資訊';
+    if(missReason==='jia-no-xun')return '日干是「甲」，甲不上天盤(這是拆補法本來的設計，要改看本旬所遁的儀)，但這局缺旬首資訊';
+    const who=dayStem==='甲'?`日干「甲」所寄的「${T2(xunDunGan)}」`:`日干「${T2(dayStem)}」`;
+    if(missReason==='center')return `${who}這次落在中宮，中五寄宮規則各派不同、本專案尚未確認`;
+    return `${who}這次沒有出現在天盤的八個外宮上`;
+  })();
+  // 甲透過六儀定位到時，要講清楚是「甲寄在這個儀上」，不能讓人以為天盤上真有一個甲字。
+  // 這句話在「本人特點」完整講一次就夠，財運/事業再重複整句會很囉唆，改用簡短版帶過。
+  const viaNote=dayVia?`（日干是「甲」，甲不上天盤，這裡按六儀遁甲看本旬所遁的「${T2(dayVia)}」落宮）`:'';
+  const viaShort=dayVia?`（甲寄「${T2(dayVia)}」）`:'';
 
   // 本人特點：日干落宮的後天八卦象義(GUA_XIANG，《說卦傳》跨門派共識) + 同宮門/星/神的
   // 已驗證 keyword(LEX_DATA) + 日干臨地盤干的固定組合(getRiganJialinMeaning，目前只有
@@ -620,7 +643,7 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
     const traitInfo=GUA_XIANG[dayGong];
     const traitMatch=traitInfo?traitInfo.trait.match(/^(.)（(.+)）$/):null;
     const traitWord=traitMatch?traitMatch[1]:'', traitDetail=traitMatch?traitMatch[2]:'';
-    selfText=`日干「${T2(dayStem)}」落${T2(dayGong)}宮——這一宮在後天八卦裡代表「${T2(traitWord)}」，也就是${T2(traitDetail)}這種底色，這類人給人的第一印象通常帶著這種味道。`;
+    selfText=`日干「${T2(dayStem)}」落${T2(dayGong)}宮${viaNote}——這一宮在後天八卦裡代表「${T2(traitWord)}」，也就是${T2(traitDetail)}這種底色，這類人給人的第一印象通常帶著這種味道。`;
     const dr=door[dayGong], st=star[dayGong], gd=god[dayGong];
     const drInfo=LEX_DATA.doors[dr], stInfo=LEX_DATA.stars[st], gdInfo=LEX_DATA.gods[gd];
     const symbolParts=[drInfo,stInfo,gdInfo].filter(Boolean);
@@ -636,23 +659,34 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
     const jialinMeaning=earthAtDayGong?getRiganJialinMeaning(earthAtDayGong):null;
     if(jialinMeaning)selfText+=`另外，「${T2(dayStem)}」這次臨地盤「${T2(earthAtDayGong)}」——傳統上這個組合常被認為${T2(jialinMeaning)}。`;
   }else{
-    selfText='這局缺少日干的落宮資訊，本人特點這塊暫時看不出來。';
+    // 降級：落宮那一層算不了，但「日干這個字本身的取象」(LEX_DATA.stems，跨資料源交叉核對過
+    // 的既有內容)一定拿得到，不該跟著一起放棄——原本這裡直接輸出一句免責聲明，等於整段空轉。
+    const dInfo=dayStem?LEX_DATA.stems[dayStem]:null;
+    selfText=dInfo
+      ?`${missText}，所以「落在哪一宮」這一層的判斷這次給不了；不過日干「${T2(dayStem)}」這個字本身的取象還是可以講：${T2(dInfo.desc)}`
+      :`${missText}，本人特點這塊這次看不出來。`;
   }
 
   // 財運：日干／生門落宮生克 + 生門旺相休囚(checkQiucaiYongshen，見 qimen-rules.js 該
   // 函式上方查證註解)。
-  const qc=checkQiucaiYongshen(sky, door, dayStem, monthZhi);
+  const qc=checkQiucaiYongshen(sky, door, dayStem, monthZhi, xunDunGan);
   let wealthText;
   if(qc){
-    wealthText=`財運方面，日干「${T2(dayStem)}」落${T2(qc.dayGong)}宮(${T2(qc.dayWx)})，生門(代表財)落${T2(qc.shengmenGong)}宮(${T2(qc.smWx)})——是「${T2(qc.relation)}」的組合，方向${qc.favor==='有利'?'偏有利，付出的心力容易換來回報':(qc.favor==='不利'?'偏不利，容易覺得使不上力':'勢均力敵，不特別偏向哪一邊')}。`;
+    wealthText=`財運方面，日干「${T2(dayStem)}」落${T2(qc.dayGong)}宮(${T2(qc.dayWx)})${qc.dayVia?viaShort:''}，生門(代表財)落${T2(qc.shengmenGong)}宮(${T2(qc.smWx)})——是「${T2(qc.relation)}」的組合，方向${qc.favor==='有利'?'偏有利，付出的心力容易換來回報':(qc.favor==='不利'?'偏不利，容易覺得使不上力':'勢均力敵，不特別偏向哪一邊')}。`;
     if(qc.doorFavor)wealthText+=`不過生門這次本身的旺衰是「${T2(qc.doorState)}」，${qc.doorFavor==='得力'?'力道偏強，算是加分':(qc.doorFavor==='無力'?'力道偏弱，這份判斷要打一點折扣':'不特別旺也不特別弱')}。`;
   }else{
-    wealthText='財運方面，這次日干或生門落在中宮，中五寄宮規則各派不同、本專案尚未確認，暫時無法判斷。';
+    // 降級：日干跟生門的宮位生克算不了，但「生門本身這個月旺不旺」是另一條獨立的資訊
+    // (getShengmenState 只看月令，不依賴任何落宮)，照樣講得出來，不用整段放棄。
+    const smGong=locateDoor(door,'生')[0]||null;
+    const why=!smGong?'生門這次落在中宮，中五寄宮規則各派不同、本專案尚未確認':missText;
+    const sm=getShengmenState(monthZhi);
+    wealthText=`財運方面，${why}，所以日干跟生門「誰生誰克」這一層這次算不了。`;
+    if(sm)wealthText+=`不過生門(代表財)本身這個月的旺衰是「${T2(sm.state)}」，${sm.favor==='得力'?'財這一側的力道偏強':(sm.favor==='無力'?'財這一側的力道偏弱':'不特別旺也不特別弱')}——這一項只看月令、不受落宮影響，仍然成立。`;
   }
 
   // 事業：日干／開門落宮生克 + 開門旺相休囚(checkShiyeYongshen)。跟財運不同，這裡的「克」
   // 有方向性含義(日克開門＝本人想離開；開門克日＝單位不想要)，來源本身就這樣區分，照實講。
-  const sy=checkShiyeYongshen(sky, door, dayStem, monthZhi);
+  const sy=checkShiyeYongshen(sky, door, dayStem, monthZhi, xunDunGan);
   let careerText;
   if(sy){
     let favorText;
@@ -660,10 +694,15 @@ function renderMingjuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSt
     else if(sy.favor==='本人想離開')favorText='這個組合傳統上偏向「自己想換位置」，比較容易對現在的單位/工作感到不耐煩';
     else if(sy.favor==='單位不想要')favorText='這個組合傳統上偏向「單位這一頭不太想要」，工作上比較容易遇到不被續用或不被重視的狀況';
     else favorText='勢均力敵，不特別偏向哪一邊';
-    careerText=`事業方面，日干「${T2(dayStem)}」落${T2(sy.dayGong)}宮(${T2(sy.dayWx)})，開門(代表單位)落${T2(sy.kaimenGong)}宮(${T2(sy.kmWx)})——是「${T2(sy.relation)}」的組合，${favorText}。`;
+    careerText=`事業方面，日干「${T2(dayStem)}」落${T2(sy.dayGong)}宮(${T2(sy.dayWx)})${sy.dayVia?viaShort:''}，開門(代表單位)落${T2(sy.kaimenGong)}宮(${T2(sy.kmWx)})——是「${T2(sy.relation)}」的組合，${favorText}。`;
     if(sy.doorFavor)careerText+=`開門本身這次的旺衰是「${T2(sy.doorState)}」，${sy.doorFavor==='得力'?'現在比較有力，算是加分':(sy.doorFavor==='無力'?'現在比較沒勁，這份判斷要打一點折扣':'不特別旺也不特別弱，算是平常狀態')}。`;
   }else{
-    careerText='事業方面，這次日干或開門落在中宮，中五寄宮規則各派不同、本專案尚未確認，暫時無法判斷。';
+    // 降級理由同財運：開門本身的旺衰只看月令，不依賴落宮，算得出來就照講。
+    const kmGong=locateDoor(door,'開')[0]||null;
+    const why=!kmGong?'開門這次落在中宮，中五寄宮規則各派不同、本專案尚未確認':missText;
+    const km=getKaimenState(monthZhi);
+    careerText=`事業方面，${why}，所以日干跟開門「誰生誰克」這一層這次算不了。`;
+    if(km)careerText+=`不過開門(代表單位/工作環境)本身這個月的旺衰是「${T2(km.state)}」，${km.favor==='得力'?'單位這一側現在比較有力':(km.favor==='無力'?'單位這一側現在比較沒勁':'不特別旺也不特別弱')}——這一項只看月令、不受落宮影響，仍然成立。`;
   }
 
   // 感情婚姻：乙／庚落宮生克(既有 checkYiGengMarriage)，跟改版前內容相同，只是拿掉了
@@ -766,7 +805,7 @@ function renderShijuStoryPlain(pan, sky, door, star, god, zfzs, dayStem, hourSte
     focusP=domainParagraph(T2(needKey).replace(/^求/,''), locate.items);
   }else if(needKey==='求財'){
     const gzQc=parseGanzhi(pan.干支);
-    const qc=gzQc?checkQiucaiYongshen(sky, door, dayStem, gzQc.月支):null;
+    const qc=gzQc?checkQiucaiYongshen(sky, door, dayStem, gzQc.月支, pan.旬首||null):null;
     if(qc){
       let text=`財運方面，日干「${T2(dayStem)}」落${T2(qc.dayGong)}宮、生門(財)落${T2(qc.shengmenGong)}宮，兩宮五行是「${T2(qc.relation)}」，方向上${qc.favor==='有利'?'偏有利':(qc.favor==='不利'?'偏不利':'勢均力敵，不分高下')}。`;
       if(qc.doorFavor)text+=`另外生門這次的旺衰是「${T2(qc.doorState)}」，${qc.doorFavor==='得力'?'現在比較有力':(qc.doorFavor==='無力'?'現在比較沒勁':'不特別旺也不特別弱')}。`;
@@ -1249,7 +1288,7 @@ function renderPan(pan,y,m,d,h,mi,needKey,yearsInput,juType,industry,targetWuxin
     // 婚姻用神(乙/庚落宮)一樣不受所求影響，所以一律計算、一律顯示，供參考。
     const gzQc=parseGanzhi(pan.干支);
     if(!gzQc)return '';
-    const qc=checkQiucaiYongshen(sky, door, dayStem, gzQc.月支);
+    const qc=checkQiucaiYongshen(sky, door, dayStem, gzQc.月支, pan.旬首||null);
     if(!qc)return '';
     const goodOverall=qc.isJi&&qc.doorFavor!=='無力';
     return `<div class="geju-card">

@@ -481,17 +481,59 @@ function check(label, actual, expected) {
   const emptyDoor2 = { 坎:'', 坤:'', 震:'', 巽:'', 乾:'', 兌:'', 艮:'', 離:'' };
   check('日克財(日干壬落巽木/生門落坤土，木克土)：不利',
     Rules.checkQiucaiYongshen({巽:'壬'}, {...emptyDoor2, 坤:'生'}, '壬', null),
-    {dayGong:'巽', shengmenGong:'坤', dayWx:'木', smWx:'土', relation:'日克財', favor:'不利', isJi:false, doorState:null, doorFavor:null});
+    {dayGong:'巽', shengmenGong:'坤', dayWx:'木', smWx:'土', relation:'日克財', favor:'不利', isJi:false, doorState:null, doorFavor:null, dayVia:null});
   check('日生財(日干乙落震木/生門落離火，木生火——日生財)：有利',
     Rules.checkQiucaiYongshen({震:'乙'}, {...emptyDoor2, 離:'生'}, '乙', null),
-    {dayGong:'震', shengmenGong:'離', dayWx:'木', smWx:'火', relation:'日生財', favor:'有利', isJi:true, doorState:null, doorFavor:null});
+    {dayGong:'震', shengmenGong:'離', dayWx:'木', smWx:'火', relation:'日生財', favor:'有利', isJi:true, doorState:null, doorFavor:null, dayVia:null});
   check('比和(日干丁落離火/生門落離火——同宮同五行)：勢均力敵',
     Rules.checkQiucaiYongshen({離:'丁'}, {離:'生'}, '丁', null),
-    {dayGong:'離', shengmenGong:'離', dayWx:'火', smWx:'火', relation:'比和', favor:'勢均力敵', isJi:true, doorState:null, doorFavor:null});
+    {dayGong:'離', shengmenGong:'離', dayWx:'火', smWx:'火', relation:'比和', favor:'勢均力敵', isJi:true, doorState:null, doorFavor:null, dayVia:null});
   check('日干或生門查無落宮(如都落中宮)：回傳 null',
     Rules.checkQiucaiYongshen({中:'甲'}, {}, '甲', null), null);
   check('沒有日干：回傳 null',
     Rules.checkQiucaiYongshen({巽:'壬'}, {坤:'生'}, null, null), null);
+
+  // ── 2026-09-06 修正：日干是甲時按六儀遁甲改看旬首所遁的儀 ──
+  // 拆補法「甲」永遠不上天盤，原本 locateStem(天盤,'甲') 必定失敗，日干屬甲的命盤(約7.7%)
+  // 求財/事業/本人特點三段全部空轉，而且錯誤歸因成「落中宮」。查證見 qimen-rules.js
+  // locateDayStemGong() 上方註解(兩個獨立來源交叉核對一致)。
+  check('日干甲+旬首戊：改看戊落宮(巽木)，跟生門(坤土)比 → 日克財不利',
+    Rules.checkQiucaiYongshen({巽:'戊'}, {...emptyDoor2, 坤:'生'}, '甲', null, '戊'),
+    {dayGong:'巽', shengmenGong:'坤', dayWx:'木', smWx:'土', relation:'日克財', favor:'不利',
+      isJi:false, doorState:null, doorFavor:null, dayVia:'戊'});
+  check('日干甲透過六儀定位時，dayVia 帶回是哪個儀(可溯源，不能讓人以為天盤上真有甲)',
+    Rules.checkQiucaiYongshen({震:'庚'}, {...emptyDoor2, 離:'生'}, '甲', null, '庚').dayVia, '庚');
+  check('日干甲但沒帶旬首：維持修正前的保守行為，回傳 null(不靜默改判)',
+    Rules.checkQiucaiYongshen({巽:'戊'}, {...emptyDoor2, 坤:'生'}, '甲', null), null);
+  check('日干甲、旬首所遁的儀落中宮：仍回傳 null(中五寄宮規則未確認，不猜)',
+    Rules.checkQiucaiYongshen({中:'戊', 坤:'乙'}, {...emptyDoor2, 坤:'生'}, '甲', null, '戊'), null);
+  check('非甲日干不受影響：仍直接查該干本身，dayVia 為 null',
+    Rules.checkQiucaiYongshen({巽:'壬'}, {...emptyDoor2, 坤:'生'}, '壬', null, '戊').dayVia, null);
+
+  // locateDayStemGong / dayStemMissReason：三種定位失敗原因要分得開，不能一律講成「落中宮」
+  {
+    const sky={坎:'戊', 坤:'乙', 震:'丙', 巽:'辛', 離:'庚', 兌:'丁', 艮:'壬', 乾:'癸', 中:'己'};
+    check('locateDayStemGong 日干甲+旬首戊 → 戊所在的坎宮，via=戊',
+      Rules.locateDayStemGong(sky, '甲', '戊'), {gong:'坎', via:'戊'});
+    check('locateDayStemGong 非甲日干直接定位，via=null',
+      Rules.locateDayStemGong(sky, '丙', null), {gong:'震', via:null});
+    check('locateDayStemGong 日干落中宮 → null', Rules.locateDayStemGong(sky, '己', null), null);
+    check('失敗原因：日干落中宮 → center', Rules.dayStemMissReason(sky, '己', null), 'center');
+    check('失敗原因：日干甲但缺旬首 → jia-no-xun', Rules.dayStemMissReason(sky, '甲', null), 'jia-no-xun');
+    check('失敗原因：甲所遁的儀落中宮 → center(不是 not-on-plate)',
+      Rules.dayStemMissReason(sky, '甲', '己'), 'center');
+    check('失敗原因：該干整個天盤都沒有 → not-on-plate',
+      Rules.dayStemMissReason({坎:'戊'}, '乙', null), 'not-on-plate');
+    check('其實定位得到時 → 回傳 null(沒有失敗原因)',
+      Rules.dayStemMissReason(sky, '丙', null), null);
+  }
+
+  // 生門/開門本身的旺衰只看月令、不依賴落宮——日干定位不到時的降級輸出靠這兩個
+  check('getShengmenState(生門土) 遇月支申(金)：土生金＝旺，得力',
+    Rules.getShengmenState('申'), {state:'旺', favor:'得力'});
+  check('getKaimenState(開門金) 遇月支申(金)：比和＝相，得力',
+    Rules.getKaimenState('申'), {state:'相', favor:'得力'});
+  check('沒有月支時回傳 null', Rules.getShengmenState(null), null);
 
   // 生門旺相休囚：沿用 getNineStarState()(天時同一套月令基準)，生門固有五行是土(DOOR_WUXING['生'])
   check('生門(土)遇月支寅(木)：土被木克＝囚，無力',
@@ -501,7 +543,7 @@ function check(label, actual, expected) {
   // 金月(申)才是旺；土在火月(巳)因為是「月(火)生我(土)」反而是死，不是旺。
   check('生門(土)遇月支申(金)：土生金＝旺，得力',
     Rules.checkQiucaiYongshen({巽:'壬'}, {...emptyDoor2, 坤:'生'}, '壬', '申'),
-    {dayGong:'巽', shengmenGong:'坤', dayWx:'木', smWx:'土', relation:'日克財', favor:'不利', isJi:false, doorState:'旺', doorFavor:'得力'});
+    {dayGong:'巽', shengmenGong:'坤', dayWx:'木', smWx:'土', relation:'日克財', favor:'不利', isJi:false, doorState:'旺', doorFavor:'得力', dayVia:null});
   check('生門(土)遇月支巳(火)：月(火)生我(土)＝死，無力(跟一般八字直覺相反，天時基準本來就反過來)',
     Rules.checkQiucaiYongshen({巽:'壬'}, {...emptyDoor2, 坤:'生'}, '壬', '巳').doorState, '死');
 
@@ -511,7 +553,7 @@ function check(label, actual, expected) {
   const gzR = Rules.parseGanzhi(panR.干支);
   check('案例(2024-02-28 18:39)：日干壬落巽/生門落坤，日克財不利，生門囚無力',
     Rules.checkQiucaiYongshen(panR.天盤, panR.門, gzR.日干, gzR.月支),
-    {dayGong:'巽', shengmenGong:'坤', dayWx:'木', smWx:'土', relation:'日克財', favor:'不利', isJi:false, doorState:'囚', doorFavor:'無力'});
+    {dayGong:'巽', shengmenGong:'坤', dayWx:'木', smWx:'土', relation:'日克財', favor:'不利', isJi:false, doorState:'囚', doorFavor:'無力', dayVia:null});
 }
 
 // ── 事業用神(日干/開門落宮生克 + 開門旺相休囚) (2026-09 新增) ──
@@ -523,13 +565,13 @@ function check(label, actual, expected) {
   const emptyDoor3 = { 坎:'', 坤:'', 震:'', 巽:'', 乾:'', 兌:'', 艮:'', 離:'' };
   check('日克開門(日干壬落巽木/開門落坤土，木克土)：本人想離開',
     Rules.checkShiyeYongshen({巽:'壬'}, {...emptyDoor3, 坤:'開'}, '壬', null),
-    {dayGong:'巽', kaimenGong:'坤', dayWx:'木', kmWx:'土', relation:'日克開門', favor:'本人想離開', isJi:false, doorState:null, doorFavor:null});
+    {dayGong:'巽', kaimenGong:'坤', dayWx:'木', kmWx:'土', relation:'日克開門', favor:'本人想離開', isJi:false, doorState:null, doorFavor:null, dayVia:null});
   check('開門克日(日干乙落坤土/開門落震木，木克土——開門克日)：單位不想要',
     Rules.checkShiyeYongshen({坤:'乙'}, {...emptyDoor3, 震:'開'}, '乙', null),
-    {dayGong:'坤', kaimenGong:'震', dayWx:'土', kmWx:'木', relation:'開門克日', favor:'單位不想要', isJi:false, doorState:null, doorFavor:null});
+    {dayGong:'坤', kaimenGong:'震', dayWx:'土', kmWx:'木', relation:'開門克日', favor:'單位不想要', isJi:false, doorState:null, doorFavor:null, dayVia:null});
   check('開門生日(開門火生日干土，比如日干丁落坤土/開門落離火)：有利',
     Rules.checkShiyeYongshen({坤:'丁'}, {...emptyDoor3, 離:'開'}, '丁', null),
-    {dayGong:'坤', kaimenGong:'離', dayWx:'土', kmWx:'火', relation:'開門生日', favor:'有利', isJi:true, doorState:null, doorFavor:null});
+    {dayGong:'坤', kaimenGong:'離', dayWx:'土', kmWx:'火', relation:'開門生日', favor:'有利', isJi:true, doorState:null, doorFavor:null, dayVia:null});
   check('日干或開門查無落宮：回傳 null',
     Rules.checkShiyeYongshen({中:'甲'}, {}, '甲', null), null);
 
@@ -539,7 +581,7 @@ function check(label, actual, expected) {
   const gzR2 = Rules.parseGanzhi(panR2.干支);
   check('案例(1986-03-14 09:06)：日干丁落坤/開門落離，開門生日有利，開門休中性',
     Rules.checkShiyeYongshen(panR2.天盤, panR2.門, gzR2.日干, gzR2.月支),
-    {dayGong:'坤', kaimenGong:'離', dayWx:'土', kmWx:'火', relation:'開門生日', favor:'有利', isJi:true, doorState:'休', doorFavor:'中性'});
+    {dayGong:'坤', kaimenGong:'離', dayWx:'土', kmWx:'火', relation:'開門生日', favor:'有利', isJi:true, doorState:'休', doorFavor:'中性', dayVia:null});
 }
 
 // ── 命局：日干臨地盤干組合(日干加臨) (2026-09 新增) ──

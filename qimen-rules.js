@@ -376,9 +376,49 @@ function checkRenhe(doorMap){
 //      月令基準，不重新定義一套新的旺衰邏輯。
 //   3. 日干或生門落中宮：中五寄宮規則各派不同、本專案尚未確認，回傳 null，不猜測(跟婚姻
 //      用神乙庚落中宮時的處理一致)。
-function checkQiucaiYongshen(sky, door, dayStem, monthZhi){
+
+// ══════════════════ 日干落宮定位(甲不上盤時按六儀遁甲改看旬首所遁的儀) ══════════════════
+// 2026-09-06 修正：命局白話版的「本人特點/財運/事業」三段都靠 locateStem(天盤,日干) 定位，
+// 但拆補法裡「甲」永遠不上天盤(寄於六儀，這是排盤引擎本來就有的設計，見 qimen-engine.js
+// 裡 fuLocation 的註解「若時干恰為甲(旬首本字)，地盤從不直接顯示甲」)，所以日干是甲的命盤
+// 一律定位失敗，實測約佔 7.7%；更糟的是原本的文案把它歸因成「落在中宮、中五寄宮規則尚未
+// 確認」——那是另一回事，等於用一個錯誤的理由告訴使用者算不出來。
+// 查證(2026-09-06，兩個獨立來源交叉核對一致)：
+//   來源一：「甲」沒有固定位置，必須以六儀代之——甲子用戊、甲戌用己、甲申用庚、甲午用辛、
+//     甲辰用壬、甲寅用癸；要找甲就看對應六儀所在的宮。
+//   來源二：日干落在這六組裡的哪一組，就用對應的那個儀(戊己庚辛壬癸)當用神。
+// 本專案引擎既有的 XUN_TO_DUNGAN 表(qimen-engine.js)跟上述對應關係完全一致，pan.旬首 存的
+// 就是「日柱所屬旬的遁干」，這裡直接沿用既有欄位，不另外造表、不重新定義一套旬首算法。
+// 回傳 {gong, via}：via 非 null 代表這一宮是透過六儀(旬首遁干)定位到的，呈現時必須講清楚是
+// 「甲寄在這個儀上」，不能讓使用者以為天盤上真的有一個「甲」字(可溯源原則)。
+// 沒帶 xunDunGan 時，日干為甲一樣回傳 null，維持跟修正前一致的保守行為，不會靜默改判。
+function locateDayStemGong(sky, dayStem, xunDunGan){
   if(!dayStem)return null;
-  const dayGong=locateStem(sky, dayStem)[0]||null;
+  if(dayStem==='甲'){
+    if(!xunDunGan)return null;
+    const g=locateStem(sky, xunDunGan)[0]||null;
+    return g?{gong:g, via:xunDunGan}:null;
+  }
+  const g=locateStem(sky, dayStem)[0]||null;
+  return g?{gong:g, via:null}:null;
+}
+
+// 日干落宮定位失敗時，回報「為什麼」——原本三種完全不同的原因(甲不上盤／落中宮／該干不在
+// 天盤外八宮)被統一講成「落在中宮」，是錯誤歸因。這裡只負責判斷原因，文案由 UI 層組。
+// 回傳 'jia-no-xun' | 'center' | 'not-on-plate' | null(其實定位得到)
+function dayStemMissReason(sky, dayStem, xunDunGan){
+  if(!dayStem)return 'no-daystem';
+  const target=dayStem==='甲'?xunDunGan:dayStem;
+  if(dayStem==='甲'&&!xunDunGan)return 'jia-no-xun';
+  if(locateStem(sky, target).length)return null;
+  if(sky&&sky['中']===target)return 'center';
+  return 'not-on-plate';
+}
+
+function checkQiucaiYongshen(sky, door, dayStem, monthZhi, xunDunGan){
+  if(!dayStem)return null;
+  const dayLoc=locateDayStemGong(sky, dayStem, xunDunGan);
+  const dayGong=dayLoc?dayLoc.gong:null;
   const shengmenGong=locateDoor(door, '生')[0]||null;
   if(!dayGong||!shengmenGong)return null;
   const dayWx=GONG_WUXING[dayGong], smWx=GONG_WUXING[shengmenGong];
@@ -392,7 +432,25 @@ function checkQiucaiYongshen(sky, door, dayStem, monthZhi){
   const seasonWx=monthZhi?BRANCH_WUXING[monthZhi]:null;
   const doorState=seasonWx?getNineStarState(DOOR_WUXING['生'], seasonWx):null;
   const doorFavor=doorState?(TIANSHI_JI.has(doorState)?'得力':(TIANSHI_XIONG.has(doorState)?'無力':'中性')):null;
-  return {dayGong, shengmenGong, dayWx, smWx, relation, favor, isJi, doorState, doorFavor};
+  // dayVia：日干是甲、透過六儀(旬首遁干)定位到這一宮時，帶回是哪個儀，呈現時要講清楚。
+  return {dayGong, shengmenGong, dayWx, smWx, relation, favor, isJi, doorState, doorFavor,
+    dayVia:dayLoc?dayLoc.via:null};
+}
+
+// 生門本身的旺相休囚：日干定位不到(甲無旬首/落中宮/不在盤上)時，求財這一段仍然可以講「財這
+// 一側現在有沒有力」——原本因為提前 return null，這個已經算得出來的資訊被一起丟掉，整段變成
+// 一句免責聲明。這裡把它抽成獨立函式，讓 UI 層在降級時還有東西可講。
+function getShengmenState(monthZhi){
+  const seasonWx=monthZhi?BRANCH_WUXING[monthZhi]:null;
+  if(!seasonWx)return null;
+  const state=getNineStarState(DOOR_WUXING['生'], seasonWx);
+  return {state, favor:TIANSHI_JI.has(state)?'得力':(TIANSHI_XIONG.has(state)?'無力':'中性')};
+}
+function getKaimenState(monthZhi){
+  const seasonWx=monthZhi?BRANCH_WUXING[monthZhi]:null;
+  if(!seasonWx)return null;
+  const state=getNineStarState(DOOR_WUXING['開'], seasonWx);
+  return {state, favor:TIANSHI_JI.has(state)?'得力':(TIANSHI_XIONG.has(state)?'無力':'中性')};
 }
 
 // ══════════════════ 主流斷局法：事業用神(日干／開門宮位生克 + 開門旺相休囚) ══════════════════
@@ -403,9 +461,10 @@ function checkQiucaiYongshen(sky, door, dayStem, monthZhi){
 // 明確給了「克」的方向性含義，所以保留方向區分，不像求財那樣籠統合併成「不利」。開門的固有
 // 五行(DOOR_WUXING)相對月令的旺相休囚，沿用跟求財用神完全相同的 getNineStarState() 機制。
 // 日干或開門落中宮：中五寄宮規則未確認，回傳 null，跟求財用神/婚姻用神的處理一致。
-function checkShiyeYongshen(sky, door, dayStem, monthZhi){
+function checkShiyeYongshen(sky, door, dayStem, monthZhi, xunDunGan){
   if(!dayStem)return null;
-  const dayGong=locateStem(sky, dayStem)[0]||null;
+  const dayLoc=locateDayStemGong(sky, dayStem, xunDunGan);
+  const dayGong=dayLoc?dayLoc.gong:null;
   const kaimenGong=locateDoor(door, '開')[0]||null;
   if(!dayGong||!kaimenGong)return null;
   const dayWx=GONG_WUXING[dayGong], kmWx=GONG_WUXING[kaimenGong];
@@ -419,7 +478,8 @@ function checkShiyeYongshen(sky, door, dayStem, monthZhi){
   const seasonWx=monthZhi?BRANCH_WUXING[monthZhi]:null;
   const doorState=seasonWx?getNineStarState(DOOR_WUXING['開'], seasonWx):null;
   const doorFavor=doorState?(TIANSHI_JI.has(doorState)?'得力':(TIANSHI_XIONG.has(doorState)?'無力':'中性')):null;
-  return {dayGong, kaimenGong, dayWx, kmWx, relation, favor, isJi, doorState, doorFavor};
+  return {dayGong, kaimenGong, dayWx, kmWx, relation, favor, isJi, doorState, doorFavor,
+    dayVia:dayLoc?dayLoc.via:null};
 }
 
 // ══════════════════ 命局：日干臨地盤干組合(日干加臨) ══════════════════
@@ -1946,6 +2006,7 @@ if (typeof module !== 'undefined' && module.exports) {
     PEACH_TRINE, getPeachBranch, buildPeachBlossomLocates, yearToBranch, yearToStem,
     getMuyuBranch, buildMuyuPeachLocates, checkDayStemMuyu, escHtml, checkQiucaiYongshen,
     checkShiyeYongshen, getRiganJialinMeaning, RIGAN_JIALIN_MEANING,
+    locateDayStemGong, dayStemMissReason, getShengmenState, getKaimenState,
     locateStem, locateDoor, locateStar, locateGod, locateSymbol,
     harmsAtGong, getCuresAtGong, parseGanzhi, GRID_ORDER, ZHI_TO_GONG,
     monthRelation, analyzeWealthSeven,
