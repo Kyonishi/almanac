@@ -32,7 +32,7 @@
     --shadow-1:rgba(0,0,0,.4);--shadow-2:rgba(0,0,0,.5);--shadow-3:rgba(0,0,0,.6);
   }
   .bc,.bj,.bf,.bx,.tag,.jsc,.gc,.exp.good,.exp.bad,.exp.neu,.shbox,.caltext,.sc,
-  .dh,.deity-sec,.tablet,.lp{ filter:brightness(.38) saturate(1.4); }
+  .dh,.deity-sec,.tablet,.lp,.qbtn,.fd-row{ filter:brightness(.38) saturate(1.4); }
   .nb:hover{background:#3A2C2C}
   .d:not(.oth):hover{background:#332828}
 }
@@ -54,6 +54,15 @@ header{background:linear-gradient(160deg,var(--red) 0%,var(--dred) 100%);color:#
 .mc{display:flex;align-items:center;gap:10px}
 #ml{font-size:16px;font-weight:600;color:var(--txt)}
 .tb{background:var(--red);color:#fff;border:none;border-radius:12px;padding:3px 11px;font-size:11px;cursor:pointer}
+
+.qbar{display:flex;gap:8px;padding:10px 14px;background:var(--card);border-bottom:1px solid var(--brd)}
+.qbtn{flex:1;background:#F0F7F0;color:var(--grn);border:1px solid #C8E6C9;border-radius:10px;
+  padding:9px 6px;font-size:12.5px;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:5px}
+.qbtn:active{opacity:.8}
+.fd-row{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;
+  background:#F7FAF7;border-radius:8px;cursor:pointer}
+.fd-row:hover{background:#EFF7EF}
 
 .cal{background:var(--card);padding-bottom:10px;border-bottom:1px solid var(--brd)}
 .wh{display:grid;grid-template-columns:repeat(7,1fr);padding:8px 6px 4px;text-align:center}
@@ -205,6 +214,11 @@ footer{text-align:center;font-size:10px;color:var(--txt3);padding:12px 16px 20px
   <button class="nb" onclick="cm(1)">›</button>
 </div>
 
+<div class="qbar">
+  <button class="qbtn" onclick="openFindDay()">🔍 找吉日</button>
+  <button class="qbtn" onclick="openBirthday()">🎂 農曆生日查詢</button>
+</div>
+
 <div class="cal">
   <div class="wh"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
   <div class="dg" id="dg"></div>
@@ -235,6 +249,11 @@ const s=(f,d='')=>{try{const r=f();return r==null?d:r}catch{return d}};
    string-literal delimiter and the surrounding HTML attribute delimiter */
 function jsAttr(s){
   return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+}
+/* escape free-text user input before dropping it into innerHTML (unlike jsAttr's targets,
+   which are all trusted library/data-table strings, this one guards actual user typing) */
+function escHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 let curSheetTimer=null;
@@ -285,6 +304,122 @@ window.doJump = function(){
   if(!y||y<1900||y>2100||!m) return;
   CY=y;CM=m;rc();closeSheet();
 };
+
+/* 跳到查詢命中的某一天：同時切換月曆顯示的月份跟選取的日期 */
+window.pickQueryDay=function(y,m,d){
+  SY=y;SM=m;SD=d;CY=y;CM=m;rc();rd();closeSheet();
+  setTimeout(()=>document.getElementById('det').scrollIntoView({behavior:'smooth'}),250);
+};
+
+/* ── 找吉日：在指定天數內，往後找哪幾天的「宜」清單裡有輸入的事項 ──
+   純粹對 lunar-javascript 已經算好的逐日宜忌資料做篩選聚合，不是新增解讀邏輯 */
+function openFindDay(){
+  const acts=Array.from(new Set(Object.keys(GLOSSARY).map(t2))).sort((a,b)=>a.localeCompare(b,'zh-Hant'));
+  document.getElementById('sterm').textContent='找吉日';
+  document.getElementById('sdesc').innerHTML=`
+    <div style="font-size:12.5px;color:var(--txt2);margin-bottom:10px">輸入事項，往後搜尋哪幾天的「宜」清單裡有它</div>
+    <input id="fdAct" list="fdActList" placeholder="例如：嫁娶、開市、入宅"
+      style="width:100%;padding:9px 10px;border:1px solid var(--line2);border-radius:8px;
+      font-size:14px;background:var(--card);color:var(--txt)">
+    <datalist id="fdActList">${acts.map(a=>`<option value="${jsAttr(a)}">`).join('')}</datalist>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+      <span style="font-size:13px;color:var(--txt2)">搜尋範圍</span>
+      <select id="fdRange" style="padding:7px 10px;border:1px solid var(--line2);border-radius:8px;
+        font-size:14px;background:var(--card);color:var(--txt)">
+        <option value="30">未來30天</option>
+        <option value="60">未來60天</option>
+        <option value="90" selected>未來90天</option>
+        <option value="180">未來180天</option>
+      </select>
+    </div>
+    <button onclick="doFindDay()" style="margin-top:14px;width:100%;padding:11px;background:var(--red);
+      color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">開始查詢</button>
+    <div id="fdResult"></div>`;
+  document.getElementById('smask').classList.add('show');
+  document.getElementById('sheet').classList.add('show');
+  setTimeout(()=>document.getElementById('fdAct').focus(),200);
+}
+window.openFindDay=openFindDay;
+window.doFindDay=function(){
+  const term=document.getElementById('fdAct').value.trim();
+  const range=parseInt(document.getElementById('fdRange').value,10);
+  const out=document.getElementById('fdResult');
+  if(!term){ out.innerHTML='<div style="color:var(--red);font-size:13px;margin-top:8px">請先輸入事項</div>'; return; }
+  out.innerHTML='<div style="color:var(--txt3);font-size:13px;margin-top:8px">查詢中…</div>';
+  const matches=[];
+  for(let i=0;i<=range&&matches.length<30;i++){
+    const d=new Date(T.getFullYear(),T.getMonth(),T.getDate()+i);
+    const y=d.getFullYear(),m=d.getMonth()+1,dd=d.getDate();
+    const yiArr=s(()=>ll(y,m,dd).getDayYi(),[])||[];
+    if(yiArr.some(x=>t2(x)===term)) matches.push({y,m,d:dd,dow:d.getDay()});
+  }
+  if(!matches.length){
+    out.innerHTML=`<div style="color:var(--txt2);font-size:13px;margin-top:8px">${range}天內找不到宜「${escHtml(term)}」的日子，試試放寬範圍或換個事項。</div>`;
+    return;
+  }
+  out.innerHTML=`<div style="color:var(--txt3);font-size:12px;margin-top:10px">找到 ${matches.length} 天：</div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;max-height:240px;overflow-y:auto">
+    ${matches.map(mt=>`<div class="fd-row" onclick="pickQueryDay(${mt.y},${mt.m},${mt.d})">
+        <span style="font-size:13px;color:var(--txt)">${mt.y}年${mt.m}月${mt.d}日</span>
+        <span style="font-size:11px;color:var(--txt3)">星期${DW[mt.dow]}</span>
+      </div>`).join('')}
+    </div>`;
+};
+
+/* ── 農曆生日查詢：輸入農曆月/日(可選閏月)，往後找最近幾次對應的國曆日期 ── */
+function openBirthday(){
+  const monthOpts=Array.from({length:12},(_,i)=>`<option value="${i+1}">${i+1}月</option>`).join('');
+  const dayOpts=Array.from({length:30},(_,i)=>`<option value="${i+1}">${i+1}日</option>`).join('');
+  document.getElementById('sterm').textContent='農曆生日查詢';
+  document.getElementById('sdesc').innerHTML=`
+    <div style="font-size:12.5px;color:var(--txt2);margin-bottom:10px">輸入農曆生日，查詢未來對應的國曆日期</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <select id="bMonth" style="padding:7px 10px;border:1px solid var(--line2);border-radius:8px;
+        font-size:14px;background:var(--card);color:var(--txt)">${monthOpts}</select>
+      <select id="bDay" style="padding:7px 10px;border:1px solid var(--line2);border-radius:8px;
+        font-size:14px;background:var(--card);color:var(--txt)">${dayOpts}</select>
+      <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--txt2)">
+        <input type="checkbox" id="bLeap"> 閏月
+      </label>
+    </div>
+    <button onclick="doBirthday()" style="margin-top:14px;width:100%;padding:11px;background:var(--red);
+      color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">查詢未來幾次</button>
+    <div id="bResult"></div>`;
+  document.getElementById('smask').classList.add('show');
+  document.getElementById('sheet').classList.add('show');
+}
+window.openBirthday=openBirthday;
+window.doBirthday=function(){
+  const leap=document.getElementById('bLeap').checked;
+  const m=parseInt(document.getElementById('bMonth').value,10);
+  const d=parseInt(document.getElementById('bDay').value,10);
+  const out=document.getElementById('bResult');
+  const today=new Date(T.getFullYear(),T.getMonth(),T.getDate());
+  const results=[];
+  let y=T.getFullYear();
+  for(let guard=0;guard<100&&results.length<3;guard++,y++){
+    const solar=s(()=>Lunar.fromYmd(y,leap?-m:m,d).getSolar(),null);
+    if(!solar) continue;
+    const sd=new Date(solar.getYear(),solar.getMonth()-1,solar.getDay());
+    if(sd>=today) results.push(solar);
+  }
+  if(!results.length){
+    out.innerHTML='<div style="color:var(--txt2);font-size:13px;margin-top:8px">查無符合的日期，請確認閏月／日期是否存在。</div>';
+    return;
+  }
+  out.innerHTML=`<div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">
+    ${results.map(sol=>{
+      const sd=new Date(sol.getYear(),sol.getMonth()-1,sol.getDay());
+      const dow=sd.getDay();
+      const daysAway=Math.round((sd-today)/864e5);
+      return `<div class="fd-row" onclick="pickQueryDay(${sol.getYear()},${sol.getMonth()},${sol.getDay()})">
+        <span style="font-size:13px;color:var(--txt)">${sol.getYear()}年${sol.getMonth()}月${sol.getDay()}日</span>
+        <span style="font-size:11px;color:var(--txt3)">星期${DW[dow]}・${daysAway===0?'今天':daysAway+'天後'}</span>
+      </div>`;
+    }).join('')}
+  </div>`;
+};
+
 window.closeSheet = function(){
   document.getElementById('smask').classList.remove('show');
   document.getElementById('sheet').classList.remove('show');
