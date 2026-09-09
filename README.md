@@ -16,6 +16,10 @@
 
 ```
 index.html          萬年曆（農曆/節氣/宜忌），獨立頁面，不依賴下面任何 qimen-*.js
+calendar-lexicon.js 萬年曆用的純資料表(術語百科/值神/十二建除)，index.html 用 <script src> 載入
+manifest.json       萬年曆的 PWA manifest（圖示/名稱/主題色），讓瀏覽器可「加到主畫面」
+icon.svg            萬年曆的 App 圖示
+sw.js               萬年曆的離線快取 Service Worker，見下方「離線支援」說明
 qimen.html          奇門遁甲排盤頁面（HTML 結構 + CSS）
 qimen-engine.js     純排盤引擎(拆補法)，無 DOM 依賴，qimenChaibu() 是主入口
 qimen-lexicon.js    九宮結構常量(GRID_ORDER/GUA_NAME/GUA_DIR/ZHI_TO_GONG)、門/星/神代號
@@ -63,3 +67,12 @@ npm test           # 跑排盤引擎回歸測試
 
 - 歷史記錄只存在單一瀏覽器的 localStorage，換裝置/清瀏覽器資料會遺失，建議定期匯出備份。
 - 不含任何盤面解讀——想知道某一局代表什麼，需要另外查閱資料或使用其他工具。
+
+## 離線支援（萬年曆）
+
+`index.html` 會嘗試註冊 `sw.js` 做離線快取（首次連網開啟後，之後離線也能用）。瀏覽器限制
+Service Worker 只能在安全來源（https 或 localhost）註冊，用 `file://` 直接開啟時註冊一定會
+失敗——這是預期行為，已經用 `.catch(()=>{})` 吞掉，不影響直接開檔案的主要用法；只有部署到
+真正的靜態網站（GitHub Pages 等）時離線快取才會生效。改動 `index.html` 依賴的檔案清單
+（`calendar-lexicon.js`／CDN 版本號等）後，記得同步更新 `sw.js` 裡的 `CORE_ASSETS` 並升級
+`CACHE_NAME`，否則使用者可能繼續吃到舊快取。

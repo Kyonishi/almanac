@@ -1,0 +1,14 @@
+{
+  "name": "萬年曆",
+  "short_name": "萬年曆",
+  "description": "農曆/節氣/宜忌萬年曆",
+  "start_url": "index.html",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#F4F2ED",
+  "theme_color": "#B03A2E",
+  "lang": "zh-TW",
+  "icons": [
+    { "src": "icon.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "any" }
+  ]
+}
