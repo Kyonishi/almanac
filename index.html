@@ -65,7 +65,7 @@ header{background:linear-gradient(160deg,var(--red) 0%,var(--dred) 100%);color:#
   background:#F7FAF7;border-radius:8px;cursor:pointer}
 .fd-row:hover{background:#EFF7EF}
 
-.cal{background:var(--card);padding-bottom:10px;border-bottom:1px solid var(--brd)}
+.cal{background:var(--card);padding-bottom:10px;border-bottom:1px solid var(--brd);overflow:hidden}
 .wh{display:grid;grid-template-columns:repeat(7,1fr);padding:8px 6px 4px;text-align:center}
 .wh>span{font-size:11px;color:var(--sub);font-weight:500}
 .wh>span:first-child{color:#C0392B}.wh>span:last-child{color:#2471A3}
@@ -472,16 +472,35 @@ function updH(){
 updH();setInterval(updH,30000);
 
 /* ══ CALENDAR ═════════════════════════════════ */
-function rc(){
+/* dir: 只有「上一月/下一月」步進(cm())才傳，同月重選/跳頁不傳——避免跨好幾個月的跳轉
+   也硬套一步式滑動動畫，造成誤導 */
+function rc(dir){
   document.getElementById('ml').textContent=`${CY}年${String(CM).padStart(2,'0')}月`;
-  const g=document.getElementById('dg');g.innerHTML='';
-  const fd=new Date(CY,CM-1,1),dow=fd.getDay(),dim=new Date(CY,CM,0).getDate();
-  const pM=CM===1?12:CM-1,pY=CM===1?CY-1:CY,pdim=new Date(pY,pM,0).getDate();
-  const nM=CM===12?1:CM+1,nY=CM===12?CY+1:CY;
-  for(let i=dow-1;i>=0;i--) g.appendChild(mc(pY,pM,pdim-i,true));
-  for(let d=1;d<=dim;d++)   g.appendChild(mc(CY,CM,d,false));
-  const tot=dow+dim,tail=tot%7?7-tot%7:0;
-  for(let d=1;d<=tail;d++)  g.appendChild(mc(nY,nM,d,true));
+  const g=document.getElementById('dg');
+  const build=()=>{
+    g.innerHTML='';
+    const fd=new Date(CY,CM-1,1),dow=fd.getDay(),dim=new Date(CY,CM,0).getDate();
+    const pM=CM===1?12:CM-1,pY=CM===1?CY-1:CY,pdim=new Date(pY,pM,0).getDate();
+    const nM=CM===12?1:CM+1,nY=CM===12?CY+1:CY;
+    for(let i=dow-1;i>=0;i--) g.appendChild(mc(pY,pM,pdim-i,true));
+    for(let d=1;d<=dim;d++)   g.appendChild(mc(CY,CM,d,false));
+    const tot=dow+dim,tail=tot%7?7-tot%7:0;
+    for(let d=1;d<=tail;d++)  g.appendChild(mc(nY,nM,d,true));
+  };
+  if(!dir){ build(); return; }
+  const dist=dir>0?'-18px':'18px';
+  g.style.transition='transform .16s ease,opacity .16s ease';
+  g.style.transform=`translateX(${dist})`;
+  g.style.opacity='0';
+  setTimeout(()=>{
+    build();
+    g.style.transition='none';
+    g.style.transform=`translateX(${dir>0?'18px':'-18px'})`;
+    void g.offsetWidth; /* 強制 reflow，讓下一行的 transition 從這個新位置開始算 */
+    g.style.transition='transform .16s ease,opacity .16s ease';
+    g.style.transform='translateX(0)';
+    g.style.opacity='1';
+  },160);
 }
 
 function mc(y,m,d,oth){
@@ -713,7 +732,7 @@ function rd(){
 }
 
 /* ══ CONTROLS ═════════════════════════════════ */
-window.cm=d=>{CM+=d;if(CM>12){CM=1;CY++;}if(CM<1){CM=12;CY--;}rc();};
+window.cm=d=>{CM+=d;if(CM>12){CM=1;CY++;}if(CM<1){CM=12;CY--;}rc(d);};
 window.gt=()=>{CY=T.getFullYear();CM=T.getMonth()+1;SY=CY;SM=CM;SD=T.getDate();rc();rd();};
 
 /* ══ 滑動切換月份（手機左右滑一下日曆本體，跟點 ‹ › 效果一樣）══ */
