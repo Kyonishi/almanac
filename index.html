@@ -23,19 +23,6 @@
 }
 /* 桌面/平板寬螢幕開啟時加寬欄位，不改多欄式排版，理由同 qimenpaipan.html(2026-08-30) */
 @media (min-width:768px){ :root{ --content-w:700px; } }
-/* 深色模式：跟隨系統設定，只重定義結構性顏色的變數；帶色底的小卡片(宜忌標籤/值神卡等)
-   維持原色調但整體調暗調飽和，避免在深色背景上刺眼 */
-@media (prefers-color-scheme:dark){
-  :root{
-    --txt:#E8E6E1;--sub:#9A9A9A;--brd:#333;--bg:#1A1A1A;
-    --card:#242424;--txt2:#B8B8B8;--txt3:#777;--line2:#444;
-    --shadow-1:rgba(0,0,0,.4);--shadow-2:rgba(0,0,0,.5);--shadow-3:rgba(0,0,0,.6);
-  }
-  .bc,.bj,.bf,.bx,.tag,.jsc,.gc,.exp.good,.exp.bad,.exp.neu,.shbox,.caltext,.sc,
-  .dh,.deity-sec,.tablet,.lp,.qbtn,.fd-row{ filter:brightness(.38) saturate(1.4); }
-  .nb:hover{background:#3A2C2C}
-  .d:not(.oth):hover{background:#332828}
-}
 html,body{height:100%;overscroll-behavior:none}
 body{font-family:-apple-system,'PingFang TC','Noto Sans TC','Microsoft JhengHei',sans-serif;
   background:var(--bg);max-width:var(--content-w);margin:0 auto;min-height:100vh;
@@ -198,6 +185,62 @@ footer{text-align:center;font-size:10px;color:var(--txt3);padding:12px 16px 20px
 .sheet-bar{width:36px;height:4px;background:var(--line2);border-radius:2px;margin:6px auto 14px}
 .sheet-term{font-size:20px;font-weight:800;color:var(--grn);margin-bottom:8px}
 .sheet-desc{font-size:14px;color:var(--txt2);line-height:1.8}
+
+/* 深色模式：跟隨系統設定。放在檔案最後，靠原生層疊順序覆蓋前面同權重的淺色版規則
+   (先前用 filter 統一調暗調飽和，結果底色與文字亮度等比例縮放、對比度反而崩掉，看不清楚) */
+@media (prefers-color-scheme:dark){
+  :root{
+    --txt:#E8E6E1;--sub:#9A9A9A;--brd:#333;--bg:#1A1A1A;
+    --card:#242424;--txt2:#B8B8B8;--txt3:#777;--line2:#444;
+    --shadow-1:rgba(0,0,0,.4);--shadow-2:rgba(0,0,0,.5);--shadow-3:rgba(0,0,0,.6);
+    --grn:#4CAF50;--red:#EF5350;--gold:#D9A93B;--lgrn:#1E2F20;
+  }
+  .nb:hover{background:#3A2C2C}
+  .d:not(.oth):hover{background:#332828}
+
+  .wh>span:first-child{color:#D9645A}.wh>span:last-child{color:#5B9BC7}
+
+  .qbtn{background:#1E2F20;border-color:#33502F}
+  .fd-row{background:#232323}
+  .fd-row:hover{background:#2A2A2A}
+
+  .bc{background:#3A2B18;color:#D99A5B}
+  .bj{background:#1E2F20}
+  .bf{background:#332C18;color:#D9B24E}
+  .bx{background:#3A1E1E;color:#E07A72}
+
+  .yt{color:#7CC47F}
+  .jt{color:#E38F86}
+
+  .tag.grn{background:#1E2F20;border-color:#33502F}
+  .tag.gld{background:#332C18;border-color:#4D411F}
+  .tag.red{background:#3A1E1E;border-color:#4D2929}
+
+  .exp.good{background:#1E2F20;border-color:#33502F}
+  .exp.bad{background:#3A1E1E;border-color:#4D2929}
+  .exp.neu{background:#2A2A2A;border-color:#3D3D3D}
+  .exp-lbl{color:#8A8A8A}
+  .exp.neu .exp-nm{color:#D8D8D8}
+  .exp.neu .lp{background:#5A5A5A}
+  .exp-desc{color:#A8A8A8}
+
+  .jsc{background:#212821}
+  .jsc.bad{background:#2E1E1E}
+  .jsi{color:#B8B8B8}
+  .jsc.bad .jsi{color:#E38F86}
+
+  .gc{background:#232323}
+  .gl{color:#8A8A8A}
+
+  .caltext{background:#212821;color:#A9BBA9}
+
+  .shbox{background:#212821}
+  .sc{background:#262626;color:#8A8A8A}
+
+  .deity-sec{background:linear-gradient(to bottom,#26210F,#2E2712)}
+  .tablet{background:linear-gradient(to bottom,#2E2712,#3A3016);border-color:#5C4A1A}
+  .tablet-name{color:#E0B84D}
+}
 </style>
 </head>
 <body>
