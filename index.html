@@ -716,6 +716,23 @@ function rd(){
 window.cm=d=>{CM+=d;if(CM>12){CM=1;CY++;}if(CM<1){CM=12;CY--;}rc();};
 window.gt=()=>{CY=T.getFullYear();CM=T.getMonth()+1;SY=CY;SM=CM;SD=T.getDate();rc();rd();};
 
+/* ══ 滑動切換月份（手機左右滑一下日曆本體，跟點 ‹ › 效果一樣）══ */
+(function(){
+  const cal=document.querySelector('.cal');
+  if(!cal) return;
+  let sx=0,sy=0,tracking=false;
+  cal.addEventListener('touchstart',e=>{
+    if(e.touches.length!==1) return;
+    sx=e.touches[0].clientX;sy=e.touches[0].clientY;tracking=true;
+  },{passive:true});
+  cal.addEventListener('touchend',e=>{
+    if(!tracking) return;
+    tracking=false;
+    const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5) cm(dx<0?1:-1);
+  },{passive:true});
+})();
+
 /* ══ INIT ═════════════════════════════════════ */
 const INIT_TIMEOUT_MS=8000;
 const initStart=Date.now();
