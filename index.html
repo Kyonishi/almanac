@@ -21,7 +21,7 @@
   --shadow-1:rgba(0,0,0,.09);--shadow-2:rgba(0,0,0,.18);--shadow-3:rgba(0,0,0,.3);
   --content-w:480px; /* 手機寬度，下面桌面斷點會加寬；.sheet 也吃這個變數，改這裡就同步 */
 }
-/* 桌面/平板寬螢幕開啟時加寬欄位，不改多欄式排版，理由同 qimen.html(2026-08-30) */
+/* 桌面/平板寬螢幕開啟時加寬欄位，不改多欄式排版，理由同 qimenpaipan.html(2026-08-30) */
 @media (min-width:768px){ :root{ --content-w:700px; } }
 /* 深色模式：跟隨系統設定，只重定義結構性顏色的變數；帶色底的小卡片(宜忌標籤/值神卡等)
    維持原色調但整體調暗調飽和，避免在深色背景上刺眼 */
@@ -744,7 +744,7 @@ if('serviceWorker' in navigator){
 
 <nav class="tabbar">
   <a href="index.html" class="tab-item active"><span class="tab-icon">📅</span>萬年曆</a>
-  <a href="qimen.html" class="tab-item"><span class="tab-icon">☯</span>奇門遁甲</a>
+  <a href="qimenpaipan.html" class="tab-item"><span class="tab-icon">☯</span>奇門遁甲</a>
 </nav>
 </body>
 </html>

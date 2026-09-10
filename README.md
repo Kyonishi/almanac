@@ -20,7 +20,8 @@ calendar-lexicon.js 萬年曆用的純資料表(術語百科/值神/十二建除
 manifest.json       萬年曆的 PWA manifest（圖示/名稱/主題色），讓瀏覽器可「加到主畫面」
 icon.svg            萬年曆的 App 圖示
 sw.js               萬年曆的離線快取 Service Worker，見下方「離線支援」說明
-qimen.html          奇門遁甲排盤頁面（HTML 結構 + CSS）
+qimenpaipan.html    奇門遁甲排盤頁面（HTML 結構 + CSS）；原檔名 qimen.html，2026-09-10 改名
+                    避免跟另一個私有倉庫（奇門解析算法）撞名
 qimen-engine.js     純排盤引擎(拆補法)，無 DOM 依賴，qimenChaibu() 是主入口
 qimen-lexicon.js    九宮結構常量(GRID_ORDER/GUA_NAME/GUA_DIR/ZHI_TO_GONG)、門/星/神代號
                     對照完整名稱、起局儀軌 RITUAL_DATA——純資料，不含任何取象/吉凶內容
