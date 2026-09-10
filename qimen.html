@@ -17,7 +17,7 @@
 @media (min-width:768px){ :root{ --content-w:720px; } }
 html,body{min-height:100%;background:var(--bg);
   font-family:-apple-system,'PingFang TC','Noto Sans TC',serif}
-body{max-width:var(--content-w);margin:0 auto;padding-bottom:32px}
+body{max-width:var(--content-w);margin:0 auto;padding-bottom:calc(58px + env(safe-area-inset-bottom))}
 
 /* HEADER */
 header{
@@ -163,29 +163,36 @@ header{
 .c-special.zf-tag{background:var(--grn);color:#fff}
 .c-special.zs-tag{background:var(--red);color:#fff}
 
-/* cross-nav */
-.cross-nav{
-  position:fixed;bottom:20px;
+/* 回頂部懸浮鈕，浮在固定分頁籤上方 */
+.top-btn{
+  position:fixed;bottom:calc(58px + env(safe-area-inset-bottom) + 12px);
   right:max(16px, calc((100vw - var(--content-w)) / 2 + 16px));
-  z-index:999;
-  display:flex;flex-direction:column;gap:8px;align-items:flex-end
-}
-.cross-nav a{
-  display:flex;align-items:center;gap:8px;
-  background:rgba(26,26,46,.8);color:#E8D5A3;
-  border-radius:24px;padding:7px 12px 7px 9px;
-  text-decoration:none;font-size:11px;letter-spacing:1px;
+  z-index:21;
+  width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+  background:rgba(26,26,46,.8);color:#E8D5A3;border-radius:50%;
+  text-decoration:none;font-size:14px;
   box-shadow:0 2px 10px rgba(0,0,0,.25);backdrop-filter:blur(4px);
+  opacity:0;pointer-events:none;transform:translateY(6px);
   transition:transform .15s,opacity .15s;
 }
-.cross-nav a:hover{opacity:1;transform:scale(1.04)}
-.cross-nav a .nav-icon{font-size:14px}
-.cross-nav a.top-btn{
-  width:34px;height:34px;padding:0;border-radius:50%;justify-content:center;
-  opacity:0;pointer-events:none;transform:translateY(6px);
+.top-btn.show{opacity:.85;pointer-events:auto;transform:translateY(0)}
+.top-btn:hover{opacity:1}
+
+/* 固定分頁籤：萬年曆／奇門遁甲 兩頁互相切換用 */
+.tabbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:20;
+  max-width:var(--content-w);margin:0 auto;
+  display:flex;background:var(--card);border-top:1px solid var(--brd);
+  box-shadow:0 -2px 10px rgba(0,0,0,.12);
+  padding-bottom:env(safe-area-inset-bottom);
 }
-.cross-nav a.top-btn.show{opacity:.85;pointer-events:auto;transform:translateY(0)}
-.cross-nav a.top-btn:hover{opacity:1}
+.tab-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;padding:8px 0;text-decoration:none;color:var(--sub);font-size:10px;
+  transition:color .12s;
+}
+.tab-item .tab-icon{font-size:19px;line-height:1}
+.tab-item.active{color:var(--red);font-weight:700}
 
 footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spacing:.5px}
 
@@ -247,12 +254,11 @@ footer{text-align:center;font-size:10px;color:var(--sub);padding:16px;letter-spa
 <script src="qimen-lexicon.js"></script>
 <script src="qimen-ui.js"></script>
 
-<div class="cross-nav">
-  <a href="#" id="backToTopBtn" class="top-btn" aria-label="回頂部"><span class="nav-icon">⬆</span></a>
-  <a href="index.html">
-    <span class="nav-icon">📅</span>萬年曆
-  </a>
-</div>
+<a href="#" id="backToTopBtn" class="top-btn" aria-label="回頂部">⬆</a>
+<nav class="tabbar">
+  <a href="index.html" class="tab-item"><span class="tab-icon">📅</span>萬年曆</a>
+  <a href="qimen.html" class="tab-item active"><span class="tab-icon">☯</span>奇門遁甲</a>
+</nav>
 <script>
 (function(){
   var btn=document.getElementById('backToTopBtn');
